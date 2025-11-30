@@ -40,7 +40,6 @@ module sui_amm::fee_distributor {
 
     /// Record of a fee claim
     /// NOTE: Still defined for API compatibility, but no longer stored on-chain
-    #[allow(unused_field)]
     struct ClaimRecord has store, copy, drop {
         timestamp_ms: u64,
         amount_a: u64,
@@ -400,10 +399,16 @@ module sui_amm::fee_distributor {
         let total_b = table::borrow_mut(&mut registry.total_fees_claimed_b, pool_id);
         *total_b = *total_b + amount_b;
         
-        // REMOVED: unbounded vector storage
-        // History is now tracked via events only (ClaimRecord events are emitted elsewhere)
-        // This prevents the position history from growing unbounded and bricking claims
-        
+        // Emit a ClaimRecord event so that historical data can be indexed
+        // off-chain without storing an ever-growing on-chain vector.
+        let record = ClaimRecord {
+            timestamp_ms: clock::timestamp_ms(_clock),
+            amount_a,
+            amount_b,
+            pool_id,
+        };
+        event::emit(record);
+
         registry.total_claims = registry.total_claims + 1;
     }
 
@@ -427,10 +432,10 @@ module sui_amm::fee_distributor {
     }
 
     /// Get claim history for a position
-    /// NOTE: History is no longer stored on-chain to prevent unbounded growth
-    /// Use event indexers to query historical claim data
+    /// NOTE: History is not stored in state to prevent unbounded growth.
+    /// Use event indexers to query historical ClaimRecord events.
     public fun get_claim_history(_registry: &FeeRegistry, _position_id: ID): Option<vector<ClaimRecord>> {
-        // Always return none - history is tracked via events only
+        // Always return none - history is tracked via ClaimRecord events only
         option::none()
     }
 
