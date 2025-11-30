@@ -800,6 +800,22 @@ module sui_amm::pool {
         )
     }
 
+    /// Calculate impermanent loss for standard pool position
+    /// 
+    /// Formula:
+    /// IL = (Value_hold - Value_lp) / Value_hold
+    /// 
+    /// Proof:
+    /// Let P = price of A in terms of B
+    /// Value_hold = initial_a * P + initial_b
+    /// Value_lp = current_a * P + current_b
+    /// 
+    /// For constant product AMM (x * y = k):
+    /// current_a = sqrt(k / P)
+    /// current_b = sqrt(k * P)
+    /// Value_lp = 2 * sqrt(k * P)
+    /// 
+    /// This function calculates the realized loss based on current reserves and user's initial deposit amounts.
     public fun get_impermanent_loss<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
         position: &LPPosition
@@ -834,6 +850,11 @@ module sui_amm::pool {
         ((loss * 10000) / value_hold as u64)
     }
 
+    /// FIX [S2]: Public function to refresh position metadata
+    /// Allows users to update their NFT display with current values without claiming fees.
+    /// IMPORTANT: NFT metadata is NOT automatically updated on every swap to save gas.
+    /// Users or frontends should call this function to ensure the NFT displays the latest
+    /// value and fees.
     public fun refresh_position_metadata<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
         position: &mut LPPosition

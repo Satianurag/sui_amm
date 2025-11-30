@@ -1,0 +1,225 @@
+INCLUDING DEPENDENCY Bridge
+INCLUDING DEPENDENCY SuiSystem
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING sui_amm
+[0m[1m[38;5;11mwarning[W09001][0m[1m: unused alias[0m
+  [0m[34m┌─[0m ./tests/edge_case_tests.move:8:40
+  [0m[34m│[0m
+[0m[34m8[0m [0m[34m│[0m     use sui_amm::stable_pool::{Self as [0m[33mstable_pool[0m, StableSwapPool};
+  [0m[34m│[0m                                        [0m[33m^^^^^^^^^^^[0m [0m[33mUnused 'use' of alias 'stable_pool'. Consider removing it[0m
+  [0m[34m│[0m
+  [0m[34m=[0m This warning can be suppressed with '#[allow(unused_use)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09001][0m[1m: unused alias[0m
+  [0m[34m┌─[0m ./tests/edge_case_tests.move:8:53
+  [0m[34m│[0m
+[0m[34m8[0m [0m[34m│[0m     use sui_amm::stable_pool::{Self as stable_pool, [0m[33mStableSwapPool[0m};
+  [0m[34m│[0m                                                     [0m[33m^^^^^^^^^^^^^^[0m [0m[33mUnused 'use' of alias 'StableSwapPool'. Consider removing it[0m
+  [0m[34m│[0m
+  [0m[34m=[0m This warning can be suppressed with '#[allow(unused_use)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W10007][0m[1m: issue with attribute value[0m
+    [0m[34m┌─[0m ./tests/edge_case_tests.move:108:24
+    [0m[34m│[0m
+[0m[34m108[0m [0m[34m│[0m     #[expected_failure([0m[33mabort_code = 1[0m)]
+    [0m[34m│[0m                        [0m[33m^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                        [0m[33m│[0m            [0m[34m│[0m
+    [0m[34m│[0m                        [0m[33m│[0m            [0m[34mReplace value with a constant from expected module or add 'location=...'[0m
+    [0m[34m│[0m                        [0m[33mWARNING: passes for an abort from any module[0m
+
+[0m[1m[38;5;11mwarning[W10007][0m[1m: issue with attribute value[0m
+   [0m[34m┌─[0m ./tests/deadline_tests.move:21:24
+   [0m[34m│[0m
+[0m[34m21[0m [0m[34m│[0m     #[expected_failure([0m[33mabort_code = 0[0m)]
+   [0m[34m│[0m                        [0m[33m^^^^^^^^^^^^^^[0m
+   [0m[34m│[0m                        [0m[33m│[0m            [0m[34m│[0m
+   [0m[34m│[0m                        [0m[33m│[0m            [0m[34mReplace value with a constant from expected module or add 'location=...'[0m
+   [0m[34m│[0m                        [0m[33mWARNING: passes for an abort from any module[0m
+
+Running Move unit tests
+[ PASS    ] sui_amm::feature_tests::test_amp_ramping_linear_interpolation
+[ PASS    ] sui_amm::metadata_tests::test_cached_values_update
+[ PASS    ] sui_amm::edge_case_tests::test_metadata_refresh_timing
+[ PASS    ] sui_amm::feature_tests::test_partial_liquidity_removal
+[ PASS    ] sui_amm::il_edge_tests::test_il_extreme_price_change
+[ PASS    ] sui_amm::metadata_tests::test_manual_position_creation_metadata
+[ PASS    ] sui_amm::advanced_tests::test_auto_compound_increases_position
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_add_custom_fee_tier
+[ PASS    ] sui_amm::event_emission_tests::test_fee_tier_added_event_emitted
+[ PASS    ] sui_amm::ratio_tolerance_boundary_test::test_ratio_tolerance_boundary
+[ PASS    ] sui_amm::multi_lp_tests::test_lp_removes_affects_others
+[ PASS    ] sui_amm::edge_case_tests::test_price_limit_boundaries
+[ PASS    ] sui_amm::il_edge_tests::test_il_no_price_change
+[ PASS    ] sui_amm::feature_tests::test_reject_excessive_protocol_fee
+[ PASS    ] sui_amm::event_emission_tests::test_fee_tier_removed_event_emitted
+[ PASS    ] sui_amm::ratio_tolerance_boundary_test::test_ratio_tolerance_boundary_fail
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_add_fee_tier_above_max
+[ PASS    ] sui_amm::advanced_tests::test_fee_accumulation_precision
+[ PASS    ] sui_amm::edge_case_tests::test_price_limit_exceeded
+[ PASS    ] sui_amm::il_edge_tests::test_il_small_position
+[ PASS    ] sui_amm::multi_lp_tests::test_multiple_lps_same_pool
+[ PASS    ] sui_amm::feature_tests::test_stop_ramp
+[ PASS    ] sui_amm::event_emission_tests::test_liquidity_added_event_emitted
+[ PASS    ] sui_amm::registry_scalability_tests::test_dos_protection_max_pools_per_token
+[ PASS    ] sui_amm::edge_tests::test_swap_with_price_limit_exceeded
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_add_fee_tier_idempotent
+[ PASS    ] sui_amm::advanced_tests::test_k_invariant_increases_with_fees
+[ PASS    ] sui_amm::il_edge_tests::test_il_with_fees
+[ PASS    ] sui_amm::registry_scalability_tests::test_get_all_pools_fails_above_limit
+[ PASS    ] sui_amm::multi_lp_tests::test_unequal_lp_shares
+[ PASS    ] sui_amm::overflow_tests::test_extreme_imbalance_overflow
+[ PASS    ] sui_amm::overflow_tests::test_get_d_near_overflow
+[ PASS    ] sui_amm::feature_tests::test_update_protocol_fee
+[ PASS    ] sui_amm::overflow_tests::test_get_y_near_overflow
+[ PASS    ] sui_amm::registry_scalability_tests::test_governable_max_fee_tier
+[ PASS    ] sui_amm::edge_tests::test_swap_with_price_limit_pass
+[ PASS    ] sui_amm::stable_math_edge_tests::test_amplification_effect
+[ PASS    ] sui_amm::stable_math_edge_tests::test_d_invariant_maintained
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_equal_amounts
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_high_amplification
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_low_amplification
+[ PASS    ] sui_amm::event_emission_tests::test_liquidity_removed_event_emitted
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_one_zero
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_create_pool_with_custom_fee_tier
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_unbalanced
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_very_large_amounts
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_d_zero_amounts
+[ PASS    ] sui_amm::il_tests::test_impermanent_loss
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_y_after_swap
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_y_basic
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_y_convergence
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_y_extreme_x
+[ PASS    ] sui_amm::stable_math_edge_tests::test_get_y_with_small_d
+[ PASS    ] sui_amm::stable_math_edge_tests::test_symmetry
+[ PASS    ] sui_amm::stable_math_tests::test_amplification
+[ PASS    ] sui_amm::stable_math_tests::test_get_d
+[ PASS    ] sui_amm::stable_math_tests::test_get_y
+[ PASS    ] sui_amm::advanced_tests::test_k_invariant_maintained_through_operations
+[ PASS    ] sui_amm::string_utils::test_concat
+[ PASS    ] sui_amm::string_utils::test_format_decimal
+[ PASS    ] sui_amm::registry_scalability_tests::test_governable_pool_creation_fee
+[ PASS    ] sui_amm::string_utils::test_format_with_commas
+[ PASS    ] sui_amm::string_utils::test_rgb_to_hex
+[ PASS    ] sui_amm::string_utils::test_to_hex_string
+[ PASS    ] sui_amm::string_utils::test_truncate
+[ PASS    ] sui_amm::string_utils::test_u64_to_string
+[ PASS    ] sui_amm::feature_tests::test_update_stable_protocol_fee
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_create_pool_with_removed_fee_tier
+[ PASS    ] sui_amm::partial_removal_tests::test_multiple_partial_removals
+[ PASS    ] sui_amm::il_verification_tests::test_il_2x_price_change
+[ PASS    ] sui_amm::event_emission_tests::test_pool_created_event_emitted
+[ PASS    ] sui_amm::unauthorized_admin_tests::test_admin_can_perform_all_operations
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_increase_max_fee_tier_then_add
+[ PASS    ] sui_amm::advanced_tests::test_protocol_fee_withdrawal
+[ PASS    ] sui_amm::il_verification_tests::test_il_verification_known_values
+[ PASS    ] sui_amm::math_edge_tests::test_constant_product_large_amounts
+[ PASS    ] sui_amm::registry_scalability_tests::test_pagination_edge_cases
+[ PASS    ] sui_amm::math_edge_tests::test_constant_product_output
+[ PASS    ] sui_amm::unauthorized_admin_tests::test_admin_cap_uniqueness
+[ PASS    ] sui_amm::math_edge_tests::test_constant_product_small_amounts
+[ PASS    ] sui_amm::math_edge_tests::test_constant_product_zero_fee
+[ PASS    ] sui_amm::math_edge_tests::test_constant_product_zero_input
+[ PASS    ] sui_amm::math_edge_tests::test_constant_product_zero_reserve
+[ PASS    ] sui_amm::math_edge_tests::test_min_edge_cases
+[ PASS    ] sui_amm::math_edge_tests::test_quote
+[ PASS    ] sui_amm::math_edge_tests::test_quote_precision
+[ PASS    ] sui_amm::fee_rounding_tests::test_accumulated_fees_per_share_precision
+[ PASS    ] sui_amm::math_edge_tests::test_quote_zero_amount
+[ PASS    ] sui_amm::math_edge_tests::test_quote_zero_reserve_a
+[ PASS    ] sui_amm::math_edge_tests::test_quote_zero_reserve_b
+[ PASS    ] sui_amm::math_edge_tests::test_sqrt_edge_cases
+[ PASS    ] sui_amm::event_emission_tests::test_stable_pool_events
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_remove_fee_tier
+[ PASS    ] sui_amm::unauthorized_admin_tests::test_creator_can_withdraw_creator_fees
+[ PASS    ] sui_amm::partial_removal_tests::test_partial_removal_with_fees
+[ PASS    ] sui_amm::unauthorized_admin_tests::test_non_creator_cannot_withdraw_creator_fees
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_remove_nonexistent_fee_tier
+[ PASS    ] sui_amm::factory_tests::test_duplicate_pool_creation
+[ PASS    ] sui_amm::fee_rounding_tests::test_fee_distribution_rounding_consistency
+[ PASS    ] sui_amm::amm_tests::test_auto_compound_single_token_fees
+[ PASS    ] sui_amm::event_emission_tests::test_swap_executed_event_emitted
+[ PASS    ] sui_amm::unauthorized_admin_tests::test_non_creator_cannot_withdraw_stable_creator_fees
+[ PASS    ] sui_amm::factory_tests::test_invalid_fee_tier
+[ PASS    ] sui_amm::registry_scalability_tests::test_pagination_with_many_pools
+[ PASS    ] sui_amm::partial_removal_tests::test_remove_1_percent
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_set_max_fee_tier_no_upper_limit
+[ PASS    ] sui_amm::factory_tests::test_multiple_pools_enumeration
+[ PASS    ] sui_amm::fee_rounding_tests::test_large_number_multiplication_no_overflow
+[ PASS    ] sui_amm::view_functions_tests::test_get_accumulated_fees
+[ PASS    ] sui_amm::quote_function_tests::test_exchange_rate_calculation
+[ PASS    ] sui_amm::amm_tests::test_math
+[ PASS    ] sui_amm::factory_tests::test_pool_creation_and_lookup
+[ PASS    ] sui_amm::view_functions_tests::test_get_position_value
+[ PASS    ] sui_amm::security_tests::test_accept_adequate_initial_liquidity
+[ PASS    ] sui_amm::factory_tests::test_reverse_lookup_and_pair_lookup
+[ PASS    ] sui_amm::partial_removal_tests::test_remove_50_percent
+[ PASS    ] sui_amm::fee_rounding_tests::test_liquidity_minting_precision_loss
+[ PASS    ] sui_amm::fee_tier_governance_tests::test_zero_fee_tier
+[ PASS    ] sui_amm::factory_tests::test_stable_pool_creation
+[ PASS    ] sui_amm::amm_tests::test_pool_lifecycle
+[ PASS    ] sui_amm::view_functions_tests::test_get_protocol_fees
+[ PASS    ] sui_amm::quote_function_tests::test_quote_bidirectional
+[ PASS    ] sui_amm::factory_tests::test_standard_fee_tiers
+[ PASS    ] sui_amm::fee_rounding_tests::test_protocol_fee_rounding
+[ PASS    ] sui_amm::flashloan_attack_tests::test_k_invariant_maintained_after_swap
+[ PASS    ] sui_amm::security_tests::test_autocompound_requires_slippage_params
+[ PASS    ] sui_amm::creator_fee_tests::test_creator_fee_accumulation
+[ PASS    ] sui_amm::partial_removal_tests::test_remove_99_percent
+[ PASS    ] sui_amm::view_functions_tests::test_impermanent_loss_calculation
+[ PASS    ] sui_amm::base64::test_create_svg_data_uri
+[ PASS    ] sui_amm::amm_tests::test_price_impact
+[ PASS    ] sui_amm::creator_fee_tests::test_non_creator_cannot_withdraw
+[ PASS    ] sui_amm::base64::test_empty_string
+[ PASS    ] sui_amm::fee_rounding_tests::test_tiny_fee_rounds_down_to_zero
+[ PASS    ] sui_amm::base64::test_encode_longer
+[ PASS    ] sui_amm::base64::test_encode_simple
+[ PASS    ] sui_amm::base64::test_encode_with_padding
+[ PASS    ] sui_amm::quote_function_tests::test_quote_matches_actual_swap
+[ PASS    ] sui_amm::critical_fixes_tests::test_display_setup_works_without_svg
+[ PASS    ] sui_amm::security_tests::test_reject_insufficient_initial_liquidity
+[ PASS    ] sui_amm::flashloan_attack_tests::test_large_swap_preserves_k_invariant
+[ PASS    ] sui_amm::partial_removal_tests::test_remove_more_than_owned
+[ PASS    ] sui_amm::critical_fixes_tests::test_partial_removal_retains_fees
+[ PASS    ] sui_amm::concurrent_tests::test_concurrent_liquidity_operations
+[ PASS    ] sui_amm::amm_tests::test_remove_liquidity
+[ PASS    ] sui_amm::deadline_tests::test_claim_fees_expired_deadline
+[ PASS    ] sui_amm::critical_fixes_tests::test_protocol_fee_cap
+[ PASS    ] sui_amm::quote_function_tests::test_quote_with_zero_input
+[ PASS    ] sui_amm::security_tests::test_small_liquidity_removal_precision
+[ PASS    ] sui_amm::slippage_edge_tests::test_check_price_limit_exact
+[ PASS    ] sui_amm::flashloan_attack_tests::test_liquidity_operations_preserve_k_invariant
+[ PASS    ] sui_amm::critical_fixes_tests::test_reject_dust_liquidity
+[ PASS    ] sui_amm::concurrent_tests::test_concurrent_swaps_different_directions
+[ PASS    ] sui_amm::amm_tests::test_slippage_zero_output
+[ PASS    ] sui_amm::critical_fixes_tests::test_stableswap_price_impact_uses_spot_not_cp
+[debug] "Step 1: Pool Created"
+[debug] "Step 2: Swaps Executed"
+[debug] "Step 3: Metadata Verified - Fees accumulated & IL detected"
+[debug] "Step 4: Fees Claimed"
+[debug] "Step 5: Liquidity Removed"
+[ PASS    ] sui_amm::demo_script::run_demo
+[ PASS    ] sui_amm::slippage_edge_tests::test_check_price_limit_exceeded
+[ PASS    ] sui_amm::concurrent_tests::test_multiple_lps_concurrent_operations
+[ PASS    ] sui_amm::quote_function_tests::test_quote_with_zero_liquidity
+[ PASS    ] sui_amm::flashloan_attack_tests::test_multiple_swaps_preserve_k_invariant
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_add_initial_liquidity
+[ PASS    ] sui_amm::amm_tests::test_stable_swap
+[ PASS    ] sui_amm::slippage_edge_tests::test_check_slippage_below_min
+[ PASS    ] sui_amm::flashloan_attack_tests::test_price_impact_protection_prevents_manipulation
+[ PASS    ] sui_amm::quote_function_tests::test_stable_pool_quotes
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_add_subsequent_liquidity
+[ PASS    ] sui_amm::amm_tests::test_swap_with_tiny_amount
+[ PASS    ] sui_amm::slippage_edge_tests::test_check_slippage_exact_min
+[ PASS    ] sui_amm::flashloan_attack_tests::test_stable_pool_d_invariant_preserved
+[ PASS    ] sui_amm::slippage_edge_tests::test_deadline_exactly_at_timestamp
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_claim_fees
+[ PASS    ] sui_amm::slippage_edge_tests::test_deadline_exactly_passed
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_create_pool
+[ PASS    ] sui_amm::slippage_edge_tests::test_deadline_far_future
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_create_stable_pool
+[ PASS    ] sui_amm::slippage_edge_tests::test_global_slippage_cap_exceeded
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_remove_liquidity
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_stable_swap
+[ PASS    ] sui_amm::gas_benchmarks::benchmark_swap
+Test result: OK. Total tests: 179; passed: 179; failed: 0

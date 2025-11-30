@@ -116,6 +116,7 @@ module sui_amm::demo_script {
                 &mut pool,
                 &mut position,
                 &clock,
+                18446744073709551615, // Max u64 deadline
                 test_scenario::ctx(scenario)
             );
 

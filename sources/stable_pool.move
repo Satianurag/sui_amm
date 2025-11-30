@@ -841,7 +841,10 @@ module sui_amm::stable_pool {
     }
 
     /// FIX [S2]: Public function to refresh position metadata from stable pool state
-    /// Allows users to update their NFT display with current values without claiming fees
+    /// Allows users to update their NFT display with current values without claiming fees.
+    /// IMPORTANT: NFT metadata is NOT automatically updated on every swap to save gas.
+    /// Users or frontends should call this function to ensure the NFT displays the latest
+    /// value and fees.
     public fun refresh_position_metadata<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         position: &mut LPPosition
@@ -865,6 +868,15 @@ module sui_amm::stable_pool {
 
     /// Calculate impermanent loss for stable pool position
     /// Uses approximation: IL = (Value_hold - Value_lp) / Value_hold
+    /// 
+    /// Note: For StableSwap, IL is generally much lower than constant product pools
+    /// as long as the price stays near 1. However, if the price depegs significantly,
+    /// IL can still occur.
+    /// 
+    /// Formula:
+    /// IL = (Value_hold - Value_lp) / Value_hold
+    /// Value_hold = initial_a * P + initial_b
+    /// Value_lp = current_a * P + current_b
     public fun get_impermanent_loss<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         position: &LPPosition
@@ -1160,5 +1172,15 @@ module sui_amm::stable_pool {
 
     public fun share<CoinA, CoinB>(pool: StableSwapPool<CoinA, CoinB>) {
         transfer::share_object(pool);
+    }
+
+    #[test_only]
+    public fun ramp_amp_for_testing<CoinA, CoinB>(
+        pool: &mut StableSwapPool<CoinA, CoinB>,
+        target_amp: u64,
+        ramp_duration_ms: u64,
+        clock: &Clock
+    ) {
+        ramp_amp(pool, target_amp, ramp_duration_ms, clock);
     }
 }

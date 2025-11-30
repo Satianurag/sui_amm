@@ -234,6 +234,8 @@ module sui_amm::position {
         pos.cached_fee_b = fee_b;
         pos.cached_il_bps = il_bps;
         // No on-chain SVG regeneration; cached values are used only for Display.
+        // NOTE: These values are static snapshots. Users must call `refresh_position_metadata`
+        // on the pool to update them before viewing if they want real-time data.
     }
 
     public(friend) fun set_pool_metadata(

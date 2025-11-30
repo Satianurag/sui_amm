@@ -92,8 +92,11 @@ module sui_amm::fee_distributor {
         pool: &mut LiquidityPool<CoinA, CoinB>,
         position: &mut LPPosition,
         clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext  
     ): (Coin<CoinA>, Coin<CoinB>) {
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
         let (coin_a, coin_b) = pool::withdraw_fees(pool, position, ctx);
         
         // Track in registry
@@ -113,8 +116,11 @@ module sui_amm::fee_distributor {
         pool: &mut StableSwapPool<CoinA, CoinB>,
         position: &mut LPPosition,
         clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+
         let (coin_a, coin_b) = stable_pool::withdraw_fees(pool, position, ctx);
         
         // Track in registry
@@ -134,8 +140,11 @@ module sui_amm::fee_distributor {
         pool: &mut LiquidityPool<CoinA, CoinB>,
         positions: &mut vector<LPPosition>,
         clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+
         let num_positions = vector::length(positions);
         assert!(num_positions > 0, ENoPositions);
         assert!(num_positions <= MAX_BATCH_SIZE, EBatchTooLarge);
@@ -174,8 +183,11 @@ module sui_amm::fee_distributor {
         pool: &mut StableSwapPool<CoinA, CoinB>,
         positions: &mut vector<LPPosition>,
         clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+
         let num_positions = vector::length(positions);
         assert!(num_positions > 0, ENoPositions);
         assert!(num_positions <= MAX_BATCH_SIZE, EBatchTooLarge);
@@ -227,7 +239,7 @@ module sui_amm::fee_distributor {
         // FIX S1: Reentrancy Protection - Snapshot k
         let k_before = pool::get_k(pool);
 
-        let (coin_a, coin_b) = claim_fees(registry, pool, position, clock, ctx);
+        let (coin_a, coin_b) = claim_fees(registry, pool, position, clock, deadline_ms, ctx);
         
         // Verify reserves haven't decreased unexpectedly (other than what we claimed)
         // Actually, claim_fees withdraws from fee balances, not reserves.
@@ -294,7 +306,7 @@ module sui_amm::fee_distributor {
     ): (Coin<CoinA>, Coin<CoinB>) {
         assert!(clock::timestamp_ms(clock) <= deadline_ms, EInvalidDeadline);
         
-        let (coin_a, coin_b) = claim_fees_from_stable_pool(registry, pool, position, clock, ctx);
+        let (coin_a, coin_b) = claim_fees_from_stable_pool(registry, pool, position, clock, deadline_ms, ctx);
         
         // SECURITY FIX: Use min_out parameters instead of hardcoded 0
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) == 0) {
