@@ -110,6 +110,8 @@ module sui_amm::pool {
         amount_b: u64,
     }
 
+    /// Creates pool with initial liquidity atomically (improvement over spec's 2-step flow).
+    /// This prevents creation of empty pools and ensures immediate usability.
     public(friend) fun create_pool<CoinA, CoinB>(
         fee_percent: u64,
         protocol_fee_percent: u64,
@@ -166,24 +168,6 @@ module sui_amm::pool {
         assert!(amount_a > 0 && amount_b > 0, EZeroAmount);
 
         let (reserve_a, reserve_b) = (balance::value(&pool.reserve_a), balance::value(&pool.reserve_b));
-        
-        // FIX V2: Ratio Validation
-        if (pool.total_liquidity > 0) {
-            // Check if ratio is maintained within tolerance
-            // ratio = amount_a / amount_b vs reserve_a / reserve_b
-            // Cross-multiply: amount_a * reserve_b vs amount_b * reserve_a
-            let val_a = (amount_a as u128) * (reserve_b as u128);
-            let val_b = (amount_b as u128) * (reserve_a as u128);
-            
-            let diff = if (val_a > val_b) { val_a - val_b } else { val_b - val_a };
-            // deviation_bps = diff * 10000 / max(val_a, val_b)
-            let max_val = if (val_a > val_b) { val_a } else { val_b };
-            
-            if (max_val > 0) {
-                let deviation = (diff * 10000) / max_val;
-                assert!(deviation <= (pool.ratio_tolerance_bps as u128), EExcessivePriceImpact); // Reusing error code or define new one
-            };
-        };
         
         // FIX V2: Ratio Validation
         if (pool.total_liquidity > 0) {
@@ -864,6 +848,7 @@ module sui_amm::pool {
             0
         } else {
             let diff = ideal_out - actual_out;
+            assert!(diff <= MAX_SAFE_VALUE, EOverflow);
             (((diff * 10000) / ideal_out) as u64)
         }
     }
@@ -985,5 +970,14 @@ module sui_amm::pool {
 
     public fun share<CoinA, CoinB>(pool: LiquidityPool<CoinA, CoinB>) {
         transfer::share_object(pool);
+    }
+
+    #[test_only]
+    public fun set_risk_params_for_testing<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        ratio_tolerance_bps: u64,
+        max_price_impact_bps: u64
+    ) {
+        set_risk_params(pool, ratio_tolerance_bps, max_price_impact_bps);
     }
 }

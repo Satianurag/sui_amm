@@ -27,6 +27,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             
             // CREATE POOL - Main operation to benchmark
@@ -38,6 +39,8 @@ module sui_amm::gas_benchmarks {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
+                &clock_val,
                 ts::ctx(&mut scenario)
             );
             
@@ -46,6 +49,7 @@ module sui_amm::gas_benchmarks {
             sui::transfer::public_transfer(position, ADMIN);
             
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::end(scenario);
@@ -61,6 +65,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             
             // CREATE STABLE POOL - Main operation to benchmark
@@ -72,8 +77,10 @@ module sui_amm::gas_benchmarks {
                 500,
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
                 &clock_val, ts::ctx(&mut scenario)
             );
+            clock::destroy_for_testing(clock_val);
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
@@ -95,6 +102,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             let coin_a = coin::mint_for_testing<USDC>(200000, ts::ctx(&mut scenario));
             let coin_b = coin::mint_for_testing<USDT>(200000, ts::ctx(&mut scenario));
@@ -104,16 +112,20 @@ module sui_amm::gas_benchmarks {
                 0,
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
+                &clock_val,
                 ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
             sui::transfer::public_transfer(pos, ADMIN);
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
@@ -125,6 +137,7 @@ module sui_amm::gas_benchmarks {
                 usdc,
                 usdt,
                 0,
+                &clock_val, 18446744073709551615,
                 ts::ctx(&mut scenario)
             );
             
@@ -132,6 +145,7 @@ module sui_amm::gas_benchmarks {
             coin::burn_for_testing(refund_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(position, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::end(scenario);
@@ -147,6 +161,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             let coin_a = coin::mint_for_testing<USDC>(200000, ts::ctx(&mut scenario));
             let coin_b = coin::mint_for_testing<USDT>(200000, ts::ctx(&mut scenario));
@@ -156,29 +171,35 @@ module sui_amm::gas_benchmarks {
                 0,
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
+                &clock_val,
                 ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
             sui::transfer::public_transfer(pos, ADMIN);
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
             let usdt = coin::mint_for_testing<USDT>(1000000, ts::ctx(&mut scenario));
-            let (pos1, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, ts::ctx(&mut scenario));
+            let (pos1, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, &clock_val, 18446744073709551615, ts::ctx(&mut scenario));
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(pos1, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         // Benchmark subsequent add
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             
             let usdc = coin::mint_for_testing<USDC>(500000, ts::ctx(&mut scenario));
@@ -190,6 +211,7 @@ module sui_amm::gas_benchmarks {
                 usdc,
                 usdt,
                 0,
+                &clock_val, 18446744073709551615,
                 ts::ctx(&mut scenario)
             );
             
@@ -197,6 +219,7 @@ module sui_amm::gas_benchmarks {
             coin::burn_for_testing(refund_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(position, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::end(scenario);
@@ -212,6 +235,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             let coin_a = coin::mint_for_testing<USDC>(200000, ts::ctx(&mut scenario));
             let coin_b = coin::mint_for_testing<USDT>(200000, ts::ctx(&mut scenario));
@@ -221,24 +245,29 @@ module sui_amm::gas_benchmarks {
                 0,
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
+                &clock_val,
                 ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
             sui::transfer::public_transfer(pos, ADMIN);
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
             let usdt = coin::mint_for_testing<USDT>(1000000, ts::ctx(&mut scenario));
-            let (pos, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, ts::ctx(&mut scenario));
+            let (pos, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, &clock_val, 18446744073709551615, ts::ctx(&mut scenario));
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(pos, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         // Setup clock
@@ -283,6 +312,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             let coin_a = coin::mint_for_testing<USDC>(200000, ts::ctx(&mut scenario));
             let coin_b = coin::mint_for_testing<USDT>(200000, ts::ctx(&mut scenario));
@@ -292,29 +322,35 @@ module sui_amm::gas_benchmarks {
                 0,
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
+                &clock_val,
                 ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
             sui::transfer::public_transfer(pos, ADMIN);
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
             let usdt = coin::mint_for_testing<USDT>(1000000, ts::ctx(&mut scenario));
-            let (pos, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, ts::ctx(&mut scenario));
+            let (pos, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, &clock_val, 18446744073709551615, ts::ctx(&mut scenario));
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(pos, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         // Benchmark remove
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             let position = ts::take_from_sender<LPPosition>(&scenario);
             
@@ -324,12 +360,14 @@ module sui_amm::gas_benchmarks {
                 position,
                 0,
                 0,
+                &clock_val, 18446744073709551615,
                 ts::ctx(&mut scenario)
             );
             
             coin::burn_for_testing(usdc_out);
             coin::burn_for_testing(usdt_out);
             ts::return_shared(pool);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::end(scenario);
@@ -345,6 +383,7 @@ module sui_amm::gas_benchmarks {
         
         ts::next_tx(&mut scenario, ADMIN);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
             let coin_a = coin::mint_for_testing<USDC>(200000, ts::ctx(&mut scenario));
             let coin_b = coin::mint_for_testing<USDT>(200000, ts::ctx(&mut scenario));
@@ -354,24 +393,29 @@ module sui_amm::gas_benchmarks {
                 0,
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
+                &clock_val,
                 ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
             sui::transfer::public_transfer(pos, ADMIN);
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
             let usdt = coin::mint_for_testing<USDT>(1000000, ts::ctx(&mut scenario));
-            let (pos, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, ts::ctx(&mut scenario));
+            let (pos, r_a, r_b) = pool::add_liquidity(&mut pool, usdc, usdt, 0, &clock_val, 18446744073709551615, ts::ctx(&mut scenario));
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(pos, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         // Setup clock
@@ -421,7 +465,7 @@ module sui_amm::gas_benchmarks {
         // Setup stable pool
         factory::test_init(ts::ctx(&mut scenario));
         
-        ts::next_tx(&mut scenario, ALICE);
+        ts::next_tx(&mut scenario, ADMIN);
         {
             let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
@@ -434,16 +478,19 @@ module sui_amm::gas_benchmarks {
                 500,
                 usdc,
                 usdt,
+                coin::mint_for_testing<sui::sui::SUI>(10_000_000_000, ts::ctx(&mut scenario)),
                 &clock_val, ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
             sui::transfer::public_transfer(pos, ADMIN);
             ts::return_shared(registry);
+            clock::destroy_for_testing(clock_val);
         };
         
         ts::next_tx(&mut scenario, LP1);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let pool = ts::take_shared<StableSwapPool<USDC, USDT>>(&scenario);
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
             let usdt = coin::mint_for_testing<USDT>(1000000, ts::ctx(&mut scenario));
@@ -452,6 +499,7 @@ module sui_amm::gas_benchmarks {
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);
             sui::transfer::public_transfer(pos, LP1);
+            clock::destroy_for_testing(clock_val);
         };
         
         // Setup clock

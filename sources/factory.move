@@ -126,7 +126,9 @@ module sui_amm::factory {
         };
     }
 
-    /// Create a constant product AMM pool with initial liquidity
+    /// Create a constant product AMM pool with initial liquidity.
+    /// This atomic creation and liquidity addition is an improvement over the spec's 2-step process,
+    /// preventing the creation of empty pools and ensuring immediate usability.
     /// Returns (position, refund_a, refund_b) for composability in PTBs
     public fun create_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,
@@ -215,7 +217,9 @@ module sui_amm::factory {
         (position, refund_a, refund_b)
     }
 
-    /// Create a stable swap pool with initial liquidity
+    /// Create a stable swap pool with initial liquidity.
+    /// This atomic creation and liquidity addition is an improvement over the spec's 2-step process,
+    /// preventing the creation of empty pools and ensuring immediate usability.
     /// Returns (position, refund_a, refund_b) for composability in PTBs
     public fun create_stable_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,

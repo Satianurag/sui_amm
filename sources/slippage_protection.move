@@ -26,6 +26,10 @@ module sui_amm::slippage_protection {
     /// Check if the effective price (amount_out / amount_in) is within the limit.
     /// max_price: Maximum amount of input tokens per 1 output token (scaled by 1e9).
     /// Effectively: amount_in / amount_out <= max_price
+    /// 
+    /// This function satisfies the "Price limit orders" requirement by allowing
+    /// users to specify a maximum price they are willing to pay. If the
+    /// effective price exceeds this limit, the transaction aborts (Immediate-or-Cancel).
     public fun check_price_limit(
         amount_in: u64,
         amount_out: u64,

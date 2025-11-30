@@ -23,6 +23,7 @@ module sui_amm::stable_pool {
     const EInvalidAmp: u64 = 4;
     const ETooHighFee: u64 = 5;  // NEW: For protocol fee validation
     const EOverflow: u64 = 6;  // NEW: For overflow protection
+    const EArithmeticError: u64 = 7; // NEW: For arithmetic safety
     
     // Constants
     const ACC_PRECISION: u128 = 1_000_000_000_000;
@@ -364,18 +365,12 @@ module sui_amm::stable_pool {
         let debt_removed_a = (old_debt_a * (liquidity_to_remove as u128)) / (total_position_liquidity as u128);
         let debt_removed_b = (old_debt_b * (liquidity_to_remove as u128)) / (total_position_liquidity as u128);
         
-        // FIX L5: Underflow protection - clamp to zero if rounding causes issues
-        let new_debt_a = if (debt_removed_a > old_debt_a) { 
-            0  // Clamp to zero if rounding causes issues
-        } else { 
-            old_debt_a - debt_removed_a 
-        };
+        // FIX L5: Assert instead of clamp for underflow protection
+        assert!(debt_removed_a <= old_debt_a, EArithmeticError);
+        assert!(debt_removed_b <= old_debt_b, EArithmeticError);
         
-        let new_debt_b = if (debt_removed_b > old_debt_b) { 
-            0 
-        } else { 
-            old_debt_b - debt_removed_b 
-        };
+        let new_debt_a = old_debt_a - debt_removed_a;
+        let new_debt_b = old_debt_b - debt_removed_b;
         
         position::update_fee_debt(position, new_debt_a, new_debt_b);
 

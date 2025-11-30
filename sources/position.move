@@ -1,3 +1,6 @@
+/// Implementation of the LPPosition NFT requirement.
+/// This module manages the LPPosition struct which represents a user's liquidity position,
+/// tracks fees, and stores metadata for dynamic NFT display.
 module sui_amm::position {
     use sui::object::{Self, UID, ID};
     use sui::tx_context::TxContext;
@@ -274,5 +277,10 @@ module sui_amm::position {
 
         display::update_version(&mut display);
         display
+    }
+
+    #[test_only]
+    public fun destroy_for_testing(position: LPPosition) {
+        destroy(position);
     }
 }

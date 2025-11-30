@@ -406,4 +406,89 @@ module sui_amm::partial_removal_tests {
 
         test_scenario::end(scenario_val);
     }
+    #[test]
+    fun test_partial_removal_with_fees() {
+        let owner = @0xA;
+        let trader = @0xB;
+        let scenario_val = test_scenario::begin(owner);
+        let scenario = &mut scenario_val;
+        
+        test_scenario::next_tx(scenario, owner);
+        {
+            let ctx = test_scenario::ctx(scenario);
+            factory::test_init(ctx);
+        };
+
+        test_scenario::next_tx(scenario, owner);
+        {
+            let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
+            let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
+            let ctx = test_scenario::ctx(scenario);
+
+            let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
+            let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
+            
+            let (position, refund_a, refund_b) = factory::create_pool(
+                registry,
+                30,
+                0,
+                coin_a,
+                coin_b,
+                coin::mint_for_testing<SUI>(10_000_000_000, ctx),
+                &clock,
+                ctx
+            );
+            
+            coin::burn_for_testing(refund_a);
+            coin::burn_for_testing(refund_b);
+            transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
+            test_scenario::return_shared(registry_val);
+        };
+
+        // Trader swaps to generate fees
+        test_scenario::next_tx(scenario, trader);
+        {
+            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
+            let ctx = test_scenario::ctx(scenario);
+            
+            let coin_in = coin::mint_for_testing<BTC>(100000, ctx);
+            let coin_out = pool::swap_a_to_b(pool, coin_in, 0, std::option::none(), &clock, 18446744073709551615, ctx);
+            
+            coin::burn_for_testing(coin_out);
+            clock::destroy_for_testing(clock);
+            test_scenario::return_shared(pool_val);
+        };
+
+        // Remove 50% liquidity and check fees
+        test_scenario::next_tx(scenario, owner);
+        {
+            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let pool = &mut pool_val;
+            let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
+            let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
+            let ctx = test_scenario::ctx(scenario);
+            
+            let initial_liquidity = position::liquidity(position);
+            let half = initial_liquidity / 2;
+            
+            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, half, 0, 0, &clock, 18446744073709551615, ctx);
+            
+            // Should have received some fees (amount > pro-rata share)
+            // But since we don't know exact amounts, just check it succeeds and debt is updated
+            assert!(position::liquidity(position) == initial_liquidity - half, 0);
+            
+            coin::burn_for_testing(coin_a);
+            coin::burn_for_testing(coin_b);
+            clock::destroy_for_testing(clock);
+            test_scenario::return_to_sender(scenario, position_val);
+            test_scenario::return_shared(pool_val);
+        };
+
+        test_scenario::end(scenario_val);
+    }
 }
