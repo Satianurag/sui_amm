@@ -20,8 +20,8 @@ module sui_amm::slippage_protection {
     /// Constant-product pools may implement Uniswap-style impact; StableSwap
     /// pools should use the Stable invariant/virtual price. To avoid mixing
     /// models, this module now only exposes generic helpers (deadline,
-    /// min-output and price limit checks). Pools are responsible for doing
-    /// their own price-impact math and enforcing any per-pool caps.
+    /// min-output, price limit checks) plus a reusable slippage calculator
+    /// that front-ends can call after fetching pool quotes.
 
     /// Check if the effective price (amount_out / amount_in) is within the limit.
     /// max_price: Maximum amount of input tokens per 1 output token (scaled by 1e9).
@@ -49,5 +49,21 @@ module sui_amm::slippage_protection {
     /// protocol-wide hard cap any more. Use per-pool configuration instead.
     public fun global_max_slippage_bps(): u64 {
         0
+    }
+
+    /// Calculate slippage (in basis points) between an expected output and
+    /// the actual output that a user would receive. This provides the
+    /// "real-time" slippage preview required by the PRD and can be exposed by
+    /// clients alongside pool::preview_* helpers.
+    public fun calculate_slippage_bps(
+        expected_output: u64,
+        actual_output: u64,
+    ): u64 {
+        if (expected_output == 0 || actual_output >= expected_output) {
+            return 0
+        };
+
+        let diff = (expected_output as u128) - (actual_output as u128);
+        (((diff * 10000) / (expected_output as u128)) as u64)
     }
 }

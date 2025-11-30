@@ -1,7 +1,15 @@
 /// Module: factory
 /// Description: Central registry for creating and managing liquidity pools.
 /// Handles pool creation (Standard and Stable), fee tier validation, and pool lookup.
-/// Enforces creation fees to prevent DoS attacks.
+/// 
+/// SECURITY NOTE [S4]: Pool Creation Fee (10 SUI)
+/// This implementation requires a 10 SUI creation fee to prevent DoS attacks via spam pool creation.
+/// This is an INTENTIONAL DEVIATION from the PRD specification for security hardening.
+/// Rationale: Without a creation barrier, attackers could create millions of pools to:
+///   - Exhaust on-chain storage
+///   - Degrade indexer performance
+///   - Make pool discovery impractical
+/// The fee is burned (sent to @0x0), providing economic deterrence without extracting value.
 module sui_amm::factory {
     use sui::object::{Self, UID, ID};
     use sui::table::{Self, Table};
@@ -26,9 +34,11 @@ module sui_amm::factory {
     const EPoolAlreadyExists: u64 = 0;
     const EInvalidFeeTier: u64 = 1;
     const EInvalidCreationFee: u64 = 2; // NEW: For DoS protection
+    const ETooManyPools: u64 = 3; // FIX [P1]: For unbounded iteration protection
 
     // Constants
     const POOL_CREATION_FEE: u64 = 10_000_000_000; // 10 SUI
+    const MAX_POOLS_UNBOUNDED: u64 = 100; // FIX [P1]: Limit for non-paginated get_all_pools
 
     // Standard fee tiers in basis points
     const FEE_TIER_LOW: u64 = 5;      // 0.05%
@@ -338,9 +348,11 @@ module sui_amm::factory {
     }
 
     /// Get all pool IDs (O(n) snapshot assembled on demand)
-    /// WARNING: This function is O(n) and will fail for large registries.
-    /// Use get_all_pools_paginated instead.
+    /// FIX [P1]: Limited to 100 pools max to prevent gas exhaustion.
+    /// Use get_all_pools_paginated instead for larger registries.
     public fun get_all_pools(registry: &PoolRegistry): vector<ID> {
+        assert!(registry.pool_count <= MAX_POOLS_UNBOUNDED, ETooManyPools);
+        
         let result = vector::empty<ID>();
         let i = 0;
         while (i < registry.pool_count) {

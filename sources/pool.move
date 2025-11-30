@@ -25,6 +25,7 @@ module sui_amm::pool {
     const ETooHighFee: u64 = 5;
     const EArithmeticError: u64 = 6; // NEW: For underflow protection
     const EUnauthorized: u64 = 7; // NEW: Access control
+    const EInvalidLiquidityRatio: u64 = 8; // FIX [L2]: For ratio tolerance violations
 
     // Constants
     const MINIMUM_LIQUIDITY: u64 = 1000;
@@ -183,12 +184,17 @@ module sui_amm::pool {
             
             if (max_val > 0) {
                 let deviation = (diff * 10000) / max_val;
-                assert!(deviation <= (pool.ratio_tolerance_bps as u128), EExcessivePriceImpact); // Reusing error code or define new one
+                // FIX [L2]: Use specific error code for ratio violations, not price impact
+                assert!(deviation <= (pool.ratio_tolerance_bps as u128), EInvalidLiquidityRatio);
             };
         };
         
         let liquidity_minted;
+        let refund_a;
+        let refund_b;
+        
         if (pool.total_liquidity == 0) {
+            // Initial liquidity: use all coins, no refunds
             let liquidity = (std::u64::sqrt(amount_a) * std::u64::sqrt(amount_b));
             assert!(liquidity >= MIN_INITIAL_LIQUIDITY, EInsufficientLiquidity);
             pool.total_liquidity = MINIMUM_LIQUIDITY;
@@ -204,6 +210,14 @@ module sui_amm::pool {
                 ctx
             );
             transfer::public_transfer(burn_position, @0x0);
+            
+            // Join all coins to pool for initial liquidity
+            balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
+            balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
+            
+            // No refunds for initial liquidity
+            refund_a = coin::zero<CoinA>(ctx);
+            refund_b = coin::zero<CoinB>(ctx);
         } else {
             // FIX S4: Overflow protection
             // Check if multiplication overflows u128
@@ -218,12 +232,31 @@ module sui_amm::pool {
             let share_a = ((amount_a as u128) * (pool.total_liquidity as u128) / (reserve_a as u128));
             let share_b = ((amount_b as u128) * (pool.total_liquidity as u128) / (reserve_b as u128));
             liquidity_minted = if (share_a < share_b) { (share_a as u64) } else { (share_b as u64) };
+            
+            // FIX [L1]: Calculate actual amounts used to mint liquidity
+            // This prevents user value loss due to integer division rounding
+            let amount_a_used = (((liquidity_minted as u128) * (reserve_a as u128) / (pool.total_liquidity as u128)) as u64);
+            let amount_b_used = (((liquidity_minted as u128) * (reserve_b as u128) / (pool.total_liquidity as u128)) as u64);
+            
+            // Convert coins to balances
+            let balance_a = coin::into_balance(coin_a);
+            let balance_b = coin::into_balance(coin_b);
+            
+            // Split to get used and refund portions
+            let balance_a_used = balance::split(&mut balance_a, amount_a_used);
+            let balance_b_used = balance::split(&mut balance_b, amount_b_used);
+            
+            // Join only the amounts actually used
+            balance::join(&mut pool.reserve_a, balance_a_used);
+            balance::join(&mut pool.reserve_b, balance_b_used);
+            
+            // Convert remaining balances back to coins for refund
+            refund_a = coin::from_balance(balance_a, ctx);
+            refund_b = coin::from_balance(balance_b, ctx);
         };
 
         assert!(liquidity_minted >= min_liquidity, EInsufficientLiquidity);
-
-        balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
-        balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
+        
         pool.total_liquidity = pool.total_liquidity + liquidity_minted;
 
         let fee_debt_a = (liquidity_minted as u128) * pool.acc_fee_per_share_a / ACC_PRECISION;
@@ -255,7 +288,7 @@ module sui_amm::pool {
             ctx
         );
         
-        (position, coin::zero(ctx), coin::zero(ctx))
+        (position, refund_a, refund_b)
     }
 
     public fun remove_liquidity<CoinA, CoinB>(
@@ -809,19 +842,31 @@ module sui_amm::pool {
         let value_a = (((liquidity as u128) * (balance::value(&pool.reserve_a) as u128) / (pool.total_liquidity as u128)) as u64);
         let value_b = (((liquidity as u128) * (balance::value(&pool.reserve_b) as u128) / (pool.total_liquidity as u128)) as u64);
         
-        // FIX P2: Optimization - check if values changed significantly
-        if (value_a == position::cached_value_a(position) && value_b == position::cached_value_b(position)) {
-             // Skip if values match (approximate check)
-             // But fees might have changed.
-             // For now, let's just proceed as fees change often.
-             // To fully optimize, we'd need last_fee_index in position.
-        };
-
         let fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
         
+        // FIX [P2]: Optimization - skip update if all values unchanged
+        let cached_value_a = position::cached_value_a(position);
+        let cached_value_b = position::cached_value_b(position);
+        let cached_fee_a = position::cached_fee_a(position);
+        let cached_fee_b = position::cached_fee_b(position);
+        
+        if (value_a == cached_value_a && value_b == cached_value_b && 
+            (fee_a as u64) == cached_fee_a && (fee_b as u64) == cached_fee_b) {
+            // All values match - skip update to save gas
+            return
+        };
+
         let il_bps = get_impermanent_loss(pool, position);
-        position::update_cached_values(position, value_a, value_b, (fee_a as u64), (fee_b as u64), il_bps);
+        
+        position::update_cached_values(
+            position,
+            value_a,
+            value_b,
+            (fee_a as u64),
+            (fee_b as u64),
+            il_bps
+        );
     }
 
     fun cp_price_impact_bps(

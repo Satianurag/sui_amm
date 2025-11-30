@@ -105,7 +105,7 @@ module sui_amm::ratio_tolerance_boundary_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = pool::EExcessivePriceImpact)]
+    #[expected_failure(abort_code = 8, location = sui_amm::pool)] // FIX [L2]: Changed from 3 to 8 (EInvalidLiquidityRatio)
     fun test_ratio_tolerance_boundary_fail() {
         let owner = @0xA;
         let scenario_val = test_scenario::begin(owner);
