@@ -1,3 +1,7 @@
+/// Module: factory
+/// Description: Central registry for creating and managing liquidity pools.
+/// Handles pool creation (Standard and Stable), fee tier validation, and pool lookup.
+/// Enforces creation fees to prevent DoS attacks.
 module sui_amm::factory {
     use sui::object::{Self, UID, ID};
     use sui::table::{Self, Table};
@@ -224,6 +228,7 @@ module sui_amm::factory {
     public fun create_stable_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,
         fee_percent: u64,
+        creator_fee_percent: u64,
         amp: u64,
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
@@ -252,6 +257,7 @@ module sui_amm::factory {
         let pool = stable_pool::create_pool<CoinA, CoinB>(
             fee_percent,
             DEFAULT_STABLE_PROTOCOL_FEE_BPS,
+            creator_fee_percent,
             amp,
             ctx
         );

@@ -313,6 +313,7 @@ module sui_amm::quote_function_tests {
             let (position, refund_a, refund_b) = factory::create_stable_pool(
                 registry,
                 30,
+                0, // creator_fee_percent
                 100,
                 usdc,
                 usdt,

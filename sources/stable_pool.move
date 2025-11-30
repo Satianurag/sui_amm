@@ -1,3 +1,6 @@
+/// Module: stable_pool
+/// Description: Implements the StableSwap invariant (Curve-like) for trading stable pairs (e.g., USDC-USDT).
+/// Supports dynamic amplification coefficient (A), admin fees, creator fees, and slippage protection.
 module sui_amm::stable_pool {
     use sui::object::{Self, UID, ID};
     use sui::coin::{Self, Coin};
@@ -24,6 +27,7 @@ module sui_amm::stable_pool {
     const ETooHighFee: u64 = 5;  // NEW: For protocol fee validation
     const EOverflow: u64 = 6;  // NEW: For overflow protection
     const EArithmeticError: u64 = 7; // NEW: For arithmetic safety
+    const EUnauthorized: u64 = 8; // NEW: Access control
     
     // Constants
     const ACC_PRECISION: u128 = 1_000_000_000_000;
@@ -41,9 +45,14 @@ module sui_amm::stable_pool {
         fee_b: Balance<CoinB>,
         protocol_fee_a: Balance<CoinA>,
         protocol_fee_b: Balance<CoinB>,
+        // FIX: Creator fees support
+        creator: address,
+        creator_fee_a: Balance<CoinA>,
+        creator_fee_b: Balance<CoinB>,
         total_liquidity: u64,
         fee_percent: u64,
         protocol_fee_percent: u64,
+        creator_fee_percent: u64,
         acc_fee_per_share_a: u128,
         acc_fee_per_share_b: u128,
         amp: u64, // Current amplification coefficient
@@ -94,7 +103,12 @@ module sui_amm::stable_pool {
         amount_b: u64,
     }
 
-
+    struct CreatorFeesWithdrawn has copy, drop {
+        pool_id: ID,
+        creator: address,
+        amount_a: u64,
+        amount_b: u64,
+    }
 
     struct ProtocolFeesWithdrawn has copy, drop {
         pool_id: ID,
@@ -119,6 +133,7 @@ module sui_amm::stable_pool {
     public fun create_pool<CoinA, CoinB>(
         fee_percent: u64,
         protocol_fee_percent: u64,
+        creator_fee_percent: u64,
         amp: u64,
         ctx: &mut TxContext
     ): StableSwapPool<CoinA, CoinB> {
@@ -132,9 +147,13 @@ module sui_amm::stable_pool {
             fee_b: balance::zero(),
             protocol_fee_a: balance::zero(),
             protocol_fee_b: balance::zero(),
+            creator: tx_context::sender(ctx),
+            creator_fee_a: balance::zero(),
+            creator_fee_b: balance::zero(),
             total_liquidity: 0,
             fee_percent,
             protocol_fee_percent,
+            creator_fee_percent,
             acc_fee_per_share_a: 0,
             acc_fee_per_share_b: 0,
             amp,
@@ -481,13 +500,19 @@ module sui_amm::stable_pool {
         
         let fee_balance = balance::split(&mut pool.reserve_a, fee_amount);
         
-        // Split fee between Protocol and LPs
+        // Split fee between Protocol, Creator and LPs
         let protocol_fee_amount = (fee_amount * pool.protocol_fee_percent) / 10000;
-        let lp_fee_amount = fee_amount - protocol_fee_amount;
+        let creator_fee_amount = (fee_amount * pool.creator_fee_percent) / 10000;
+        let lp_fee_amount = fee_amount - protocol_fee_amount - creator_fee_amount;
 
         if (protocol_fee_amount > 0) {
             let proto_fee = balance::split(&mut fee_balance, protocol_fee_amount);
             balance::join(&mut pool.protocol_fee_a, proto_fee);
+        };
+
+        if (creator_fee_amount > 0) {
+            let creator_fee = balance::split(&mut fee_balance, creator_fee_amount);
+            balance::join(&mut pool.creator_fee_a, creator_fee);
         };
         
         balance::join(&mut pool.fee_a, fee_balance);
@@ -553,11 +578,17 @@ module sui_amm::stable_pool {
         let fee_balance = balance::split(&mut pool.reserve_b, fee_amount);
         
         let protocol_fee_amount = (fee_amount * pool.protocol_fee_percent) / 10000;
-        let lp_fee_amount = fee_amount - protocol_fee_amount;
+        let creator_fee_amount = (fee_amount * pool.creator_fee_percent) / 10000;
+        let lp_fee_amount = fee_amount - protocol_fee_amount - creator_fee_amount;
 
         if (protocol_fee_amount > 0) {
             let proto_fee = balance::split(&mut fee_balance, protocol_fee_amount);
             balance::join(&mut pool.protocol_fee_b, proto_fee);
+        };
+
+        if (creator_fee_amount > 0) {
+            let creator_fee = balance::split(&mut fee_balance, creator_fee_amount);
+            balance::join(&mut pool.creator_fee_b, creator_fee);
         };
 
         balance::join(&mut pool.fee_b, fee_balance);
@@ -722,6 +753,26 @@ module sui_amm::stable_pool {
         event::emit(ProtocolFeesWithdrawn {
             pool_id: object::id(pool),
             admin: tx_context::sender(ctx),
+            amount_a: balance::value(&fee_a),
+            amount_b: balance::value(&fee_b),
+        });
+        
+        (coin::from_balance(fee_a, ctx), coin::from_balance(fee_b, ctx))
+    }
+
+    public fun withdraw_creator_fees<CoinA, CoinB>(
+        pool: &mut StableSwapPool<CoinA, CoinB>,
+        ctx: &mut TxContext
+    ): (Coin<CoinA>, Coin<CoinB>) {
+        // Verify sender is creator
+        assert!(tx_context::sender(ctx) == pool.creator, EUnauthorized);
+        
+        let fee_a = balance::withdraw_all(&mut pool.creator_fee_a);
+        let fee_b = balance::withdraw_all(&mut pool.creator_fee_b);
+        
+        event::emit(CreatorFeesWithdrawn {
+            pool_id: object::id(pool),
+            creator: tx_context::sender(ctx),
             amount_a: balance::value(&fee_a),
             amount_b: balance::value(&fee_b),
         });
@@ -1083,7 +1134,7 @@ module sui_amm::stable_pool {
         amp: u64,
         ctx: &mut TxContext
     ): StableSwapPool<CoinA, CoinB> {
-        create_pool(fee_percent, protocol_fee_percent, amp, ctx)
+        create_pool(fee_percent, protocol_fee_percent, 0, amp, ctx)
     }
 
     public fun share<CoinA, CoinB>(pool: StableSwapPool<CoinA, CoinB>) {

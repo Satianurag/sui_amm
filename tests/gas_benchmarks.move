@@ -74,6 +74,7 @@ module sui_amm::gas_benchmarks {
             let (position, refund_a, refund_b) = factory::create_stable_pool<USDC, USDT>(
                 &mut registry,
                 factory::fee_tier_low(), // 0.05% for stables
+                0, // creator_fee_percent
                 500,
                 coin_a,
                 coin_b,
@@ -475,6 +476,7 @@ module sui_amm::gas_benchmarks {
             let (pos, ref_a, ref_b) = factory::create_stable_pool<USDC, USDT>(
                 &mut registry,
                 factory::fee_tier_low(), // 0.05% for stables
+                0, // creator_fee_percent
                 500,
                 usdc,
                 usdt,

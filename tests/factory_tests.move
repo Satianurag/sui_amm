@@ -202,7 +202,7 @@ module sui_amm::factory_tests {
             let coin_a4 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b4 = coin::mint_for_testing<ETH>(200000, ctx);
             let creation_fee4 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
-            let (p4, ra4, rb4) = factory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, creation_fee4, &clock, ctx);
+            let (p4, ra4, rb4) = factory::create_stable_pool<BTC, ETH>(registry, 5, 0, 100, coin_a4, coin_b4, creation_fee4, &clock, ctx);
             transfer::public_transfer(p4, owner);
             transfer::public_transfer(ra4, owner);
             transfer::public_transfer(rb4, owner);
@@ -296,7 +296,7 @@ module sui_amm::factory_tests {
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
             let creation_fee = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
-            let (position, refund_a, refund_b) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, creation_fee, &clock, ctx);
+            let (position, refund_a, refund_b) = factory::create_stable_pool<BTC, USDC>(registry, 5, 0, 100, coin_a, coin_b, creation_fee, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
@@ -348,7 +348,7 @@ module sui_amm::factory_tests {
             let coin_a2 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
             let creation_fee2 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
-            let (position2, refund_a2, refund_b2) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, creation_fee2, &clock, ctx);
+            let (position2, refund_a2, refund_b2) = factory::create_stable_pool<BTC, USDC>(registry, 5, 0, 100, coin_a2, coin_b2, creation_fee2, &clock, ctx);
             transfer::public_transfer(position2, owner);
             transfer::public_transfer(refund_a2, owner);
             transfer::public_transfer(refund_b2, owner);
