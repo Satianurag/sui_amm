@@ -26,7 +26,7 @@ module sui_amm::feature_tests {
         // Create stable pool with amp = 100
         ts::next_tx(scenario, ADMIN);
         {
-            let pool = stable_pool::create_pool<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
+            let pool = stable_pool::create_pool_for_testing<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
             stable_pool::share(pool);
             
             admin::test_init(ts::ctx(scenario));
@@ -35,11 +35,13 @@ module sui_amm::feature_tests {
         // Add liquidity
         ts::next_tx(scenario, ALICE);
         {
-            let pool = ts::take_shared<StableSwapPool<USDC, USDT>>(&scenario);
+            let pool_val = ts::take_shared<StableSwapPool<USDT, USDC>>(scenario);
+            let pool = &mut pool_val;
+            let clock = clock::create_for_testing(ts::ctx(scenario));
             let ctx = ts::ctx(scenario);
 
-            let coin_a = coin::mint_for_testing<USDC>(1_000_000, ctx);
-            let coin_b = coin::mint_for_testing<USDT>(1_000_000, ctx);
+            let coin_a = coin::mint_for_testing<USDT>(1_000_000, ctx);
+            let coin_b = coin::mint_for_testing<USDC>(1_000_000, ctx);
 
             let (position, r_a, r_b) = stable_pool::add_liquidity(pool, coin_a, coin_b, 0, &clock, 18446744073709551615, ts::ctx(scenario));
             
@@ -47,6 +49,7 @@ module sui_amm::feature_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, ALICE);
             
+            clock::destroy_for_testing(clock);
             ts::return_shared(pool_val);
         };
 
@@ -64,7 +67,7 @@ module sui_amm::feature_tests {
                 &cap,
                 pool,
                 200,
-                60000, // future_time
+                86401000, // future_time > 24h
                 &clock
             );
             
@@ -80,19 +83,8 @@ module sui_amm::feature_tests {
             let pool = &pool_val;
             let clock = clock::create_for_testing(ts::ctx(scenario));
             
-            // Advance clock to 30s
-            clock::increment_for_testing(&mut clock, 30000);
-            
-            // Perform a swap to trigger update (or just check view function if exposed)
-            // Since update_amp is internal, we check via swap or view
-            // But swap updates it.
-            
-            // Let's just verify the pool state if possible, or assume it works if no error.
-            // Actually, we can check via get_amp() if we had one.
-            // stable_pool has get_amp().
-            
-            // We need to trigger an update first. get_amp usually calculates it lazily or returns stored?
-            // In our implementation, get_amp calculates it based on clock.
+            // Advance clock to ~50% (43200500 ms)
+            clock::increment_for_testing(&mut clock, 43200500);
             
             let current_amp = stable_pool::get_current_amp(pool, &clock);
             // Just ensure the call succeeds; value is implementation-defined in tests
@@ -112,7 +104,7 @@ module sui_amm::feature_tests {
         
         ts::next_tx(scenario, ADMIN);
         {
-            let pool = stable_pool::create_pool<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
+            let pool = stable_pool::create_pool_for_testing<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
             stable_pool::share(pool);
             admin::test_init(ts::ctx(scenario));
         };
@@ -129,7 +121,7 @@ module sui_amm::feature_tests {
                 &cap,
                 pool,
                 200,
-                60000,
+                86401000,
                 &clock
             );
             
@@ -175,7 +167,7 @@ module sui_amm::feature_tests {
         
         ts::next_tx(scenario, ADMIN);
         {
-            let pool = pool::create_pool<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
             pool::share(pool);
             admin::test_init(ts::ctx(scenario));
         };
@@ -209,7 +201,7 @@ module sui_amm::feature_tests {
         
         ts::next_tx(scenario, ADMIN);
         {
-            let pool = stable_pool::create_pool<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
+            let pool = stable_pool::create_pool_for_testing<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
             stable_pool::share(pool);
             admin::test_init(ts::ctx(scenario));
         };
@@ -244,7 +236,7 @@ module sui_amm::feature_tests {
         
         ts::next_tx(scenario, ADMIN);
         {
-            let pool = pool::create_pool<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
             pool::share(pool);
             admin::test_init(ts::ctx(scenario));
         };
@@ -278,16 +270,19 @@ module sui_amm::feature_tests {
         
         ts::next_tx(scenario, ALICE);
         {
-            let pool = pool::create_pool<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
             let coin_a = coin::mint_for_testing<USDT>(1000000, ts::ctx(scenario));
             let coin_b = coin::mint_for_testing<USDC>(1000000, ts::ctx(scenario));
             
-            let (position, r_a, r_b) = pool::add_liquidity(&mut pool, coin_a, coin_b, 0, &clock, 18446744073709551615, ts::ctx(scenario));
+            let clock = clock::create_for_testing(ts::ctx(scenario));
+            let ctx = ts::ctx(scenario);
+            let (position, r_a, r_b) = pool::add_liquidity(&mut pool, coin_a, coin_b, 0, &clock, 18446744073709551615, ctx);
             
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, ALICE);
             pool::share(pool);
+            clock::destroy_for_testing(clock);
         };
 
         // Remove 50%
@@ -301,6 +296,8 @@ module sui_amm::feature_tests {
             let initial_liq = position::liquidity(position);
             let remove_amt = initial_liq / 2;
             
+            let clock = clock::create_for_testing(ts::ctx(scenario));
+            let ctx = ts::ctx(scenario);
             let (c_a, c_b) = pool::remove_liquidity_partial(
                 pool,
                 position,
@@ -309,7 +306,7 @@ module sui_amm::feature_tests {
                 0,
                 &clock,
                 18446744073709551615,
-                ts::ctx(scenario)
+                ctx
             );
             
             assert!(coin::value(&c_a) > 0, 0);
@@ -321,6 +318,7 @@ module sui_amm::feature_tests {
             coin::burn_for_testing(c_a);
             coin::burn_for_testing(c_b);
             
+            clock::destroy_for_testing(clock);
             ts::return_to_sender(scenario, position_val);
             ts::return_shared(pool_val);
         };

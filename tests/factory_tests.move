@@ -5,6 +5,7 @@ module sui_amm::factory_tests {
     use std::option;
     use sui::transfer;
     use std::vector;
+    use sui::clock::{Self};
     
     use sui_amm::factory::{Self, PoolRegistry};
 
@@ -30,15 +31,17 @@ module sui_amm::factory_tests {
         {
             let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx);
+            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -77,12 +80,13 @@ module sui_amm::factory_tests {
         {
             let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             // Create pool with initial liquidity
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
-            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx);
+            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, &clock, ctx);
             
             // Transfer returned objects
             transfer::public_transfer(position, owner);
@@ -92,16 +96,14 @@ module sui_amm::factory_tests {
             // Try to create duplicate - should fail
             let coin_a2 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a2, coin_b2, ctx);
+            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a2, coin_b2, &clock, ctx);
             
-            // Clean up to avoid unused variable warnings if it didn't abort (but it should)
-            // Note: In expected_failure tests, we don't strictly need to destroy since execution stops
-            // But for correctness in case it doesn't abort immediately:
             let p = _p; let ra = _ra; let rb = _rb;
             transfer::public_transfer(p, owner);
             transfer::public_transfer(ra, owner);
             transfer::public_transfer(rb, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -125,18 +127,20 @@ module sui_amm::factory_tests {
         {
             let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             // Try to create pool with invalid fee tier (25 bps not in standard tiers)
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
-            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 25, 0, coin_a, coin_b, ctx);
+            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 25, 0, coin_a, coin_b, &clock, ctx);
             
             let p = _p; let ra = _ra; let rb = _rb;
             transfer::public_transfer(p, owner);
             transfer::public_transfer(ra, owner);
             transfer::public_transfer(rb, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -160,19 +164,20 @@ module sui_amm::factory_tests {
         {
             let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             // Different token pairs
             let coin_a1 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b1 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (p1, ra1, rb1) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a1, coin_b1, ctx);
+            let (p1, ra1, rb1) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a1, coin_b1, &clock, ctx);
             transfer::public_transfer(p1, owner);
             transfer::public_transfer(ra1, owner);
             transfer::public_transfer(rb1, owner);
 
             let coin_a2 = coin::mint_for_testing<ETH>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (p2, ra2, rb2) = factory::create_pool<ETH, USDC>(registry, 30, 0, coin_a2, coin_b2, ctx);
+            let (p2, ra2, rb2) = factory::create_pool<ETH, USDC>(registry, 30, 0, coin_a2, coin_b2, &clock, ctx);
             transfer::public_transfer(p2, owner);
             transfer::public_transfer(ra2, owner);
             transfer::public_transfer(rb2, owner);
@@ -180,7 +185,7 @@ module sui_amm::factory_tests {
             // Same pair, different fee tier (allowed)
             let coin_a3 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b3 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (p3, ra3, rb3) = factory::create_pool<BTC, USDC>(registry, 100, 0, coin_a3, coin_b3, ctx);
+            let (p3, ra3, rb3) = factory::create_pool<BTC, USDC>(registry, 100, 0, coin_a3, coin_b3, &clock, ctx);
             transfer::public_transfer(p3, owner);
             transfer::public_transfer(ra3, owner);
             transfer::public_transfer(rb3, owner);
@@ -188,11 +193,12 @@ module sui_amm::factory_tests {
             // Stable pool
             let coin_a4 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b4 = coin::mint_for_testing<ETH>(200000, ctx);
-            let (p4, ra4, rb4) = factory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, ctx);
+            let (p4, ra4, rb4) = factory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, &clock, ctx);
             transfer::public_transfer(p4, owner);
             transfer::public_transfer(ra4, owner);
             transfer::public_transfer(rb4, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -226,17 +232,37 @@ module sui_amm::factory_tests {
 
     #[test]
     fun test_standard_fee_tiers() {
-        // Verify standard fee tier values
-        assert!(factory::fee_tier_low() == 5, 0);      // 0.05%
-        assert!(factory::fee_tier_medium() == 30, 1);  // 0.30%
-        assert!(factory::fee_tier_high() == 100, 2);   // 1.00%
+        let owner = @0xA;
+        let scenario_val = test_scenario::begin(owner);
+        let scenario = &mut scenario_val;
         
-        // Verify validation
-        assert!(factory::is_valid_fee_tier(5), 3);
-        assert!(factory::is_valid_fee_tier(30), 4);
-        assert!(factory::is_valid_fee_tier(100), 5);
-        assert!(!factory::is_valid_fee_tier(25), 6);
-        assert!(!factory::is_valid_fee_tier(50), 7);
+        test_scenario::next_tx(scenario, owner);
+        {
+            let ctx = test_scenario::ctx(scenario);
+            factory::test_init(ctx);
+        };
+
+        test_scenario::next_tx(scenario, owner);
+        {
+            let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
+            let registry = &registry_val;
+
+            // Verify standard fee tier values
+            assert!(factory::fee_tier_low() == 5, 0);      // 0.05%
+            assert!(factory::fee_tier_medium() == 30, 1);  // 0.30%
+            assert!(factory::fee_tier_high() == 100, 2);   // 1.00%
+            
+            // Verify validation
+            assert!(factory::is_valid_fee_tier(registry, 5), 3);
+            assert!(factory::is_valid_fee_tier(registry, 30), 4);
+            assert!(factory::is_valid_fee_tier(registry, 100), 5);
+            assert!(!factory::is_valid_fee_tier(registry, 25), 6);
+            assert!(!factory::is_valid_fee_tier(registry, 50), 7);
+            
+            test_scenario::return_shared(registry_val);
+        };
+        
+        test_scenario::end(scenario_val);
     }
 
     #[test]
@@ -255,11 +281,12 @@ module sui_amm::factory_tests {
         {
             let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, refund_a, refund_b) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, ctx);
+            let (position, refund_a, refund_b) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
@@ -272,6 +299,7 @@ module sui_amm::factory_tests {
             let regular_pool_opt = factory::get_pool_id<BTC, USDC>(registry, 5, false);
             assert!(option::is_none(&regular_pool_opt), 1);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -294,12 +322,13 @@ module sui_amm::factory_tests {
         {
             let registry_val = test_scenario::take_shared<PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             // Create standard pool
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx);
+            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
@@ -307,11 +336,12 @@ module sui_amm::factory_tests {
             // Create stable pool
             let coin_a2 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position2, refund_a2, refund_b2) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, ctx);
+            let (position2, refund_a2, refund_b2) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, &clock, ctx);
             transfer::public_transfer(position2, owner);
             transfer::public_transfer(refund_a2, owner);
             transfer::public_transfer(refund_b2, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 

@@ -3,6 +3,7 @@ module sui_amm::partial_removal_tests {
     use sui::test_scenario::{Self};
     use sui::coin::{Self};
     use sui::transfer;
+    use sui::clock::{Self};
     
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::factory;
@@ -27,6 +28,7 @@ module sui_amm::partial_removal_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
@@ -38,12 +40,14 @@ module sui_amm::partial_removal_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -54,6 +58,7 @@ module sui_amm::partial_removal_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let initial_liquidity = position::liquidity(position);
@@ -65,6 +70,8 @@ module sui_amm::partial_removal_tests {
                 half,
                 0,
                 0,
+                &clock,
+                18446744073709551615,
                 ctx
             );
             
@@ -77,6 +84,7 @@ module sui_amm::partial_removal_tests {
             
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
+            clock::destroy_for_testing(clock);
             test_scenario::return_to_sender(scenario, position_val);
             test_scenario::return_shared(pool_val);
         };
@@ -100,6 +108,7 @@ module sui_amm::partial_removal_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
 
             let coin_a = coin::mint_for_testing<BTC>(10000000, ctx);
@@ -111,12 +120,14 @@ module sui_amm::partial_removal_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -127,6 +138,7 @@ module sui_amm::partial_removal_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let initial_liquidity = position::liquidity(position);
@@ -138,6 +150,8 @@ module sui_amm::partial_removal_tests {
                 one_percent,
                 0,
                 0,
+                &clock,
+                18446744073709551615,
                 ctx
             );
             
@@ -146,6 +160,7 @@ module sui_amm::partial_removal_tests {
             
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
+            clock::destroy_for_testing(clock);
             test_scenario::return_to_sender(scenario, position_val);
             test_scenario::return_shared(pool_val);
         };
@@ -169,6 +184,7 @@ module sui_amm::partial_removal_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
 
             let coin_a = coin::mint_for_testing<BTC>(10000000, ctx);
@@ -180,12 +196,14 @@ module sui_amm::partial_removal_tests {
                 0, // creator_fee_percent (previously non-zero; protocol fee now fixed)
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -196,6 +214,7 @@ module sui_amm::partial_removal_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let initial_liquidity = position::liquidity(position);
@@ -207,6 +226,8 @@ module sui_amm::partial_removal_tests {
                 ninety_nine_percent,
                 0,
                 0,
+                &clock,
+                18446744073709551615,
                 ctx
             );
             
@@ -216,6 +237,7 @@ module sui_amm::partial_removal_tests {
             
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
+            clock::destroy_for_testing(clock);
             test_scenario::return_to_sender(scenario, position_val);
             test_scenario::return_shared(pool_val);
         };
@@ -239,6 +261,7 @@ module sui_amm::partial_removal_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
 
             let coin_a = coin::mint_for_testing<BTC>(10000000, ctx);
@@ -250,12 +273,14 @@ module sui_amm::partial_removal_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -268,15 +293,17 @@ module sui_amm::partial_removal_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             initial_liquidity = position::liquidity(position);
             let quarter = initial_liquidity / 4;
             
-            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, quarter, 0, 0, ctx);
+            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, quarter, 0, 0, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_to_sender(scenario, position_val);
             test_scenario::return_shared(pool_val);
         };
@@ -288,18 +315,20 @@ module sui_amm::partial_removal_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let current = position::liquidity(position);
             let quarter_of_remaining = current / 3; // ~25% of original
             
-            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, quarter_of_remaining, 0, 0, ctx);
+            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, quarter_of_remaining, 0, 0, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
             
             // Should have ~50% of original left
             assert!(position::liquidity(position) > initial_liquidity / 3, 0);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_to_sender(scenario, position_val);
             test_scenario::return_shared(pool_val);
         };
@@ -324,6 +353,7 @@ module sui_amm::partial_removal_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
@@ -335,12 +365,14 @@ module sui_amm::partial_removal_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -351,15 +383,17 @@ module sui_amm::partial_removal_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<sui_amm::position::LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
             
             let liquidity = position::liquidity(position);
             let too_much = liquidity + 1;
             
-            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, too_much, 0, 0, ctx);
+            let (coin_a, coin_b) = pool::remove_liquidity_partial(pool, position, too_much, 0, 0, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_to_sender(scenario, position_val);
             test_scenario::return_shared(pool_val);
         };

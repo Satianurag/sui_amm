@@ -8,10 +8,12 @@ module sui_amm::factory {
     use std::vector;
     use sui::event;
     use sui::vec_map::{Self, VecMap};
+    use sui::vec_set::{Self, VecSet};
     
     use sui_amm::pool;
     use sui_amm::stable_pool;
     use sui_amm::position;
+    use sui_amm::admin::{AdminCap};
 
     // Error codes
     const EPoolAlreadyExists: u64 = 0;
@@ -48,9 +50,24 @@ module sui_amm::factory {
         pool_index: Table<u64, ID>, // Scalable registry of pool IDs
         pool_count: u64,
         pools_by_fee: VecMap<u64, vector<ID>>, // Fee tier -> pool IDs
+        // FIX V3: Dynamic fee tiers
+        allowed_fee_tiers: VecSet<u64>,
+    }
+
+    struct FeeTierAdded has copy, drop {
+        fee_tier: u64,
+    }
+
+    struct FeeTierRemoved has copy, drop {
+        fee_tier: u64,
     }
 
     fun init(ctx: &mut TxContext) {
+        let allowed_fee_tiers = vec_set::empty();
+        vec_set::insert(&mut allowed_fee_tiers, FEE_TIER_LOW);
+        vec_set::insert(&mut allowed_fee_tiers, FEE_TIER_MEDIUM);
+        vec_set::insert(&mut allowed_fee_tiers, FEE_TIER_HIGH);
+
         transfer::share_object(PoolRegistry {
             id: object::new(ctx),
             pools: table::new(ctx),
@@ -58,6 +75,7 @@ module sui_amm::factory {
             pool_index: table::new(ctx),
             pool_count: 0,
             pools_by_fee: vec_map::empty(),
+            allowed_fee_tiers,
         });
     }
 
@@ -66,11 +84,33 @@ module sui_amm::factory {
         init(ctx);
     }
 
-    /// Validate that fee tier is one of the standard tiers
-    public fun is_valid_fee_tier(fee_percent: u64): bool {
-        fee_percent == FEE_TIER_LOW || 
-        fee_percent == FEE_TIER_MEDIUM || 
-        fee_percent == FEE_TIER_HIGH
+    /// Validate that fee tier is allowed
+    public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+        vec_set::contains(&registry.allowed_fee_tiers, &fee_percent)
+    }
+
+    /// Admin function to add a new fee tier
+    public fun add_fee_tier(
+        _admin: &AdminCap,
+        registry: &mut PoolRegistry,
+        fee_tier: u64
+    ) {
+        if (!vec_set::contains(&registry.allowed_fee_tiers, &fee_tier)) {
+            vec_set::insert(&mut registry.allowed_fee_tiers, fee_tier);
+            event::emit(FeeTierAdded { fee_tier });
+        };
+    }
+
+    /// Admin function to remove a fee tier
+    public fun remove_fee_tier(
+        _admin: &AdminCap,
+        registry: &mut PoolRegistry,
+        fee_tier: u64
+    ) {
+        if (vec_set::contains(&registry.allowed_fee_tiers, &fee_tier)) {
+            vec_set::remove(&mut registry.allowed_fee_tiers, &fee_tier);
+            event::emit(FeeTierRemoved { fee_tier });
+        };
     }
 
     /// Create a constant product AMM pool with initial liquidity
@@ -84,7 +124,7 @@ module sui_amm::factory {
         clock: &sui::clock::Clock,
         ctx: &mut TxContext
     ): (position::LPPosition, sui::coin::Coin<CoinA>, sui::coin::Coin<CoinB>) {
-        assert!(is_valid_fee_tier(fee_percent), EInvalidFeeTier);
+        assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
         
         let type_a = type_name::with_original_ids<CoinA>();
         let type_b = type_name::with_original_ids<CoinB>();
@@ -157,7 +197,7 @@ module sui_amm::factory {
         clock: &sui::clock::Clock,
         ctx: &mut TxContext
     ): (position::LPPosition, sui::coin::Coin<CoinA>, sui::coin::Coin<CoinB>) {
-        assert!(is_valid_fee_tier(fee_percent), EInvalidFeeTier);
+        assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
         
         let type_a = type_name::with_original_ids<CoinA>();
         let type_b = type_name::with_original_ids<CoinB>();
@@ -254,6 +294,32 @@ module sui_amm::factory {
         result
     }
 
+    /// FIX P1: Pagination for pool registry
+    public fun get_all_pools_paginated(
+        registry: &PoolRegistry, 
+        start_index: u64, 
+        limit: u64
+    ): vector<ID> {
+        let result = vector::empty<ID>();
+        let count = registry.pool_count;
+        if (start_index >= count) {
+            return result
+        };
+        
+        let end_index = start_index + limit;
+        if (end_index > count) {
+            end_index = count;
+        };
+        
+        let i = start_index;
+        while (i < end_index) {
+            let id_ref = table::borrow(&registry.pool_index, i);
+            vector::push_back(&mut result, *id_ref);
+            i = i + 1;
+        };
+        result
+    }
+
     /// Get pools for a specific fee tier
     public fun get_pools_by_fee_tier(registry: &PoolRegistry, fee_percent: u64): vector<ID> {
         if (vec_map::contains(&registry.pools_by_fee, &fee_percent)) {
@@ -272,38 +338,31 @@ module sui_amm::factory {
         }
     }
 
-    /// Get all pools for a specific token pair (checking all standard fee tiers + stable)
+    /// Get all pools for a specific token pair (checking all allowed fee tiers + stable)
     public fun get_pools_for_pair<CoinA, CoinB>(registry: &PoolRegistry): vector<ID> {
         let pools = vector::empty<ID>();
         
-        // Check low fee
-        let id_low = get_pool_id<CoinA, CoinB>(registry, FEE_TIER_LOW, false);
-        if (option::is_some(&id_low)) {
-            vector::push_back(&mut pools, *option::borrow(&id_low));
-        };
-        let id_low_stable = get_pool_id<CoinA, CoinB>(registry, FEE_TIER_LOW, true);
-        if (option::is_some(&id_low_stable)) {
-            vector::push_back(&mut pools, *option::borrow(&id_low_stable));
-        };
-
-        // Check medium fee
-        let id_med = get_pool_id<CoinA, CoinB>(registry, FEE_TIER_MEDIUM, false);
-        if (option::is_some(&id_med)) {
-            vector::push_back(&mut pools, *option::borrow(&id_med));
-        };
-        let id_med_stable = get_pool_id<CoinA, CoinB>(registry, FEE_TIER_MEDIUM, true);
-        if (option::is_some(&id_med_stable)) {
-            vector::push_back(&mut pools, *option::borrow(&id_med_stable));
-        };
-
-        // Check high fee
-        let id_high = get_pool_id<CoinA, CoinB>(registry, FEE_TIER_HIGH, false);
-        if (option::is_some(&id_high)) {
-            vector::push_back(&mut pools, *option::borrow(&id_high));
-        };
-        let id_high_stable = get_pool_id<CoinA, CoinB>(registry, FEE_TIER_HIGH, true);
-        if (option::is_some(&id_high_stable)) {
-            vector::push_back(&mut pools, *option::borrow(&id_high_stable));
+        // Iterate through all allowed fee tiers
+        let keys = vec_set::keys(&registry.allowed_fee_tiers);
+        let i = 0;
+        let len = vector::length(keys);
+        
+        while (i < len) {
+            let fee = *vector::borrow(keys, i);
+            
+            // Check regular pool
+            let id_reg = get_pool_id<CoinA, CoinB>(registry, fee, false);
+            if (option::is_some(&id_reg)) {
+                vector::push_back(&mut pools, *option::borrow(&id_reg));
+            };
+            
+            // Check stable pool
+            let id_stable = get_pool_id<CoinA, CoinB>(registry, fee, true);
+            if (option::is_some(&id_stable)) {
+                vector::push_back(&mut pools, *option::borrow(&id_stable));
+            };
+            
+            i = i + 1;
         };
         
         pools

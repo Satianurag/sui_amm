@@ -18,6 +18,15 @@ module sui_amm::fee_distributor {
     // Error codes
     const ENoPositions: u64 = 0;
     const EInvalidDeadline: u64 = 1;
+    const EBatchTooLarge: u64 = 2; // NEW: DoS protection
+
+    // Constants
+    const MAX_BATCH_SIZE: u64 = 100; // NEW: Max positions per batch claim
+
+    /// Capability for managing protocol fees
+    struct AdminCap has key, store {
+        id: UID,
+    }
 
     /// Registry for tracking fee claims across the protocol
     struct FeeRegistry has key {
@@ -57,7 +66,7 @@ module sui_amm::fee_distributor {
         timestamp_ms: u64,
     }
 
-    /// Initialize the fee registry
+    /// Initialize the fee registry and create admin capability
     fun init(ctx: &mut TxContext) {
         transfer::share_object(FeeRegistry {
             id: object::new(ctx),
@@ -65,6 +74,11 @@ module sui_amm::fee_distributor {
             total_fees_claimed_b: table::new(ctx),
             total_claims: 0,
         });
+
+        // Create and transfer AdminCap to deployer
+        transfer::transfer(AdminCap {
+            id: object::new(ctx),
+        }, tx_context::sender(ctx));
     }
 
     #[test_only]
@@ -124,6 +138,7 @@ module sui_amm::fee_distributor {
     ): (Coin<CoinA>, Coin<CoinB>) {
         let num_positions = vector::length(positions);
         assert!(num_positions > 0, ENoPositions);
+        assert!(num_positions <= MAX_BATCH_SIZE, EBatchTooLarge);
         
         let mut_coin_a = coin::zero<CoinA>(ctx);
         let mut_coin_b = coin::zero<CoinB>(ctx);
@@ -163,6 +178,7 @@ module sui_amm::fee_distributor {
     ): (Coin<CoinA>, Coin<CoinB>) {
         let num_positions = vector::length(positions);
         assert!(num_positions > 0, ENoPositions);
+        assert!(num_positions <= MAX_BATCH_SIZE, EBatchTooLarge);
         
         let mut_coin_a = coin::zero<CoinA>(ctx);
         let mut_coin_b = coin::zero<CoinB>(ctx);
@@ -293,6 +309,7 @@ module sui_amm::fee_distributor {
 
     /// Sweep protocol fees from a regular pool (admin only via friend)
     public(friend) fun sweep_protocol_fees<CoinA, CoinB>(
+        _admin_cap: &AdminCap,
         _registry: &mut FeeRegistry,
         pool: &mut LiquidityPool<CoinA, CoinB>,
         clock: &Clock,
@@ -317,6 +334,7 @@ module sui_amm::fee_distributor {
 
     /// Sweep protocol fees from a stable pool (admin only via friend)
     public(friend) fun sweep_protocol_fees_stable<CoinA, CoinB>(
+        _admin_cap: &AdminCap,
         _registry: &mut FeeRegistry,
         pool: &mut StableSwapPool<CoinA, CoinB>,
         clock: &Clock,
@@ -440,9 +458,9 @@ module sui_amm::fee_distributor {
 
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) > 0) {
             let (leftover_a, leftover_b) = pool::increase_liquidity(
-                pool,
-                position,
-                coin_a,
+                pool, 
+                position, 
+                coin_a, 
                 coin_b,
                 clock,
                 18446744073709551615,

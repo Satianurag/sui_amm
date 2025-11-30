@@ -1,0 +1,1758 @@
+INCLUDING DEPENDENCY Bridge
+INCLUDING DEPENDENCY SuiSystem
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING sui_amm
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/slippage_edge_tests.move:25:17
+   [0m[34m│[0m
+[0m[34m25[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/slippage_edge_tests.move:79:17
+   [0m[34m│[0m
+[0m[34m79[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/slippage_edge_tests.move:133:17
+    [0m[34m│[0m
+[0m[34m133[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/il_edge_tests.move:25:17
+   [0m[34m│[0m
+[0m[34m25[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/il_edge_tests.move:97:17
+   [0m[34m│[0m
+[0m[34m97[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/il_edge_tests.move:187:17
+    [0m[34m│[0m
+[0m[34m187[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/il_edge_tests.move:276:17
+    [0m[34m│[0m
+[0m[34m276[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/il_edge_tests.move:324:17
+    [0m[34m│[0m
+[0m[34m324[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/il_edge_tests.move:329:40
+    [0m[34m│[0m
+[0m[34m329[0m [0m[34m│[0m             let (position, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 1, ctx)[0m;
+    [0m[34m│[0m                                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:140:17
+    [0m[34m│[0m
+[0m[34m140[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/il_edge_tests.move:329:40
+    [0m[34m│[0m
+[0m[34m329[0m [0m[34m│[0m             let (position, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 1, ctx)[0m;
+    [0m[34m│[0m                                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                        [0m[31m│[0m                  [0m[34m│[0m
+    [0m[34m│[0m                                        [0m[31m│[0m                  [0m[34mFound 5 argument(s) here[0m
+    [0m[34m│[0m                                        [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. The call expected 7 argument(s) but got 5[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:135:16
+    [0m[34m│[0m
+[0m[34m135[0m [0m[34m│[0m     public fun add_liquidity<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/concurrent_tests.move:27:17
+   [0m[34m│[0m
+[0m[34m27[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/concurrent_tests.move:37:17
+   [0m[34m│[0m
+[0m[34m37[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:42:50
+    [0m[34m│[0m  
+[0m[34m 42[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m 45[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m 49[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:42:50
+    [0m[34m│[0m    
+[0m[34m 42[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m 45[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m 49[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:106:17
+    [0m[34m│[0m
+[0m[34m106[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:116:17
+    [0m[34m│[0m
+[0m[34m116[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:121:50
+    [0m[34m│[0m  
+[0m[34m121[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m122[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m123[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m124[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m127[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m128[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:121:50
+    [0m[34m│[0m    
+[0m[34m121[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m122[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m123[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m124[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m127[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m128[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:188:17
+    [0m[34m│[0m
+[0m[34m188[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:198:17
+    [0m[34m│[0m
+[0m[34m198[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:203:50
+    [0m[34m│[0m  
+[0m[34m203[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m204[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m205[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m206[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m209[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m210[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/concurrent_tests.move:203:50
+    [0m[34m│[0m    
+[0m[34m203[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m204[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m205[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m206[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m209[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m210[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:37:50
+    [0m[34m│[0m
+[0m[34m 37[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:37:50
+    [0m[34m│[0m
+[0m[34m 37[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:85:50
+    [0m[34m│[0m
+[0m[34m 85[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:85:50
+    [0m[34m│[0m
+[0m[34m 85[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:95:34
+    [0m[34m│[0m
+[0m[34m 95[0m [0m[34m│[0m             let (_p, _ra, _rb) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a2, coin_b2, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:95:34
+    [0m[34m│[0m
+[0m[34m 95[0m [0m[34m│[0m             let (_p, _ra, _rb) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a2, coin_b2, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:133:34
+    [0m[34m│[0m
+[0m[34m133[0m [0m[34m│[0m             let (_p, _ra, _rb) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 25, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:133:34
+    [0m[34m│[0m
+[0m[34m133[0m [0m[34m│[0m             let (_p, _ra, _rb) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 25, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:168:34
+    [0m[34m│[0m
+[0m[34m168[0m [0m[34m│[0m             let (p1, ra1, rb1) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a1, coin_b1, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:168:34
+    [0m[34m│[0m
+[0m[34m168[0m [0m[34m│[0m             let (p1, ra1, rb1) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a1, coin_b1, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:175:34
+    [0m[34m│[0m
+[0m[34m175[0m [0m[34m│[0m             let (p2, ra2, rb2) = [0m[31mfactory::create_pool<ETH, USDC>(registry, 30, 0, coin_a2, coin_b2, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:175:34
+    [0m[34m│[0m
+[0m[34m175[0m [0m[34m│[0m             let (p2, ra2, rb2) = [0m[31mfactory::create_pool<ETH, USDC>(registry, 30, 0, coin_a2, coin_b2, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:183:34
+    [0m[34m│[0m
+[0m[34m183[0m [0m[34m│[0m             let (p3, ra3, rb3) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 100, 0, coin_a3, coin_b3, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:183:34
+    [0m[34m│[0m
+[0m[34m183[0m [0m[34m│[0m             let (p3, ra3, rb3) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 100, 0, coin_a3, coin_b3, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:191:34
+    [0m[34m│[0m
+[0m[34m191[0m [0m[34m│[0m             let (p4, ra4, rb4) = [0m[31mfactory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_stable_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:197:17
+    [0m[34m│[0m
+[0m[34m197[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:191:34
+    [0m[34m│[0m
+[0m[34m191[0m [0m[34m│[0m             let (p4, ra4, rb4) = [0m[31mfactory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, ctx)[0m;
+    [0m[34m│[0m                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                                    [0m[34m│[0m
+    [0m[34m│[0m                                  [0m[31m│[0m                                    [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                  [0m[31mInvalid call of 'sui_amm::factory::create_stable_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:191:16
+    [0m[34m│[0m
+[0m[34m191[0m [0m[34m│[0m     public fun create_stable_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:235:17
+    [0m[34m│[0m
+[0m[34m235[0m [0m[34m│[0m         assert!([0m[31mfactory::is_valid_fee_tier(5)[0m, 3);
+    [0m[34m│[0m                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                 [0m[31m│[0m                          [0m[34m│[0m
+    [0m[34m│[0m                 [0m[31m│[0m                          [0m[34mGiven: integer[0m
+    [0m[34m│[0m                 [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. Invalid argument for parameter 'registry'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:44
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                                            [0m[34m-------------[0m [0m[34mExpected: '&sui_amm::factory::PoolRegistry'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:235:17
+    [0m[34m│[0m
+[0m[34m235[0m [0m[34m│[0m         assert!([0m[31mfactory::is_valid_fee_tier(5)[0m, 3);
+    [0m[34m│[0m                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                 [0m[31m│[0m                         [0m[34m│[0m
+    [0m[34m│[0m                 [0m[31m│[0m                         [0m[34mFound 1 argument(s) here[0m
+    [0m[34m│[0m                 [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. The call expected 2 argument(s) but got 1[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:16
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                [0m[34m-----------------[0m [0m[34mExpected 2 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:236:17
+    [0m[34m│[0m
+[0m[34m236[0m [0m[34m│[0m         assert!([0m[31mfactory::is_valid_fee_tier(30)[0m, 4);
+    [0m[34m│[0m                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                 [0m[31m│[0m                          [0m[34m│[0m
+    [0m[34m│[0m                 [0m[31m│[0m                          [0m[34mGiven: integer[0m
+    [0m[34m│[0m                 [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. Invalid argument for parameter 'registry'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:44
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                                            [0m[34m-------------[0m [0m[34mExpected: '&sui_amm::factory::PoolRegistry'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:236:17
+    [0m[34m│[0m
+[0m[34m236[0m [0m[34m│[0m         assert!([0m[31mfactory::is_valid_fee_tier(30)[0m, 4);
+    [0m[34m│[0m                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                 [0m[31m│[0m                         [0m[34m│[0m
+    [0m[34m│[0m                 [0m[31m│[0m                         [0m[34mFound 1 argument(s) here[0m
+    [0m[34m│[0m                 [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. The call expected 2 argument(s) but got 1[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:16
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                [0m[34m-----------------[0m [0m[34mExpected 2 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:237:17
+    [0m[34m│[0m
+[0m[34m237[0m [0m[34m│[0m         assert!([0m[31mfactory::is_valid_fee_tier(100)[0m, 5);
+    [0m[34m│[0m                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                 [0m[31m│[0m                          [0m[34m│[0m
+    [0m[34m│[0m                 [0m[31m│[0m                          [0m[34mGiven: integer[0m
+    [0m[34m│[0m                 [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. Invalid argument for parameter 'registry'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:44
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                                            [0m[34m-------------[0m [0m[34mExpected: '&sui_amm::factory::PoolRegistry'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:237:17
+    [0m[34m│[0m
+[0m[34m237[0m [0m[34m│[0m         assert!([0m[31mfactory::is_valid_fee_tier(100)[0m, 5);
+    [0m[34m│[0m                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                 [0m[31m│[0m                         [0m[34m│[0m
+    [0m[34m│[0m                 [0m[31m│[0m                         [0m[34mFound 1 argument(s) here[0m
+    [0m[34m│[0m                 [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. The call expected 2 argument(s) but got 1[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:16
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                [0m[34m-----------------[0m [0m[34mExpected 2 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:238:18
+    [0m[34m│[0m
+[0m[34m238[0m [0m[34m│[0m         assert!(![0m[31mfactory::is_valid_fee_tier(25)[0m, 6);
+    [0m[34m│[0m                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                  [0m[31m│[0m                          [0m[34m│[0m
+    [0m[34m│[0m                  [0m[31m│[0m                          [0m[34mGiven: integer[0m
+    [0m[34m│[0m                  [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. Invalid argument for parameter 'registry'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:44
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                                            [0m[34m-------------[0m [0m[34mExpected: '&sui_amm::factory::PoolRegistry'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:238:18
+    [0m[34m│[0m
+[0m[34m238[0m [0m[34m│[0m         assert!(![0m[31mfactory::is_valid_fee_tier(25)[0m, 6);
+    [0m[34m│[0m                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                  [0m[31m│[0m                         [0m[34m│[0m
+    [0m[34m│[0m                  [0m[31m│[0m                         [0m[34mFound 1 argument(s) here[0m
+    [0m[34m│[0m                  [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. The call expected 2 argument(s) but got 1[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:16
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                [0m[34m-----------------[0m [0m[34mExpected 2 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:239:18
+    [0m[34m│[0m
+[0m[34m239[0m [0m[34m│[0m         assert!(![0m[31mfactory::is_valid_fee_tier(50)[0m, 7);
+    [0m[34m│[0m                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                  [0m[31m│[0m                          [0m[34m│[0m
+    [0m[34m│[0m                  [0m[31m│[0m                          [0m[34mGiven: integer[0m
+    [0m[34m│[0m                  [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. Invalid argument for parameter 'registry'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:44
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                                            [0m[34m-------------[0m [0m[34mExpected: '&sui_amm::factory::PoolRegistry'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:239:18
+    [0m[34m│[0m
+[0m[34m239[0m [0m[34m│[0m         assert!(![0m[31mfactory::is_valid_fee_tier(50)[0m, 7);
+    [0m[34m│[0m                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                  [0m[31m│[0m                         [0m[34m│[0m
+    [0m[34m│[0m                  [0m[31m│[0m                         [0m[34mFound 1 argument(s) here[0m
+    [0m[34m│[0m                  [0m[31mInvalid call of 'sui_amm::factory::is_valid_fee_tier'. The call expected 2 argument(s) but got 1[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:88:16
+    [0m[34m│[0m
+[0m[34m 88[0m [0m[34m│[0m     public fun is_valid_fee_tier(registry: &PoolRegistry, fee_percent: u64): bool {
+    [0m[34m│[0m                [0m[34m-----------------[0m [0m[34mExpected 2 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:262:50
+    [0m[34m│[0m
+[0m[34m262[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_stable_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:197:17
+    [0m[34m│[0m
+[0m[34m197[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:262:50
+    [0m[34m│[0m
+[0m[34m262[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                                     [0m[34m│[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                                     [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                                  [0m[31mInvalid call of 'sui_amm::factory::create_stable_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:191:16
+    [0m[34m│[0m
+[0m[34m191[0m [0m[34m│[0m     public fun create_stable_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:302:50
+    [0m[34m│[0m
+[0m[34m302[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:302:50
+    [0m[34m│[0m
+[0m[34m302[0m [0m[34m│[0m             let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, ctx)[0m;
+    [0m[34m│[0m                                                  [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                              [0m[34m│[0m
+    [0m[34m│[0m                                                  [0m[31m│[0m                              [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                                  [0m[31mInvalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:310:53
+    [0m[34m│[0m
+[0m[34m310[0m [0m[34m│[0m             let (position2, refund_a2, refund_b2) = [0m[31mfactory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, ctx)[0m;
+    [0m[34m│[0m                                                     [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::factory::create_stable_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:197:17
+    [0m[34m│[0m
+[0m[34m197[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/factory_tests.move:310:53
+    [0m[34m│[0m
+[0m[34m310[0m [0m[34m│[0m             let (position2, refund_a2, refund_b2) = [0m[31mfactory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, ctx)[0m;
+    [0m[34m│[0m                                                     [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                                     [0m[31m│[0m                                     [0m[34m│[0m
+    [0m[34m│[0m                                                     [0m[31m│[0m                                     [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                                     [0m[31mInvalid call of 'sui_amm::factory::create_stable_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:191:16
+    [0m[34m│[0m
+[0m[34m191[0m [0m[34m│[0m     public fun create_stable_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/quote_function_tests.move:27:17
+   [0m[34m│[0m
+[0m[34m27[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/quote_function_tests.move:36:17
+   [0m[34m│[0m
+[0m[34m36[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:41:50
+    [0m[34m│[0m  
+[0m[34m 41[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 47[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:41:50
+    [0m[34m│[0m    
+[0m[34m 41[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m 47[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+   [0m[34m┌─[0m ./tests/quote_function_tests.move:65:33
+   [0m[34m│[0m
+[0m[34m65[0m [0m[34m│[0m             let quoted_output = [0m[31mpool::get_quote_a_to_b[0m(pool, swap_amount);
+   [0m[34m│[0m                                 [0m[31m^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'get_quote_a_to_b' in module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/quote_function_tests.move:93:17
+   [0m[34m│[0m
+[0m[34m93[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+   [0m[34m┌─[0m ./tests/quote_function_tests.move:97:25
+   [0m[34m│[0m
+[0m[34m97[0m [0m[34m│[0m             let quote = [0m[31mpool::get_quote_a_to_b[0m(&pool, 1000);
+   [0m[34m│[0m                         [0m[31m^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'get_quote_a_to_b' in module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:115:17
+    [0m[34m│[0m
+[0m[34m115[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:129:50
+    [0m[34m│[0m  
+[0m[34m129[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m130[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m131[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m132[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m135[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m136[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:129:50
+    [0m[34m│[0m    
+[0m[34m129[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m130[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m131[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m132[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m135[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m136[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:150:25
+    [0m[34m│[0m
+[0m[34m150[0m [0m[34m│[0m             let quote = [0m[31mpool::get_quote_a_to_b[0m(pool, 0);
+    [0m[34m│[0m                         [0m[31m^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'get_quote_a_to_b' in module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:168:17
+    [0m[34m│[0m
+[0m[34m168[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:177:17
+    [0m[34m│[0m
+[0m[34m177[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:182:50
+    [0m[34m│[0m  
+[0m[34m182[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m183[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m184[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m185[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m188[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m189[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:182:50
+    [0m[34m│[0m    
+[0m[34m182[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m183[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m184[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m185[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m188[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m189[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:203:32
+    [0m[34m│[0m
+[0m[34m203[0m [0m[34m│[0m             let quote_a_to_b = [0m[31mpool::get_quote_a_to_b[0m(pool, amount);
+    [0m[34m│[0m                                [0m[31m^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'get_quote_a_to_b' in module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:204:32
+    [0m[34m│[0m
+[0m[34m204[0m [0m[34m│[0m             let quote_b_to_a = [0m[31mpool::get_quote_b_to_a[0m(pool, amount);
+    [0m[34m│[0m                                [0m[31m^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'get_quote_b_to_a' in module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:225:17
+    [0m[34m│[0m
+[0m[34m225[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:234:17
+    [0m[34m│[0m
+[0m[34m234[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:239:50
+    [0m[34m│[0m  
+[0m[34m239[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<ETH, USDT>([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m240[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m241[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m242[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m245[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m246[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:239:50
+    [0m[34m│[0m    
+[0m[34m239[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool<ETH, USDT>([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m─────────────────────────────────────────────────────────────────────────────────'[0m
+[0m[34m240[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m241[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m242[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m245[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m246[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:259:24
+    [0m[34m│[0m
+[0m[34m259[0m [0m[34m│[0m             let rate = [0m[31mpool::get_exchange_rate[0m(pool);
+    [0m[34m│[0m                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'get_exchange_rate' in module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/quote_function_tests.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04001][0m[1m: restricted visibility[0m
+    [0m[34m┌─[0m ./sources/governance.move:133:9
+    [0m[34m│[0m
+[0m[34m133[0m [0m[34m│[0m         [0m[31mpool::set_protocol_fee_percent(pool, proposal.new_fee_bps)[0m;
+    [0m[34m│[0m         [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call to 'public(friend)' visible function 'sui_amm::pool::set_protocol_fee_percent'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:629:5
+    [0m[34m│[0m
+[0m[34m629[0m [0m[34m│[0m     public(friend) fun set_protocol_fee_percent<CoinA, CoinB>(
+    [0m[34m│[0m     [0m[34m--------------[0m [0m[34mThis function can only be called from a 'friend' of module 'sui_amm::pool'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/edge_tests.move:28:17
+   [0m[34m│[0m
+[0m[34m28[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/edge_tests.move:98:17
+   [0m[34m│[0m
+[0m[34m98[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09001][0m[1m: unused alias[0m
+   [0m[34m┌─[0m ./tests/critical_fixes_tests.move:13:14
+   [0m[34m│[0m
+[0m[34m13[0m [0m[34m│[0m     use std::[0m[33mstring[0m;
+   [0m[34m│[0m              [0m[33m^^^^^^[0m [0m[33mUnused 'use' of alias 'string'. Consider removing it[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_use)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:45:40
+    [0m[34m│[0m
+[0m[34m 45[0m [0m[34m│[0m             let (position, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:140:17
+    [0m[34m│[0m
+[0m[34m140[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:45:40
+    [0m[34m│[0m
+[0m[34m 45[0m [0m[34m│[0m             let (position, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                        [0m[31m│[0m                  [0m[34m│[0m
+    [0m[34m│[0m                                        [0m[31m│[0m                  [0m[34mFound 5 argument(s) here[0m
+    [0m[34m│[0m                                        [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. The call expected 7 argument(s) but got 5[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:135:16
+    [0m[34m│[0m
+[0m[34m135[0m [0m[34m│[0m     public fun add_liquidity<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:81:36
+    [0m[34m│[0m  
+[0m[34m 81[0m [0m[34m│[0m               let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m────────────────────────────────────^[0m
+[0m[34m 82[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                pool,[0m
+[0m[34m 83[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                position,[0m
+[0m[34m 84[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                remove_amount,[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 87[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ts::ctx(scenario)[0m
+[0m[34m 88[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:81:36
+    [0m[34m│[0m    
+[0m[34m 81[0m [0m[34m│[0m                 let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────'[0m
+[0m[34m 82[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                pool,[0m
+[0m[34m 83[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                position,[0m
+[0m[34m 84[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                remove_amount,[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m 87[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ts::ctx(scenario)[0m
+[0m[34m 88[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:144:40
+    [0m[34m│[0m
+[0m[34m144[0m [0m[34m│[0m             let (position, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:140:17
+    [0m[34m│[0m
+[0m[34m140[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:144:40
+    [0m[34m│[0m
+[0m[34m144[0m [0m[34m│[0m             let (position, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                        [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                        [0m[31m│[0m                  [0m[34m│[0m
+    [0m[34m│[0m                                        [0m[31m│[0m                  [0m[34mFound 5 argument(s) here[0m
+    [0m[34m│[0m                                        [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. The call expected 7 argument(s) but got 5[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:135:16
+    [0m[34m│[0m
+[0m[34m135[0m [0m[34m│[0m     public fun add_liquidity<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:199:35
+    [0m[34m│[0m
+[0m[34m199[0m [0m[34m│[0m             let (pos, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                   [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:140:17
+    [0m[34m│[0m
+[0m[34m140[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:199:35
+    [0m[34m│[0m
+[0m[34m199[0m [0m[34m│[0m             let (pos, r_a, r_b) = [0m[31mpool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                   [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                   [0m[31m│[0m                  [0m[34m│[0m
+    [0m[34m│[0m                                   [0m[31m│[0m                  [0m[34mFound 5 argument(s) here[0m
+    [0m[34m│[0m                                   [0m[31mInvalid call of 'sui_amm::pool::add_liquidity'. The call expected 7 argument(s) but got 5[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:135:16
+    [0m[34m│[0m
+[0m[34m135[0m [0m[34m│[0m     public fun add_liquidity<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:229:35
+    [0m[34m│[0m
+[0m[34m229[0m [0m[34m│[0m             let (pos, r_a, r_b) = [0m[31mstable_pool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                   [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::stable_pool::add_liquidity'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/stable_pool.move:152:17
+    [0m[34m│[0m
+[0m[34m152[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/critical_fixes_tests.move:229:35
+    [0m[34m│[0m
+[0m[34m229[0m [0m[34m│[0m             let (pos, r_a, r_b) = [0m[31mstable_pool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario))[0m;
+    [0m[34m│[0m                                   [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                   [0m[31m│[0m                         [0m[34m│[0m
+    [0m[34m│[0m                                   [0m[31m│[0m                         [0m[34mFound 5 argument(s) here[0m
+    [0m[34m│[0m                                   [0m[31mInvalid call of 'sui_amm::stable_pool::add_liquidity'. The call expected 7 argument(s) but got 5[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/stable_pool.move:147:16
+    [0m[34m│[0m
+[0m[34m147[0m [0m[34m│[0m     public fun add_liquidity<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-------------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:35:50
+    [0m[34m│[0m  
+[0m[34m 35[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m 36[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m 37[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m 38[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 41[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:35:50
+    [0m[34m│[0m    
+[0m[34m 35[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m 36[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m 37[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m 38[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m 41[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:62:36
+    [0m[34m│[0m  
+[0m[34m 62[0m [0m[34m│[0m               let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m────────────────────────────────────^[0m
+[0m[34m 63[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                pool,[0m
+[0m[34m 64[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                position,[0m
+[0m[34m 65[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                half,[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 68[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m 69[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:62:36
+    [0m[34m│[0m    
+[0m[34m 62[0m [0m[34m│[0m                 let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────'[0m
+[0m[34m 63[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                pool,[0m
+[0m[34m 64[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                position,[0m
+[0m[34m 65[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                half,[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m 68[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m 69[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:108:50
+    [0m[34m│[0m  
+[0m[34m108[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m109[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m110[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m111[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m114[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m115[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:108:50
+    [0m[34m│[0m    
+[0m[34m108[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m109[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m110[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m111[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m114[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m115[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:135:36
+    [0m[34m│[0m  
+[0m[34m135[0m [0m[34m│[0m               let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m────────────────────────────────────^[0m
+[0m[34m136[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                pool,[0m
+[0m[34m137[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                position,[0m
+[0m[34m138[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                one_percent,[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m141[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m142[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:135:36
+    [0m[34m│[0m    
+[0m[34m135[0m [0m[34m│[0m                 let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────'[0m
+[0m[34m136[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                pool,[0m
+[0m[34m137[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                position,[0m
+[0m[34m138[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                one_percent,[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m141[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m142[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:177:50
+    [0m[34m│[0m  
+[0m[34m177[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m178[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m179[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m180[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent (previously non-zero; protocol fee now fixed)[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m183[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m184[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:177:50
+    [0m[34m│[0m    
+[0m[34m177[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m178[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m179[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m180[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent (previously non-zero; protocol fee now fixed)[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m183[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m184[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:204:36
+    [0m[34m│[0m  
+[0m[34m204[0m [0m[34m│[0m               let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m────────────────────────────────────^[0m
+[0m[34m205[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                pool,[0m
+[0m[34m206[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                position,[0m
+[0m[34m207[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ninety_nine_percent,[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m210[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m211[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:204:36
+    [0m[34m│[0m    
+[0m[34m204[0m [0m[34m│[0m                 let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────'[0m
+[0m[34m205[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                pool,[0m
+[0m[34m206[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                position,[0m
+[0m[34m207[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ninety_nine_percent,[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m210[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m211[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:247:50
+    [0m[34m│[0m  
+[0m[34m247[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m248[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m249[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m250[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m253[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m254[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:247:50
+    [0m[34m│[0m    
+[0m[34m247[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m248[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m249[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m250[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m253[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m254[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:276:36
+    [0m[34m│[0m
+[0m[34m276[0m [0m[34m│[0m             let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial(pool, position, quarter, 0, 0, ctx)[0m;
+    [0m[34m│[0m                                    [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:276:36
+    [0m[34m│[0m
+[0m[34m276[0m [0m[34m│[0m             let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial(pool, position, quarter, 0, 0, ctx)[0m;
+    [0m[34m│[0m                                    [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                    [0m[31m│[0m                             [0m[34m│[0m
+    [0m[34m│[0m                                    [0m[31m│[0m                             [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                    [0m[31mInvalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:296:36
+    [0m[34m│[0m
+[0m[34m296[0m [0m[34m│[0m             let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial(pool, position, quarter_of_remaining, 0, 0, ctx)[0m;
+    [0m[34m│[0m                                    [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:296:36
+    [0m[34m│[0m
+[0m[34m296[0m [0m[34m│[0m             let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial(pool, position, quarter_of_remaining, 0, 0, ctx)[0m;
+    [0m[34m│[0m                                    [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                    [0m[31m│[0m                             [0m[34m│[0m
+    [0m[34m│[0m                                    [0m[31m│[0m                             [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                    [0m[31mInvalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:332:50
+    [0m[34m│[0m  
+[0m[34m332[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m333[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m334[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m335[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m338[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m339[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:124:17
+    [0m[34m│[0m
+[0m[34m124[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:332:50
+    [0m[34m│[0m    
+[0m[34m332[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m333[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m334[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m335[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m338[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m339[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 7 argument(s) but got 6[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 6 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:118:16
+    [0m[34m│[0m
+[0m[34m118[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 7 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:359:36
+    [0m[34m│[0m
+[0m[34m359[0m [0m[34m│[0m             let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial(pool, position, too_much, 0, 0, ctx)[0m;
+    [0m[34m│[0m                                    [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid call of 'sui_amm::pool::remove_liquidity_partial'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:280:17
+    [0m[34m│[0m
+[0m[34m280[0m [0m[34m│[0m         clock: &Clock,
+    [0m[34m│[0m                 [0m[34m-----[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/partial_removal_tests.move:359:36
+    [0m[34m│[0m
+[0m[34m359[0m [0m[34m│[0m             let (coin_a, coin_b) = [0m[31mpool::remove_liquidity_partial(pool, position, too_much, 0, 0, ctx)[0m;
+    [0m[34m│[0m                                    [0m[31m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [0m[34m│[0m                                    [0m[31m│[0m                             [0m[34m│[0m
+    [0m[34m│[0m                                    [0m[31m│[0m                             [0m[34mFound 6 argument(s) here[0m
+    [0m[34m│[0m                                    [0m[31mInvalid call of 'sui_amm::pool::remove_liquidity_partial'. The call expected 8 argument(s) but got 6[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/pool.move:274:16
+    [0m[34m│[0m
+[0m[34m274[0m [0m[34m│[0m     public fun remove_liquidity_partial<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m------------------------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;11mwarning[W09001][0m[1m: unused alias[0m
+  [0m[34m┌─[0m ./sources/pool.move:8:22
+  [0m[34m│[0m
+[0m[34m8[0m [0m[34m│[0m     use sui::clock::{[0m[33mSelf[0m, Clock};
+  [0m[34m│[0m                      [0m[33m^^^^[0m [0m[33mUnused 'use' of alias 'clock'. Consider removing it[0m
+  [0m[34m│[0m
+  [0m[34m=[0m This warning can be suppressed with '#[allow(unused_use)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+    [0m[34m┌─[0m ./sources/pool.move:814:9
+    [0m[34m│[0m
+[0m[34m814[0m [0m[34m│[0m         [0m[31mposition::view_value[0m(&view)
+    [0m[34m│[0m         [0m[31m^^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'view_value' in module 'sui_amm::position'[0m
+
+[0m[1m[38;5;9merror[E03003][0m[1m: unbound module member[0m
+    [0m[34m┌─[0m ./sources/pool.move:822:9
+    [0m[34m│[0m
+[0m[34m822[0m [0m[34m│[0m         [0m[31mposition::view_fees[0m(&view)
+    [0m[34m│[0m         [0m[31m^^^^^^^^^^^^^^^^^^^[0m [0m[31mInvalid module access. Unbound function 'view_fees' in module 'sui_amm::position'[0m
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./sources/pool.move:826:9
+    [0m[34m│[0m
+[0m[34m826[0m [0m[34m│[0m         [0m[33mpool[0m: &mut LiquidityPool<CoinA, CoinB>,
+    [0m[34m│[0m         [0m[33m^^^^[0m [0m[33mUnused parameter 'pool'. Consider removing or prefixing with an underscore: '_pool'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/il_tests.move:28:17
+   [0m[34m│[0m
+[0m[34m28[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/advanced_tests.move:27:17
+   [0m[34m│[0m
+[0m[34m27[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+   [0m[34m┌─[0m ./tests/advanced_tests.move:77:17
+   [0m[34m│[0m
+[0m[34m77[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+   [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+   [0m[34m│[0m
+   [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/advanced_tests.move:104:17
+    [0m[34m│[0m
+[0m[34m104[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/advanced_tests.move:151:17
+    [0m[34m│[0m
+[0m[34m151[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/advanced_tests.move:178:17
+    [0m[34m│[0m
+[0m[34m178[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/advanced_tests.move:256:17
+    [0m[34m│[0m
+[0m[34m256[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+[0m[1m[38;5;11mwarning[W09002][0m[1m: unused variable[0m
+    [0m[34m┌─[0m ./tests/advanced_tests.move:329:17
+    [0m[34m│[0m
+[0m[34m329[0m [0m[34m│[0m             let [0m[33mclock[0m = clock::create_for_testing(ctx);
+    [0m[34m│[0m                 [0m[33m^^^^^[0m [0m[33mUnused local variable 'clock'. Consider removing or prefixing with an underscore: '_clock'[0m
+    [0m[34m│[0m
+    [0m[34m=[0m This warning can be suppressed with '#[allow(unused_variable)]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+

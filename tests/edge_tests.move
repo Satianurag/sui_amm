@@ -25,8 +25,7 @@ module sui_amm::edge_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool); 
         };
 
@@ -35,8 +34,8 @@ module sui_amm::edge_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
@@ -45,6 +44,7 @@ module sui_amm::edge_tests {
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -65,8 +65,8 @@ module sui_amm::edge_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<BTC>(1000, ctx);
             
@@ -95,8 +95,7 @@ module sui_amm::edge_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool); 
         };
 
@@ -105,8 +104,8 @@ module sui_amm::edge_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
@@ -115,6 +114,7 @@ module sui_amm::edge_tests {
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -127,8 +127,8 @@ module sui_amm::edge_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<BTC>(1000, ctx);
             

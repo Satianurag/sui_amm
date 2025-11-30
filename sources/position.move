@@ -170,6 +170,14 @@ module sui_amm::position {
         )
     }
 
+    public fun view_value(view: &PositionView): (u64, u64) {
+        (view.value_a, view.value_b)
+    }
+
+    public fun view_fees(view: &PositionView): (u64, u64) {
+        (view.pending_fee_a, view.pending_fee_b)
+    }
+
     public(friend) fun increase_liquidity(pos: &mut LPPosition, amount: u64, amount_a: u64, amount_b: u64) {
         pos.liquidity = pos.liquidity + amount;
         pos.min_a = pos.min_a + amount_a;

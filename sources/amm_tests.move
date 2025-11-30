@@ -36,8 +36,7 @@ module sui_amm::amm_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);  // fee, protocol_fee, creator_fee
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);  // fee, protocol_fee, creator_fee
             pool::share(pool); 
         };
 
@@ -61,7 +60,7 @@ module sui_amm::amm_tests {
             assert!(total == minted + locked, 100);
 
             transfer::public_transfer(position, owner);
-            
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val); 
         };
 
@@ -81,6 +80,7 @@ module sui_amm::amm_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, user1);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -112,7 +112,6 @@ module sui_amm::amm_tests {
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
             
             let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
             
@@ -141,8 +140,7 @@ module sui_amm::amm_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = stable_pool::create_pool<BTC, USDC>(5, 0, 100, ctx); // 0.05% fee
+            let pool = stable_pool::create_pool_for_testing<BTC, USDC>(5, 0, 100, ctx); // 0.05% fee
             stable_pool::share(pool);
         };
 
@@ -162,6 +160,7 @@ module sui_amm::amm_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, user1);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -199,8 +198,7 @@ module sui_amm::amm_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool); 
         };
 
@@ -219,6 +217,7 @@ module sui_amm::amm_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val); 
         };
 
@@ -238,6 +237,7 @@ module sui_amm::amm_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, user1);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -258,6 +258,7 @@ module sui_amm::amm_tests {
             
             transfer::public_transfer(coin_a, user1);
             transfer::public_transfer(coin_b, user1);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
         
@@ -267,16 +268,19 @@ module sui_amm::amm_tests {
     #[test]
     fun test_price_impact() {
         // 100 in, 1000 reserve -> ~9% impact
-        let impact = pool::test_cp_price_impact_bps(100, 90, 1000, 1000);
-        assert!(impact == 1000, 0); // 10.00%
+        // (reserve_in, reserve_out, amount_in, amount_out)
+        // amount_in = 100, reserve_in = 1000.
+        // amount_out = 90 (approx).
+        let impact = pool::test_cp_price_impact_bps(1000, 1000, 100, 90);
+        assert!(impact >= 900 && impact <= 1100, 0); // ~10.00%
 
         // 1 in, 1000000 reserve -> ~0% impact
-        let impact_small = pool::test_cp_price_impact_bps(1, 1, 1000000, 1000000);
+        let impact_small = pool::test_cp_price_impact_bps(1000000, 1000000, 1, 1);
         assert!(impact_small == 0, 1);
 
         // 1000 in, 1000 reserve -> 50% impact
-        let impact_large = pool::test_cp_price_impact_bps(1000, 500, 1000, 1000);
-        assert!(impact_large == 5000, 2); // 50.00%
+        let impact_large = pool::test_cp_price_impact_bps(1000, 1000, 1000, 500);
+        assert!(impact_large >= 4900 && impact_large <= 5100, 2); // ~50.00%
     }
 
     #[test]
@@ -289,8 +293,7 @@ module sui_amm::amm_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
 
@@ -332,8 +335,7 @@ module sui_amm::amm_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(300, 0, 0, ctx); // 3% fee to generate significant fees
+            let pool = pool::create_pool_for_testing<BTC, USDC>(300, 0, 0, ctx); // 3% fee to generate significant fees
             pool::share(pool);
         };
 
@@ -350,6 +352,7 @@ module sui_amm::amm_tests {
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, user1);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 

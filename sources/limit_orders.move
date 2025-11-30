@@ -85,6 +85,7 @@ module sui_amm::limit_orders {
     public fun create_limit_order<CoinIn, CoinOut>(
         registry: &mut OrderRegistry,
         pool_id: ID,
+        is_a_to_b: bool,
         coin_in: Coin<CoinIn>,
         target_price: u64,
         min_amount_out: u64,
@@ -102,7 +103,7 @@ module sui_amm::limit_orders {
             owner: tx_context::sender(ctx),
             pool_id,
             pool_type: 0, // regular
-            is_a_to_b: true, // determined by generic types
+            is_a_to_b,
             deposit: coin::into_balance(coin_in),
             target_price,
             min_amount_out,
@@ -134,7 +135,7 @@ module sui_amm::limit_orders {
             order_id,
             owner,
             pool_id,
-            is_a_to_b: true,
+            is_a_to_b,
             amount_in,
             target_price,
             expiry,
@@ -144,8 +145,8 @@ module sui_amm::limit_orders {
         order_id
     }
 
-    ///Execute a limit order (anyone can call if conditions met)
-    public fun execute_limit_order<CoinA, CoinB>(
+    /// Execute a limit order A to B (anyone can call if conditions met)
+    public fun execute_limit_order_a_to_b<CoinA, CoinB>(
         registry: &mut OrderRegistry,
         pool: &mut LiquidityPool<CoinA, CoinB>,
         order: LimitOrder<CoinA, CoinB>,
@@ -155,23 +156,40 @@ module sui_amm::limit_orders {
         // Validate order is for this pool
         assert!(order.pool_id == object::id(pool), EPriceNotMet);
         assert!(order.pool_type == 0, EPriceNotMet);
+        assert!(order.is_a_to_b == true, EPriceNotMet);
         
         // Check expiry
         let current_time = clock::timestamp_ms(clock);
         assert!(current_time <= order.expiry, EOrderExpired);
 
         // Check if target price is met
-        let (reserve_a, reserve_b) = pool::get_reserves(pool);
+        let (reserve_a, reserve_b) = (pool::get_reserves(pool));
+        // Price = amount_in / amount_out. For A->B, we want low price (more B for A)
+        // Wait, target_price definition: "amount_in per 1 amount_out"
+        // If I sell A for B. I want MORE B.
+        // So amount_in / amount_out should be LOWER.
+        // Example: 1 A = 2 B. Price = 0.5 A/B.
+        // If 1 A = 3 B. Price = 0.33 A/B.
+        // So lower price is better for A->B seller?
+        // Yes, because I give less A for 1 B.
+        
+        // Current price on pool:
+        // amount_in / amount_out ~ reserve_a / reserve_b (roughly)
+        // Let's use spot price: reserve_a / reserve_b
         let current_price = ((reserve_a as u128) * 1_000_000_000 / (reserve_b as u128) as u64);
         
-        // For buy orders: current_price <= target_price (better or equal)
+        // For buy orders (A->B): current_price <= target_price (better or equal)
         assert!(current_price <= order.target_price, EPriceNotMet);
 
-        // Unpack order first to extract deposit
+        let order_id = object::id(&order);
+        let owner = order.owner;
+        let pool_id = order.pool_id;
+
+        // Unpack order
         let LimitOrder { 
             id, 
-            owner,
-            pool_id,
+            owner: _,
+            pool_id: _,
             pool_type: _,
             is_a_to_b: _,
             deposit,
@@ -200,7 +218,100 @@ module sui_amm::limit_orders {
         let execution_price = ((amount_in as u128) * 1_000_000_000 / (amount_out as u128) as u64);
 
         // Unregister order
-        let order_id = object::id_from_address(owner);  // Use owner address for ID
+        table::remove(&mut registry.active_orders, order_id);
+        
+        // Remove from user orders
+        let user_list = table::borrow_mut(&mut registry.user_orders, owner);
+        let (found, idx) = vector::index_of(user_list, &order_id);
+        if (found) {
+            vector::remove(user_list, idx);
+        };
+
+        // Remove from pool orders
+        let pool_list = table::borrow_mut(&mut registry.pool_orders, pool_id);
+        let (found2, idx2) = vector::index_of(pool_list, &order_id);
+        if (found2) {
+            vector::remove(pool_list, idx2);
+        };
+
+        event::emit(OrderExecuted {
+            order_id,
+            executor: tx_context::sender(ctx),
+            amount_in,
+            amount_out,
+            execution_price,
+        });
+
+        // Delete the order's UID
+        object::delete(id);
+
+        coin_out
+    }
+
+    /// Execute a limit order B to A (anyone can call if conditions met)
+    public fun execute_limit_order_b_to_a<CoinA, CoinB>(
+        registry: &mut OrderRegistry,
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        order: LimitOrder<CoinB, CoinA>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ): Coin<CoinA> {
+        // Validate order is for this pool
+        assert!(order.pool_id == object::id(pool), EPriceNotMet);
+        assert!(order.pool_type == 0, EPriceNotMet);
+        assert!(order.is_a_to_b == false, EPriceNotMet);
+        
+        // Check expiry
+        let current_time = clock::timestamp_ms(clock);
+        assert!(current_time <= order.expiry, EOrderExpired);
+
+        // Check if target price is met
+        let (reserve_a, reserve_b) = (pool::get_reserves(pool));
+        
+        // Price = amount_in / amount_out = amount_b / amount_a
+        // Spot price = reserve_b / reserve_a
+        let current_price = ((reserve_b as u128) * 1_000_000_000 / (reserve_a as u128) as u64);
+        
+        // For buy orders: current_price <= target_price (better or equal)
+        assert!(current_price <= order.target_price, EPriceNotMet);
+
+        let order_id = object::id(&order);
+        let owner = order.owner;
+        let pool_id = order.pool_id;
+
+        // Unpack order
+        let LimitOrder { 
+            id, 
+            owner: _,
+            pool_id: _,
+            pool_type: _,
+            is_a_to_b: _,
+            deposit,
+            min_amount_out,
+            target_price: _,
+            expiry: _,
+            created_at: _,
+        } = order;
+
+        let amount_in = balance::value(&deposit);
+        let coin_in = coin::from_balance(deposit, ctx);
+
+        // Execute swap
+        let deadline = current_time + 60000; // 60 second deadline
+        let coin_out = pool::swap_b_to_a(
+            pool, 
+            coin_in, 
+            min_amount_out,
+            option::none(), 
+            clock, 
+            deadline, 
+            ctx
+        );
+
+        let amount_out = coin::value(&coin_out);
+        let execution_price = ((amount_in as u128) * 1_000_000_000 / (amount_out as u128) as u64);
+
+        // Unregister order
         table::remove(&mut registry.active_orders, order_id);
         
         // Remove from user orders

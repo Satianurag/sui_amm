@@ -23,8 +23,9 @@ module sui_amm::quote_function_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             factory::test_init(ctx);
         };
 
@@ -32,8 +33,8 @@ module sui_amm::quote_function_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(10000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(10000000, ctx);
@@ -44,12 +45,14 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -58,8 +61,8 @@ module sui_amm::quote_function_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<ETH, USDT>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
             
             let swap_amount = 1000;
             let quoted_output = pool::get_quote_a_to_b(pool, swap_amount);
@@ -89,9 +92,10 @@ module sui_amm::quote_function_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<ETH, USDT>(30, 10, 0, ctx);
+            clock::destroy_for_testing(clock);
+            let pool = pool::create_pool_for_testing<ETH, USDT>(30, 10, 0, ctx);
             
             // Empty pool should return 0
             let quote = pool::get_quote_a_to_b(&pool, 1000);
@@ -111,8 +115,9 @@ module sui_amm::quote_function_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             factory::test_init(ctx);
         };
 
@@ -120,8 +125,8 @@ module sui_amm::quote_function_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(1000000, ctx);
@@ -132,12 +137,14 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -164,8 +171,9 @@ module sui_amm::quote_function_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             factory::test_init(ctx);
         };
 
@@ -173,8 +181,8 @@ module sui_amm::quote_function_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(10000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(10000000, ctx);
@@ -185,12 +193,14 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -221,8 +231,9 @@ module sui_amm::quote_function_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             factory::test_init(ctx);
         };
 
@@ -230,8 +241,8 @@ module sui_amm::quote_function_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(2000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(4000000, ctx);
@@ -242,12 +253,14 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 
@@ -276,8 +289,9 @@ module sui_amm::quote_function_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             factory::test_init(ctx);
         };
 
@@ -285,8 +299,8 @@ module sui_amm::quote_function_tests {
         {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let usdc = coin::mint_for_testing<USDC>(10000000, ctx);
             let usdt = coin::mint_for_testing<DAI>(10000000, ctx); // Changed DAI to USDT as per user's implied intent
@@ -304,6 +318,7 @@ module sui_amm::quote_function_tests {
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             transfer::public_transfer(position, owner);
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(registry_val);
         };
 

@@ -23,9 +23,10 @@ module sui_amm::advanced_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            clock::destroy_for_testing(clock);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
 
@@ -33,8 +34,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
@@ -43,6 +44,7 @@ module sui_amm::advanced_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -53,8 +55,8 @@ module sui_amm::advanced_tests {
             {
                 let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
                 let pool = &mut pool_val;
+                let clock = clock::create_for_testing(test_scenario::ctx(scenario));
                 let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
                 let coin_in = coin::mint_for_testing<BTC>(1000, ctx);
                 let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 100000, ctx);
@@ -73,8 +75,9 @@ module sui_amm::advanced_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             
             let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
             
@@ -100,10 +103,11 @@ module sui_amm::advanced_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             // 10% protocol fee
-            let pool = pool::create_pool<BTC, USDC>(30, 1000, 0, ctx);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 1000, 0, ctx);
             pool::share(pool);
             admin::test_init(ctx);
         };
@@ -112,8 +116,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
@@ -122,6 +126,7 @@ module sui_amm::advanced_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -130,8 +135,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<BTC>(10000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 100000, ctx);
@@ -147,8 +152,9 @@ module sui_amm::advanced_tests {
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
+            clock::destroy_for_testing(clock);
             
             let (fee_a, fee_b) = admin::withdraw_protocol_fees_from_pool(&admin_cap, pool, ctx);
             
@@ -174,9 +180,10 @@ module sui_amm::advanced_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            clock::destroy_for_testing(clock);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
 
@@ -184,8 +191,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
@@ -194,6 +201,7 @@ module sui_amm::advanced_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -202,8 +210,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<BTC>(50000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 100000, ctx);
@@ -220,8 +228,8 @@ module sui_amm::advanced_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
             
             let liquidity_before = position::liquidity(position);
             
@@ -252,9 +260,10 @@ module sui_amm::advanced_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            clock::destroy_for_testing(clock);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
 
@@ -262,8 +271,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(10000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(10000000, ctx);
@@ -272,6 +281,7 @@ module sui_amm::advanced_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -290,8 +300,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<BTC>(50000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 100000, ctx);
@@ -325,9 +335,10 @@ module sui_amm::advanced_tests {
         
         test_scenario::next_tx(scenario, owner);
         {
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
-            let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
+            clock::destroy_for_testing(clock);
+            let pool = pool::create_pool_for_testing<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
 
@@ -335,8 +346,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(10000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(10000000, ctx);
@@ -345,6 +356,7 @@ module sui_amm::advanced_tests {
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
             
+            clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };
 
@@ -366,8 +378,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<BTC>(50000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 100000, ctx);
@@ -383,8 +395,8 @@ module sui_amm::advanced_tests {
         {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
+            let clock = clock::create_for_testing(test_scenario::ctx(scenario));
             let ctx = test_scenario::ctx(scenario);
-            let clock = clock::create_for_testing(ctx);
 
             let coin_in = coin::mint_for_testing<USDC>(50000, ctx);
             let coin_out = pool::swap_b_to_a(pool, coin_in, 0, option::none(), &clock, 100000, ctx);

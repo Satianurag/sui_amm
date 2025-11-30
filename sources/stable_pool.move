@@ -638,12 +638,14 @@ module sui_amm::stable_pool {
         let pending_fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let pending_fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
 
+        let il_bps = get_impermanent_loss(pool, position);
+
         position::make_position_view(
             value_a,
             value_b,
             (pending_fee_a as u64),
             (pending_fee_b as u64),
-            0, // Stable pools track IL off-chain; assume 0 for display
+            il_bps,
         )
     }
 
@@ -790,7 +792,52 @@ module sui_amm::stable_pool {
         let fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
         
-        position::update_cached_values(position, value_a, value_b, (fee_a as u64), (fee_b as u64), 0); // IL is 0 for stable pools
+        let il_bps = get_impermanent_loss(pool, position);
+        position::update_cached_values(position, value_a, value_b, (fee_a as u64), (fee_b as u64), il_bps);
+    }
+
+    /// Calculate impermanent loss for stable pool position
+    /// Uses approximation: IL = (Value_hold - Value_lp) / Value_hold
+    public fun get_impermanent_loss<CoinA, CoinB>(
+        pool: &StableSwapPool<CoinA, CoinB>,
+        position: &LPPosition
+    ): u64 {
+        let liquidity = position::liquidity(position);
+        if (liquidity == 0 || pool.total_liquidity == 0) {
+            return 0
+        };
+
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        if (reserve_a == 0 || reserve_b == 0) {
+            return 0
+        };
+
+        // Price of A in terms of B (scaled by 1e9)
+        // price_a = reserve_b / reserve_a
+        let price_a_scaled = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+        
+        // Initial amounts (hold strategy)
+        let initial_a = (position::min_a(position) as u128);
+        let initial_b = (position::min_b(position) as u128);
+        
+        // Current amounts (LP strategy)
+        let current_a = ((liquidity as u128) * (reserve_a as u128)) / (pool.total_liquidity as u128);
+        let current_b = ((liquidity as u128) * (reserve_b as u128)) / (pool.total_liquidity as u128);
+        
+        // Value Hold = initial_a * price_a + initial_b * 1
+        let value_hold = (initial_a * price_a_scaled) / 1_000_000_000 + initial_b;
+        
+        // Value LP = current_a * price_a + current_b * 1
+        let value_lp = (current_a * price_a_scaled) / 1_000_000_000 + current_b;
+        
+        if (value_hold <= value_lp || value_hold == 0) {
+            return 0
+        };
+        
+        let loss = value_hold - value_lp;
+        // Return in basis points (scaled by 10000)
+        ((loss * 10000) / value_hold as u64)
     }
 
 
@@ -911,7 +958,14 @@ module sui_amm::stable_pool {
         assert!(target_amp >= MIN_AMP && target_amp <= MAX_AMP, EInvalidAmp);
         
         // FIX L3: Safety limits on amp changes
-        let current_amp = get_current_amp(pool, clock);
+        // Ensure no active ramp or complete it first
+        if (pool.amp_ramp_start_time != 0) {
+            pool.amp = get_current_amp(pool, clock);
+            pool.amp_ramp_start_time = 0;
+            pool.amp_ramp_end_time = 0;
+        };
+
+        let current_amp = pool.amp;
         
         // Max 2x increase or 0.5x decrease per ramp
         if (target_amp > current_amp) {
@@ -997,6 +1051,16 @@ module sui_amm::stable_pool {
         pool.target_amp = pool.amp;
         pool.amp_ramp_start_time = 0;
         pool.amp_ramp_end_time = 0;
+    }
+
+    #[test_only]
+    public fun create_pool_for_testing<CoinA, CoinB>(
+        fee_percent: u64,
+        protocol_fee_percent: u64,
+        amp: u64,
+        ctx: &mut TxContext
+    ): StableSwapPool<CoinA, CoinB> {
+        create_pool(fee_percent, protocol_fee_percent, amp, ctx)
     }
 
     public fun share<CoinA, CoinB>(pool: StableSwapPool<CoinA, CoinB>) {

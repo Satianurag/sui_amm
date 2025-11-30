@@ -35,7 +35,7 @@ module sui_amm::security_tests {
         // Create pool with liquidity
         ts::next_tx(scenario, ALICE);
         {
-            let pool = pool::create_pool<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
             let coin_a = coin::mint_for_testing<USDC>(1000000, ts::ctx(scenario));
             let coin_b = coin::mint_for_testing<ETH>(1000000, ts::ctx(scenario));
             
@@ -43,7 +43,7 @@ module sui_amm::security_tests {
                 &mut pool,
                 coin_a,
                 coin_b,
-                0,
+                0, &clock, 18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -64,10 +64,10 @@ module sui_amm::security_tests {
             let coin_out = pool::swap_a_to_b(
                 pool,
                 coin_in,
-                0,
+                0, 
                 option::none(),
-                &clock,
-                1000000000000,
+                &clock, 
+                18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -93,7 +93,7 @@ module sui_amm::security_tests {
                 1,  // min_out_a - acceptable slippage
                 1,  // min_out_b - acceptable slippage
                 &clock,
-                2000000000000,
+                18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -120,7 +120,7 @@ module sui_amm::security_tests {
         // Create pool
         ts::next_tx(scenario, ALICE);
         {
-            let pool = pool::create_pool<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
             let coin_a = coin::mint_for_testing<USDC>(1000000, ts::ctx(scenario));
             let coin_b = coin::mint_for_testing<ETH>(1000000, ts::ctx(scenario));
             
@@ -128,7 +128,7 @@ module sui_amm::security_tests {
                 &mut pool,
                 coin_a,
                 coin_b,
-                0,
+                0, &clock, 18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -159,7 +159,7 @@ module sui_amm::security_tests {
                 position,
                 remove_amount,
                 0, // min amounts
-                0,
+                0, &clock, 18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -193,8 +193,8 @@ module sui_amm::security_tests {
                 pool,
                 position,
                 remove_amount,
-                0,
-                0,
+                0, 
+                0, &clock, 18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -217,10 +217,11 @@ module sui_amm::security_tests {
     fun test_reject_insufficient_initial_liquidity() {
         let scenario_val = ts::begin(ALICE);
         let scenario = &mut scenario_val;
+        let clock = clock::create_for_testing(ts::ctx(scenario));
         
         ts::next_tx(scenario, ALICE);
         {
-            let pool = pool::create_pool<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
             
             // Try to create pool with very low liquidity (would burn 50%+)
             // Total liquidity = sqrt(5000 * 5000) = 5000
@@ -233,7 +234,7 @@ module sui_amm::security_tests {
                 &mut pool,
                 coin_a,
                 coin_b,
-                0,
+                0, &clock, 18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -244,6 +245,7 @@ module sui_amm::security_tests {
             pool::share(pool);
         };
 
+        clock::destroy_for_testing(clock);
         ts::end(scenario_val);
     }
 
@@ -251,10 +253,11 @@ module sui_amm::security_tests {
     fun test_accept_adequate_initial_liquidity() {
         let scenario_val = ts::begin(ALICE);
         let scenario = &mut scenario_val;
+        let clock = clock::create_for_testing(ts::ctx(scenario));
         
         ts::next_tx(scenario, ALICE);
         {
-            let pool = pool::create_pool<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
+            let pool = pool::create_pool_for_testing<USDC, ETH>(30, 10, 5, ts::ctx(scenario));
             
             // Adequate initial liquidity
             // sqrt(1000000 * 1000000) = 1000000 > 100000 minimum
@@ -265,7 +268,7 @@ module sui_amm::security_tests {
                 &mut pool,
                 coin_a,
                 coin_b,
-                0,
+                0, &clock, 18446744073709551615,
                 ts::ctx(scenario)
             );
             
@@ -279,6 +282,7 @@ module sui_amm::security_tests {
             pool::share(pool);
         };
 
+        clock::destroy_for_testing(clock);
         ts::end(scenario_val);
     }
 }
