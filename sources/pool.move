@@ -412,6 +412,9 @@ module sui_amm::pool {
             liquidity_burned: liquidity_to_remove,
         });
 
+        // FIX [V6]: Refresh metadata to ensure NFT display is up-to-date
+        refresh_position_metadata(pool, position);
+
         (coin::from_balance(split_a, ctx), coin::from_balance(split_b, ctx))
     }
 
@@ -452,6 +455,9 @@ module sui_amm::pool {
                 amount_b: balance::value(&fee_b),
             });
         };
+
+        // FIX [V6]: Refresh metadata to ensure NFT display is up-to-date
+        refresh_position_metadata(pool, position);
 
         (coin::from_balance(fee_a, ctx), coin::from_balance(fee_b, ctx))
     }
