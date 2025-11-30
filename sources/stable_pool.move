@@ -93,11 +93,26 @@ module sui_amm::stable_pool {
         amount_b: u64,
     }
 
+
+
     struct ProtocolFeesWithdrawn has copy, drop {
         pool_id: ID,
         admin: address,
         amount_a: u64,
         amount_b: u64,
+    }
+
+    struct AmpRampStarted has copy, drop {
+        pool_id: ID,
+        old_amp: u64,
+        target_amp: u64,
+        start_time: u64,
+        end_time: u64,
+    }
+
+    struct AmpRampStopped has copy, drop {
+        pool_id: ID,
+        final_amp: u64,
     }
 
     public fun create_pool<CoinA, CoinB>(
@@ -986,6 +1001,14 @@ module sui_amm::stable_pool {
         pool.target_amp = target_amp;
         pool.amp_ramp_start_time = current_time;
         pool.amp_ramp_end_time = current_time + ramp_duration_ms;
+
+        event::emit(AmpRampStarted {
+            pool_id: object::id(pool),
+            old_amp: current_amp,
+            target_amp,
+            start_time: current_time,
+            end_time: current_time + ramp_duration_ms,
+        });
     }
 
     /// FIX M4: Calculate price impact for a hypothetical A to B swap (view function)
@@ -1051,6 +1074,11 @@ module sui_amm::stable_pool {
         pool.target_amp = pool.amp;
         pool.amp_ramp_start_time = 0;
         pool.amp_ramp_end_time = 0;
+
+        event::emit(AmpRampStopped {
+            pool_id: object::id(pool),
+            final_amp: pool.amp,
+        });
     }
 
     #[test_only]

@@ -21,7 +21,7 @@ module sui_amm::fee_distributor {
     const EBatchTooLarge: u64 = 2; // NEW: DoS protection
 
     // Constants
-    const MAX_BATCH_SIZE: u64 = 100; // NEW: Max positions per batch claim
+    const MAX_BATCH_SIZE: u64 = 50; // FIX L5: Reduced from 100 to 50 to prevent gas limit issues
 
     /// Capability for managing protocol fees
     struct AdminCap has key, store {
@@ -223,7 +223,18 @@ module sui_amm::fee_distributor {
         // Validate deadline
         assert!(clock::timestamp_ms(clock) <= deadline_ms, EInvalidDeadline);
         
+        // FIX S1: Reentrancy Protection - Snapshot reserves
+        // FIX S1: Reentrancy Protection - Snapshot k
+        let k_before = pool::get_k(pool);
+
         let (coin_a, coin_b) = claim_fees(registry, pool, position, clock, ctx);
+        
+        // Verify reserves haven't decreased unexpectedly (other than what we claimed)
+        // Actually, claim_fees withdraws from fee balances, not reserves.
+        // But if a reentrancy happened during claim_fees (unlikely as it's internal), 
+        // or if we call external code (we don't here, just coin ops).
+        // The risk is in the swap.
+        // Let's check reserves after swap.
         
         // FIX V4: Auto-compound slippage protection - use min_out parameters properly
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) == 0) {
@@ -252,8 +263,19 @@ module sui_amm::fee_distributor {
                 deadline_ms,
                 ctx
             );
+            
+            // Final Reentrancy Check
+            // Final Reentrancy Check
+            let k_after = pool::get_k(pool);
+            assert!(k_after >= k_before, 999); // EReentrancy
+            
             (leftover_a, leftover_b)
         } else {
+            // Final Reentrancy Check
+            // Final Reentrancy Check
+            let k_after = pool::get_k(pool);
+            assert!(k_after >= k_before, 999); // EReentrancy
+            
             (coin_a, coin_b)
         }
     }

@@ -1,0 +1,131 @@
+INCLUDING DEPENDENCY Bridge
+INCLUDING DEPENDENCY SuiSystem
+INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY MoveStdlib
+BUILDING sui_amm
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/creator_fee_tests.move:41:50
+    [0m[34m│[0m  
+[0m[34m 41[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30, // 0.3% fee[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m 49[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:138:17
+    [0m[34m│[0m
+[0m[34m138[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/creator_fee_tests.move:41:50
+    [0m[34m│[0m  
+[0m[34m 41[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30, // 0.3% fee[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m 47[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                &clock,[0m
+    [0m[34m│[0m [0m[31m│[0m                 [0m[34m------[0m [0m[34mGiven: '&sui::clock::Clock'[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m 49[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'creation_fee'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m ./sources/factory.move:137:23
+    [0m[34m│[0m
+[0m[34m137[0m [0m[34m│[0m         creation_fee: Coin<SUI>, // FIX S4: DoS Protection
+    [0m[34m│[0m                       [0m[34m---------[0m [0m[34mExpected: 'sui::coin::Coin<sui::sui::SUI>'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/creator_fee_tests.move:41:50
+    [0m[34m│[0m    
+[0m[34m 41[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m 42[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m 43[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30, // 0.3% fee[0m
+[0m[34m 44[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m 48[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m 49[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 8 argument(s) but got 7[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 7 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:131:16
+    [0m[34m│[0m
+[0m[34m131[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 8 argument(s)[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/creator_fee_tests.move:118:50
+    [0m[34m│[0m  
+[0m[34m118[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m119[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m120[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m121[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m125[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m126[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'clock'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m /home/sati/.move/https___github_com_MystenLabs_sui_git_494fa6ede17f366f1cd850f01ccb9f42dc75c470/crates/sui-framework/packages/sui-framework/sources/test/test_scenario.move:370:47
+    [0m[34m│[0m
+[0m[34m370[0m [0m[34m│[0m public fun ctx(scenario: &mut Scenario): &mut TxContext {
+    [0m[34m│[0m                                               [0m[34m---------[0m [0m[34mGiven: 'sui::tx_context::TxContext'[0m
+    [0m[34m│[0m
+    [0m[34m┌─[0m ./sources/factory.move:138:17
+    [0m[34m│[0m
+[0m[34m138[0m [0m[34m│[0m         clock: &sui::clock::Clock,
+    [0m[34m│[0m                 [0m[34m-----------------[0m [0m[34mExpected: 'sui::clock::Clock'[0m
+
+[0m[1m[38;5;9merror[E04007][0m[1m: incompatible types[0m
+    [0m[34m┌─[0m ./tests/creator_fee_tests.move:118:50
+    [0m[34m│[0m  
+[0m[34m118[0m [0m[34m│[0m               let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──────────────────────────────────────────────────^[0m
+[0m[34m119[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                registry,[0m
+[0m[34m120[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                30,[0m
+[0m[34m121[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m
+[0m[34m124[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                &clock,[0m
+    [0m[34m│[0m [0m[31m│[0m                 [0m[34m------[0m [0m[34mGiven: '&sui::clock::Clock'[0m
+[0m[34m125[0m [0m[34m│[0m [0m[31m│[0m [0m[31m                ctx[0m
+[0m[34m126[0m [0m[34m│[0m [0m[31m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. Invalid argument for parameter 'creation_fee'[0m
+    [0m[34m│[0m  
+    [0m[34m┌─[0m ./sources/factory.move:137:23
+    [0m[34m│[0m
+[0m[34m137[0m [0m[34m│[0m         creation_fee: Coin<SUI>, // FIX S4: DoS Protection
+    [0m[34m│[0m                       [0m[34m---------[0m [0m[34mExpected: 'sui::coin::Coin<sui::sui::SUI>'[0m
+
+[0m[1m[38;5;9merror[E04016][0m[1m: too few arguments[0m
+    [0m[34m┌─[0m ./tests/creator_fee_tests.move:118:50
+    [0m[34m│[0m    
+[0m[34m118[0m [0m[34m│[0m                 let (position, refund_a, refund_b) = [0m[31mfactory::create_pool([0m
+    [0m[34m│[0m [0m[31m╭[0m[0m[31m──[0m[0m[31m──────────────────────────────────────────────────^[0m
+    [0m[34m│[0m [0m[31m│[0m [0m[34m╭[0m[0m[34m──────────────────────────────────────────────────────────────────────'[0m
+[0m[34m119[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                registry,[0m
+[0m[34m120[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                30,[0m
+[0m[34m121[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                0, // creator_fee_percent[0m
+    [0m[34m·[0m [0m[31m│[0m [0m[34m│[0m
+[0m[34m125[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m                ctx[0m
+[0m[34m126[0m [0m[34m│[0m [0m[31m│[0m [0m[34m│[0m [0m[31m            )[0m;
+    [0m[34m│[0m [0m[31m╰[0m[0m[31m─[0m[0m[34m│[0m[0m[31m─────────────^ Invalid call of 'sui_amm::factory::create_pool'. The call expected 8 argument(s) but got 7[0m
+    [0m[34m│[0m   [0m[34m╰[0m[0m[34m─────────────' Found 7 argument(s) here[0m
+    [0m[34m│[0m    
+    [0m[34m┌─[0m ./sources/factory.move:131:16
+    [0m[34m│[0m
+[0m[34m131[0m [0m[34m│[0m     public fun create_pool<CoinA, CoinB>(
+    [0m[34m│[0m                [0m[34m-----------[0m [0m[34mExpected 8 argument(s)[0m
+

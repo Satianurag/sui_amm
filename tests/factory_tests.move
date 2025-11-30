@@ -6,6 +6,7 @@ module sui_amm::factory_tests {
     use sui::transfer;
     use std::vector;
     use sui::clock::{Self};
+    use sui::sui::SUI;
     
     use sui_amm::factory::{Self, PoolRegistry};
 
@@ -36,7 +37,8 @@ module sui_amm::factory_tests {
             
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, &clock, ctx);
+            let creation_fee = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, creation_fee, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
@@ -86,7 +88,8 @@ module sui_amm::factory_tests {
             // Create pool with initial liquidity
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
-            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, &clock, ctx);
+            let creation_fee = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, creation_fee, &clock, ctx);
             
             // Transfer returned objects
             transfer::public_transfer(position, owner);
@@ -96,7 +99,8 @@ module sui_amm::factory_tests {
             // Try to create duplicate - should fail
             let coin_a2 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a2, coin_b2, &clock, ctx);
+            let creation_fee2 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a2, coin_b2, creation_fee2, &clock, ctx);
             
             let p = _p; let ra = _ra; let rb = _rb;
             transfer::public_transfer(p, owner);
@@ -133,7 +137,8 @@ module sui_amm::factory_tests {
             // Try to create pool with invalid fee tier (25 bps not in standard tiers)
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
-            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 25, 0, coin_a, coin_b, &clock, ctx);
+            let creation_fee = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (_p, _ra, _rb) = factory::create_pool<BTC, USDC>(registry, 25, 0, coin_a, coin_b, creation_fee, &clock, ctx);
             
             let p = _p; let ra = _ra; let rb = _rb;
             transfer::public_transfer(p, owner);
@@ -170,14 +175,16 @@ module sui_amm::factory_tests {
             // Different token pairs
             let coin_a1 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b1 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (p1, ra1, rb1) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a1, coin_b1, &clock, ctx);
+            let creation_fee1 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (p1, ra1, rb1) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a1, coin_b1, creation_fee1, &clock, ctx);
             transfer::public_transfer(p1, owner);
             transfer::public_transfer(ra1, owner);
             transfer::public_transfer(rb1, owner);
 
             let coin_a2 = coin::mint_for_testing<ETH>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (p2, ra2, rb2) = factory::create_pool<ETH, USDC>(registry, 30, 0, coin_a2, coin_b2, &clock, ctx);
+            let creation_fee2 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (p2, ra2, rb2) = factory::create_pool<ETH, USDC>(registry, 30, 0, coin_a2, coin_b2, creation_fee2, &clock, ctx);
             transfer::public_transfer(p2, owner);
             transfer::public_transfer(ra2, owner);
             transfer::public_transfer(rb2, owner);
@@ -185,7 +192,8 @@ module sui_amm::factory_tests {
             // Same pair, different fee tier (allowed)
             let coin_a3 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b3 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (p3, ra3, rb3) = factory::create_pool<BTC, USDC>(registry, 100, 0, coin_a3, coin_b3, &clock, ctx);
+            let creation_fee3 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (p3, ra3, rb3) = factory::create_pool<BTC, USDC>(registry, 100, 0, coin_a3, coin_b3, creation_fee3, &clock, ctx);
             transfer::public_transfer(p3, owner);
             transfer::public_transfer(ra3, owner);
             transfer::public_transfer(rb3, owner);
@@ -193,7 +201,8 @@ module sui_amm::factory_tests {
             // Stable pool
             let coin_a4 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b4 = coin::mint_for_testing<ETH>(200000, ctx);
-            let (p4, ra4, rb4) = factory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, &clock, ctx);
+            let creation_fee4 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (p4, ra4, rb4) = factory::create_stable_pool<BTC, ETH>(registry, 5, 100, coin_a4, coin_b4, creation_fee4, &clock, ctx);
             transfer::public_transfer(p4, owner);
             transfer::public_transfer(ra4, owner);
             transfer::public_transfer(rb4, owner);
@@ -286,7 +295,8 @@ module sui_amm::factory_tests {
             
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, refund_a, refund_b) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, &clock, ctx);
+            let creation_fee = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (position, refund_a, refund_b) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a, coin_b, creation_fee, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
@@ -328,7 +338,8 @@ module sui_amm::factory_tests {
             // Create standard pool
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, &clock, ctx);
+            let creation_fee = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (position, refund_a, refund_b) = factory::create_pool<BTC, USDC>(registry, 30, 0, coin_a, coin_b, creation_fee, &clock, ctx);
             transfer::public_transfer(position, owner);
             transfer::public_transfer(refund_a, owner);
             transfer::public_transfer(refund_b, owner);
@@ -336,7 +347,8 @@ module sui_amm::factory_tests {
             // Create stable pool
             let coin_a2 = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b2 = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position2, refund_a2, refund_b2) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, &clock, ctx);
+            let creation_fee2 = coin::mint_for_testing<SUI>(10_000_000_000, ctx);
+            let (position2, refund_a2, refund_b2) = factory::create_stable_pool<BTC, USDC>(registry, 5, 100, coin_a2, coin_b2, creation_fee2, &clock, ctx);
             transfer::public_transfer(position2, owner);
             transfer::public_transfer(refund_a2, owner);
             transfer::public_transfer(refund_b2, owner);

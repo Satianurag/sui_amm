@@ -13,11 +13,18 @@ module sui_amm::factory {
     use sui_amm::pool;
     use sui_amm::stable_pool;
     use sui_amm::position;
+
     use sui_amm::admin::{AdminCap};
+    use sui::sui::SUI;
+    use sui::coin::{Self, Coin};
 
     // Error codes
     const EPoolAlreadyExists: u64 = 0;
     const EInvalidFeeTier: u64 = 1;
+    const EInvalidCreationFee: u64 = 2; // NEW: For DoS protection
+
+    // Constants
+    const POOL_CREATION_FEE: u64 = 10_000_000_000; // 10 SUI
 
     // Standard fee tiers in basis points
     const FEE_TIER_LOW: u64 = 5;      // 0.05%
@@ -52,6 +59,8 @@ module sui_amm::factory {
         pools_by_fee: VecMap<u64, vector<ID>>, // Fee tier -> pool IDs
         // FIX V3: Dynamic fee tiers
         allowed_fee_tiers: VecSet<u64>,
+        // FIX M4: Reverse lookup for efficient indexing
+        token_to_pools: Table<TypeName, vector<ID>>,
     }
 
     struct FeeTierAdded has copy, drop {
@@ -76,6 +85,7 @@ module sui_amm::factory {
             pool_count: 0,
             pools_by_fee: vec_map::empty(),
             allowed_fee_tiers,
+            token_to_pools: table::new(ctx),
         });
     }
 
@@ -95,6 +105,9 @@ module sui_amm::factory {
         registry: &mut PoolRegistry,
         fee_tier: u64
     ) {
+        // FIX S2: Access Control Validation
+        assert!(fee_tier <= 10000, EInvalidFeeTier); // Max 100%
+        
         if (!vec_set::contains(&registry.allowed_fee_tiers, &fee_tier)) {
             vec_set::insert(&mut registry.allowed_fee_tiers, fee_tier);
             event::emit(FeeTierAdded { fee_tier });
@@ -119,12 +132,17 @@ module sui_amm::factory {
         registry: &mut PoolRegistry,
         fee_percent: u64,
         creator_fee_percent: u64,
-        coin_a: sui::coin::Coin<CoinA>,
-        coin_b: sui::coin::Coin<CoinB>,
+        coin_a: Coin<CoinA>,
+        coin_b: Coin<CoinB>,
+        creation_fee: Coin<SUI>, // FIX S4: DoS Protection
         clock: &sui::clock::Clock,
         ctx: &mut TxContext
-    ): (position::LPPosition, sui::coin::Coin<CoinA>, sui::coin::Coin<CoinB>) {
+    ): (position::LPPosition, Coin<CoinA>, Coin<CoinB>) {
         assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
+        assert!(coin::value(&creation_fee) >= POOL_CREATION_FEE, EInvalidCreationFee);
+        
+        // Burn creation fee (transfer to 0x0)
+        transfer::public_transfer(creation_fee, @0x0);
         
         let type_a = type_name::with_original_ids<CoinA>();
         let type_b = type_name::with_original_ids<CoinB>();
@@ -160,6 +178,17 @@ module sui_amm::factory {
         let fee_pools = vec_map::get_mut(&mut registry.pools_by_fee, &fee_percent);
         vector::push_back(fee_pools, pool_id);
 
+        // FIX M4: Update reverse lookup
+        if (!table::contains(&registry.token_to_pools, type_a)) {
+            table::add(&mut registry.token_to_pools, type_a, vector::empty());
+        };
+        vector::push_back(table::borrow_mut(&mut registry.token_to_pools, type_a), pool_id);
+
+        if (!table::contains(&registry.token_to_pools, type_b)) {
+            table::add(&mut registry.token_to_pools, type_b, vector::empty());
+        };
+        vector::push_back(table::borrow_mut(&mut registry.token_to_pools, type_b), pool_id);
+
         event::emit(PoolCreated {
             pool_id,
             type_a,
@@ -192,12 +221,17 @@ module sui_amm::factory {
         registry: &mut PoolRegistry,
         fee_percent: u64,
         amp: u64,
-        coin_a: sui::coin::Coin<CoinA>,
-        coin_b: sui::coin::Coin<CoinB>,
+        coin_a: Coin<CoinA>,
+        coin_b: Coin<CoinB>,
+        creation_fee: Coin<SUI>, // FIX S4: DoS Protection
         clock: &sui::clock::Clock,
         ctx: &mut TxContext
-    ): (position::LPPosition, sui::coin::Coin<CoinA>, sui::coin::Coin<CoinB>) {
+    ): (position::LPPosition, Coin<CoinA>, Coin<CoinB>) {
         assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
+        assert!(coin::value(&creation_fee) >= POOL_CREATION_FEE, EInvalidCreationFee);
+        
+        // Burn creation fee
+        transfer::public_transfer(creation_fee, @0x0);
         
         let type_a = type_name::with_original_ids<CoinA>();
         let type_b = type_name::with_original_ids<CoinB>();
@@ -230,6 +264,17 @@ module sui_amm::factory {
         };
         let fee_pools = vec_map::get_mut(&mut registry.pools_by_fee, &fee_percent);
         vector::push_back(fee_pools, pool_id);
+
+        // FIX M4: Update reverse lookup
+        if (!table::contains(&registry.token_to_pools, type_a)) {
+            table::add(&mut registry.token_to_pools, type_a, vector::empty());
+        };
+        vector::push_back(table::borrow_mut(&mut registry.token_to_pools, type_a), pool_id);
+
+        if (!table::contains(&registry.token_to_pools, type_b)) {
+            table::add(&mut registry.token_to_pools, type_b, vector::empty());
+        };
+        vector::push_back(table::borrow_mut(&mut registry.token_to_pools, type_b), pool_id);
 
         event::emit(PoolCreated {
             pool_id,
@@ -283,6 +328,8 @@ module sui_amm::factory {
     }
 
     /// Get all pool IDs (O(n) snapshot assembled on demand)
+    /// WARNING: This function is O(n) and will fail for large registries.
+    /// Use get_all_pools_paginated instead.
     public fun get_all_pools(registry: &PoolRegistry): vector<ID> {
         let result = vector::empty<ID>();
         let i = 0;
@@ -381,5 +428,15 @@ module sui_amm::factory {
     /// Get all pool IDs (for enumeration)
     public fun all_pool_ids(registry: &PoolRegistry): vector<ID> {
         get_all_pools(registry)
+    }
+
+    /// FIX M4: Get all pools containing a specific token
+    public fun get_pools_for_token<CoinType>(registry: &PoolRegistry): vector<ID> {
+        let type_name = type_name::with_original_ids<CoinType>();
+        if (table::contains(&registry.token_to_pools, type_name)) {
+            *table::borrow(&registry.token_to_pools, type_name)
+        } else {
+            vector::empty()
+        }
     }
 }

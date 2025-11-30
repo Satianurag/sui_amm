@@ -4,6 +4,7 @@ module sui_amm::quote_function_tests {
     use sui::coin::{Self};
     use sui::transfer;
     use sui::clock::{Self};
+    use sui::sui::SUI;
     use std::option;
     
     use sui_amm::pool::{Self, LiquidityPool};
@@ -45,6 +46,7 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<SUI>(10_000_000_000, ctx),
                 &clock,
                 ctx
             );
@@ -137,6 +139,7 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<SUI>(10_000_000_000, ctx),
                 &clock,
                 ctx
             );
@@ -193,6 +196,7 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<SUI>(10_000_000_000, ctx),
                 &clock,
                 ctx
             );
@@ -253,6 +257,7 @@ module sui_amm::quote_function_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                coin::mint_for_testing<SUI>(10_000_000_000, ctx),
                 &clock,
                 ctx
             );
@@ -311,6 +316,7 @@ module sui_amm::quote_function_tests {
                 100,
                 usdc,
                 usdt,
+                coin::mint_for_testing<SUI>(10_000_000_000, ctx),
                 &clock,
                 ctx
             );
