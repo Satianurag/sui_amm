@@ -367,6 +367,7 @@ module sui_amm::flashloan_attack_tests {
                 &mut position,
                 coin_a,
                 coin_b,
+                0, // min_liquidity
                 &clock,
                 18446744073709551615,
                 ts::ctx(&mut scenario)

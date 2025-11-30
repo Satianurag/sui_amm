@@ -442,12 +442,18 @@ module sui_amm::gas_benchmarks {
             let pool = ts::take_shared<LiquidityPool<USDC, USDT>>(&scenario);
             let position = ts::take_from_sender<LPPosition>(&scenario);
             
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
+            
             // CLAIM FEES - Main operation to benchmark
-            let (fee_a, fee_b) = fee_distributor::claim_fees_simple(
+            let (fee_a, fee_b) = fee_distributor::claim_fees(
                 &mut pool,
                 &mut position,
+                &clock_val,
+                0,
                 ts::ctx(&mut scenario)
             );
+            
+            clock::destroy_for_testing(clock_val);
             
             coin::burn_for_testing(fee_a);
             coin::burn_for_testing(fee_b);

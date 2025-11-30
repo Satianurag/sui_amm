@@ -11,7 +11,7 @@ module sui_amm::demo_script {
     use sui_amm::factory::{Self, PoolRegistry};
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
-    use sui_amm::fee_distributor::{Self, FeeRegistry};
+    use sui_amm::fee_distributor::{Self};
 
     // Test Coins
     struct USDC has drop {}
@@ -31,7 +31,7 @@ module sui_amm::demo_script {
         test_scenario::next_tx(scenario, ADMIN);
         {
             factory::test_init(test_scenario::ctx(scenario));
-            fee_distributor::test_init(test_scenario::ctx(scenario));
+            // fee_distributor::test_init(test_scenario::ctx(scenario));
         };
 
         // 2. Create Pool (by CREATOR)
@@ -90,16 +90,16 @@ module sui_amm::demo_script {
         // 4. Verify Metadata & Claim Fees (by CREATOR)
         test_scenario::next_tx(scenario, CREATOR);
         {
-            let pool = test_scenario::take_shared<LiquidityPool<USDC, ETH>>(scenario);
-            let registry = test_scenario::take_shared<FeeRegistry>(scenario);
-            let position = test_scenario::take_from_sender<LPPosition>(scenario);
+            let pool_val = test_scenario::take_shared<LiquidityPool<USDC, ETH>>(scenario);
+            let pool = &mut pool_val;
+            let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
+            let position = &mut position_val;
 
             // Refresh metadata manually to check values
-            pool::refresh_position_metadata(&pool, &mut position);
+            pool::refresh_position_metadata(pool, position);
             
-            let fees_a = position::cached_fee_a(&position);
-            // let fees_b = position::cached_fee_b(&position); // Should be 0 since we swapped A to B, fees are in A
-            let il_bps = position::cached_il_bps(&position);
+            let fees_a = position::cached_fee_a(position);
+            let il_bps = position::cached_il_bps(position);
 
             // Verify fees accumulated (0.3% of 1000 USDC = 3 USDC)
             // Protocol fee might take a cut, but cached_fee_a should be > 0
@@ -110,11 +110,10 @@ module sui_amm::demo_script {
 
             debug::print(&string::utf8(b"Step 3: Metadata Verified - Fees accumulated & IL detected"));
 
-            // Claim Fees
+            // Claim Fees (use the outer clock, not a new one)
             let (fee_a, fee_b) = fee_distributor::claim_fees(
-                &mut registry,
-                &mut pool,
-                &mut position,
+                pool,
+                position,
                 &clock,
                 18446744073709551615, // Max u64 deadline
                 test_scenario::ctx(scenario)
@@ -127,8 +126,8 @@ module sui_amm::demo_script {
 
             // 5. Remove Liquidity
             let (out_a, out_b) = pool::remove_liquidity(
-                &mut pool,
-                position,
+                pool,
+                position_val,
                 0, 0,
                 &clock,
                 18446744073709551615,
@@ -140,8 +139,7 @@ module sui_amm::demo_script {
             coin::burn_for_testing(out_a);
             coin::burn_for_testing(out_b);
             
-            test_scenario::return_shared(pool);
-            test_scenario::return_shared(registry);
+            test_scenario::return_shared(pool_val);
         };
 
         clock::destroy_for_testing(clock);

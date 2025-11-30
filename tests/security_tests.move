@@ -7,7 +7,7 @@ module sui_amm::security_tests {
     use sui::transfer;
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
-    use sui_amm::fee_distributor::{Self, FeeRegistry};
+    use sui_amm::fee_distributor::{Self};
     use std::option;
 
     // Test coins
@@ -29,7 +29,7 @@ module sui_amm::security_tests {
         // Create fee registry
         ts::next_tx(scenario, ADMIN);
         {
-            fee_distributor::test_init(ts::ctx(scenario));
+            // fee_distributor::test_init(ts::ctx(scenario));
         };
 
         // Create pool with liquidity
@@ -78,20 +78,16 @@ module sui_amm::security_tests {
         // Test auto_compound with slippage protection
         ts::next_tx(scenario, ALICE);
         {
-            let registry_val = ts::take_shared<FeeRegistry>(scenario);
-            let registry = &mut registry_val;
             let pool_val = ts::take_shared<LiquidityPool<USDC, ETH>>(scenario);
             let pool = &mut pool_val;
             let position_val = ts::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             
             // This should work with adequate slippage params
-            let (leftover_a, leftover_b) = fee_distributor::auto_compound_with_deadline(
-                registry,
+            let (leftover_a, leftover_b) = fee_distributor::compound_fees(
                 pool,
                 position,
-                1,  // min_out_a - acceptable slippage
-                1,  // min_out_b - acceptable slippage
+                1,  // min_liquidity - acceptable slippage (using 1 share as min)
                 &clock,
                 18446744073709551615,
                 ts::ctx(scenario)
@@ -102,7 +98,6 @@ module sui_amm::security_tests {
             
             ts::return_to_sender(scenario, position_val);
             ts::return_shared(pool_val);
-            ts::return_shared(registry_val);
         };
 
         clock::destroy_for_testing(clock);

@@ -37,44 +37,8 @@ module sui_amm::admin {
         sui_amm::stable_pool::withdraw_protocol_fees(pool, ctx)
     }
 
-    public fun update_pool_risk_params<CoinA, CoinB>(
-        _admin: &AdminCap,
-        pool: &mut LiquidityPool<CoinA, CoinB>,
-        ratio_tolerance_bps: u64,
-        max_price_impact_bps: u64,
-        ctx: &mut TxContext
-    ) {
-        sui_amm::pool::set_risk_params(pool, ratio_tolerance_bps, max_price_impact_bps);
-        ctx;
-    }
-
-    public fun update_stable_pool_max_price_impact<CoinA, CoinB>(
-        _admin: &AdminCap,
-        pool: &mut StableSwapPool<CoinA, CoinB>,
-        max_price_impact_bps: u64,
-        ctx: &mut TxContext
-    ) {
-        sui_amm::stable_pool::set_max_price_impact_bps(pool, max_price_impact_bps);
-        ctx;
-    }
-
-    /// FIX [M2]: Admin function to update protocol fees for regular pools
-    public fun set_pool_protocol_fee<CoinA, CoinB>(
-        _admin: &AdminCap,
-        pool: &mut LiquidityPool<CoinA, CoinB>,
-        new_percent: u64
-    ) {
-        sui_amm::pool::set_protocol_fee_percent(pool, new_percent);
-    }
-
-    /// FIX [M2]: Admin function to update protocol fees for stable pools
-    public fun set_stable_pool_protocol_fee<CoinA, CoinB>(
-        _admin: &AdminCap,
-        pool: &mut StableSwapPool<CoinA, CoinB>,
-        new_percent: u64
-    ) {
-        sui_amm::stable_pool::set_protocol_fee_percent(pool, new_percent);
-    }
+    // NOTE: Protocol fee changes and risk parameter updates must now go through 
+    // the governance module with a timelock. Direct setters have been removed.
 
     /// FIX [L1]: Admin function to initiate amp ramping for stable pools
     public fun ramp_stable_pool_amp<CoinA, CoinB>(

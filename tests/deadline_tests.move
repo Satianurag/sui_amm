@@ -28,7 +28,6 @@ module sui_amm::deadline_tests {
         {
             let pool = pool::create_pool_for_testing<USDT, USDC>(30, 0, 0, ts::ctx(scenario));
             pool::share(pool);
-            sui_amm::fee_distributor::test_init(ts::ctx(scenario));
         };
 
         // 2. Alice adds liquidity
@@ -71,8 +70,6 @@ module sui_amm::deadline_tests {
         {
             let pool_val = ts::take_shared<LiquidityPool<USDT, USDC>>(scenario);
             let pool = &mut pool_val;
-            let registry_val = ts::take_shared<sui_amm::fee_distributor::FeeRegistry>(scenario);
-            let registry = &mut registry_val;
             let position_val = ts::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let clock = clock::create_for_testing(ts::ctx(scenario));
@@ -84,7 +81,6 @@ module sui_amm::deadline_tests {
             let expired_deadline = now - 1; // 999
             
             let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees(
-                registry,
                 pool,
                 position,
                 &clock,
@@ -97,7 +93,6 @@ module sui_amm::deadline_tests {
             
             clock::destroy_for_testing(clock);
             ts::return_to_sender(scenario, position_val);
-            ts::return_shared(registry_val);
             ts::return_shared(pool_val);
         };
 

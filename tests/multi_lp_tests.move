@@ -95,7 +95,9 @@ module sui_amm::multi_lp_tests {
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
             
-            let (fee_a_lp1, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
+            let clock = clock::create_for_testing(ctx);
+            let (fee_a_lp1, fee_b) = sui_amm::fee_distributor::claim_fees(pool, position, &clock, 0, ctx);
+            clock::destroy_for_testing(clock);
             let fee_amount_lp1 = coin::value(&fee_a_lp1);
             
             // Fee should be ~15 (30 total fee * 0.5 share)
@@ -116,7 +118,9 @@ module sui_amm::multi_lp_tests {
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
             
-            let (fee_a_lp2, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
+            let clock = clock::create_for_testing(ctx);
+            let (fee_a_lp2, fee_b) = sui_amm::fee_distributor::claim_fees(pool, position, &clock, 0, ctx);
+            clock::destroy_for_testing(clock);
             let fee_amount_lp2 = coin::value(&fee_a_lp2);
             
             // Fee should be ~15 (30 total fee * 0.5 share)
@@ -214,7 +218,9 @@ module sui_amm::multi_lp_tests {
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
             
-            let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
+            let clock = clock::create_for_testing(ctx);
+            let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees(pool, position, &clock, 0, ctx);
+            clock::destroy_for_testing(clock);
             // Big LP gets ~90% of fees (verified in small_lp test)
             
             transfer::public_transfer(fee_a, big_lp);
@@ -232,7 +238,9 @@ module sui_amm::multi_lp_tests {
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
             
-            let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
+            let clock = clock::create_for_testing(ctx);
+            let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees(pool, position, &clock, 0, ctx);
+            clock::destroy_for_testing(clock);
             let small_lp_fee = coin::value(&fee_a);
             
             // Ratio should be approximately 9:1

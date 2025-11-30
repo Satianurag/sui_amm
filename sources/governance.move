@@ -8,57 +8,74 @@ module sui_amm::governance {
     
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::stable_pool::{Self, StableSwapPool};
+    use sui_amm::admin::{AdminCap};
     
-    friend sui_amm::admin;
-
     // Error codes
     const EProposalNotReady: u64 = 0;
     const EProposalExpired: u64 = 1;
     const EInvalidFee: u64 = 2;
-    const EUnauthorized: u64 = 3;
+    #[allow(unused_const)]
+    const EUnauthorized: u64 = 3; // Reserved for future use
     const EProposalNotFound: u64 = 4;
+    const EProposalAlreadyExecuted: u64 = 5;
+    const EInvalidProposalType: u64 = 6;
 
     // Constants
-    const TIMELOCK_DURATION_MS: u64 = 604_800_000; // 7 days
-    const PROPOSAL_EXPIRY_MS: u64 = 1_209_600_000; // 14 days
+    const TIMELOCK_DURATION_MS: u64 = 172_800_000; // 48 hours (as per audit fix)
+    const PROPOSAL_EXPIRY_MS: u64 = 604_800_000; // 7 days
     const MAX_PROTOCOL_FEE_BPS: u64 = 1000; // 10% hard cap
 
-    struct FeeChangeProposal has store, copy, drop {
-        pool_id: ID,
-        pool_type: u8, // 0 = regular, 1 = stable
-        new_fee_bps: u64,
-        proposed_at: u64,
-        execution_time: u64,
-        expiry_time: u64,
+    // Proposal Types
+    const TYPE_FEE_CHANGE: u8 = 1;
+    const TYPE_PARAMETER_CHANGE: u8 = 2;
+
+    struct Proposal has store, drop {
+        id: ID,
+        proposal_type: u8, 
+        target_pool: ID,
+        // For Fee Change: new_fee_bps
+        // For Param Change: max_price_impact_bps (we use u64 for generic value)
+        new_value: u64, 
+        // Additional value for param change (ratio_tolerance)
+        aux_value: u64,
+        proposer: address,
+        created_at: u64,
+        executable_at: u64,
         executed: bool,
+        cancelled: bool,
     }
 
-    struct GovernanceRegistry has key {
+    struct GovernanceConfig has key {
         id: UID,
-        proposals: Table<ID, FeeChangeProposal>,
-        admin: address,
-        next_proposal_id: u64,
+        timelock_duration_ms: u64,
+        proposals: Table<ID, Proposal>,
+        proposal_count: u64,
     }
 
     struct ProposalCreated has copy, drop {
         proposal_id: ID,
-        pool_id: ID,
-        new_fee_bps: u64,
-        execution_time: u64,
+        proposal_type: u8,
+        target_pool: ID,
+        new_value: u64,
+        executable_at: u64,
     }
 
     struct ProposalExecuted has copy, drop {
         proposal_id: ID,
-        pool_id: ID,
-        new_fee_bps: u64,
+        executed_at: u64,
+    }
+
+    struct ProposalCancelled has copy, drop {
+        proposal_id: ID,
+        cancelled_by: address,
     }
 
     fun init(ctx: &mut TxContext) {
-        transfer::share_object(GovernanceRegistry {
+        transfer::share_object(GovernanceConfig {
             id: object::new(ctx),
+            timelock_duration_ms: TIMELOCK_DURATION_MS,
             proposals: table::new(ctx),
-            admin: tx_context::sender(ctx),
-            next_proposal_id: 0,
+            proposal_count: 0,
         });
     }
 
@@ -67,139 +84,220 @@ module sui_amm::governance {
         init(ctx);
     }
 
-    /// Propose protocol fee change (admin only)
-    public(friend) fun propose_fee_change(
-        registry: &mut GovernanceRegistry,
+    // --- Propose Functions ---
+
+    /// Propose a fee change. Requires AdminCap.
+    public fun propose_fee_change(
+        _admin: &AdminCap,
+        config: &mut GovernanceConfig,
         pool_id: ID,
-        pool_type: u8,
-        new_fee_bps: u64,
+        new_fee_percent: u64,
         clock: &Clock,
-        _ctx: &mut TxContext
+        ctx: &mut TxContext
     ): ID {
-        assert!(tx_context::sender(_ctx) == registry.admin, EUnauthorized);
-        assert!(new_fee_bps <= MAX_PROTOCOL_FEE_BPS, EInvalidFee);
-
-        let current_time = clock::timestamp_ms(clock);
-        let execution_time = current_time + TIMELOCK_DURATION_MS;
-        let expiry_time = execution_time + PROPOSAL_EXPIRY_MS;
-
-        let proposal = FeeChangeProposal {
+        assert!(new_fee_percent <= MAX_PROTOCOL_FEE_BPS, EInvalidFee);
+        
+        create_proposal(
+            config,
+            TYPE_FEE_CHANGE,
             pool_id,
-            pool_type,
-            new_fee_bps,
-            proposed_at: current_time,
-            execution_time,
-            expiry_time,
-            executed: false,
-        };
-
-        // Create unique proposal ID
-        let proposal_id = object::id_from_address(
-            @0x0 // This will be replaced with proper ID generation
-        );
-        table::add(&mut registry.proposals, proposal_id, proposal);
-        registry.next_proposal_id = registry.next_proposal_id + 1;
-
-        event::emit(ProposalCreated {
-            proposal_id,
-            pool_id,
-            new_fee_bps,
-            execution_time,
-        });
-
-        proposal_id
+            new_fee_percent,
+            0,
+            clock,
+            ctx
+        )
     }
 
-    /// Execute fee change proposal (anyone can call after timelock)
-    public fun execute_fee_change_regular<CoinA, CoinB>(
-        registry: &mut GovernanceRegistry,
-        pool: &mut LiquidityPool<CoinA, CoinB>,
-        proposal_id: ID,
+    /// Propose parameter change (risk params). Requires AdminCap.
+    public fun propose_parameter_change(
+        _admin: &AdminCap,
+        config: &mut GovernanceConfig,
+        pool_id: ID,
+        ratio_tolerance_bps: u64, // 0 for stable pools
+        max_price_impact_bps: u64,
         clock: &Clock,
-        _ctx: &TxContext
+        ctx: &mut TxContext
+    ): ID {
+        create_proposal(
+            config,
+            TYPE_PARAMETER_CHANGE,
+            pool_id,
+            max_price_impact_bps, // Primary value
+            ratio_tolerance_bps,  // Aux value
+            clock,
+            ctx
+        )
+    }
+
+    fun create_proposal(
+        config: &mut GovernanceConfig,
+        proposal_type: u8,
+        target_pool: ID,
+        new_value: u64,
+        aux_value: u64,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ): ID {
+        let now = clock::timestamp_ms(clock);
+        let proposal_id = object::new(ctx);
+        let id = object::uid_to_inner(&proposal_id);
+        object::delete(proposal_id); // We just need the ID
+
+        let proposal = Proposal {
+            id,
+            proposal_type,
+            target_pool,
+            new_value,
+            aux_value,
+            proposer: tx_context::sender(ctx),
+            created_at: now,
+            executable_at: now + config.timelock_duration_ms,
+            executed: false,
+            cancelled: false,
+        };
+
+        table::add(&mut config.proposals, id, proposal);
+        config.proposal_count = config.proposal_count + 1;
+
+        event::emit(ProposalCreated {
+            proposal_id: id,
+            proposal_type,
+            target_pool,
+            new_value,
+            executable_at: now + config.timelock_duration_ms,
+        });
+
+        id
+    }
+
+    // --- Execute Functions ---
+
+    /// Execute fee change for regular pool
+    public fun execute_fee_change_regular<CoinA, CoinB>(
+        config: &mut GovernanceConfig,
+        proposal_id: ID,
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        clock: &Clock,
+        _ctx: &mut TxContext
     ) {
-        assert!(table::contains(&registry.proposals, proposal_id), EProposalNotFound);
+        let proposal = validate_proposal_execution(config, proposal_id, TYPE_FEE_CHANGE, object::id(pool), clock);
         
-        let proposal = table::borrow_mut(&mut registry.proposals, proposal_id);
-        assert!(!proposal.executed, EProposalNotReady);
-        assert!(proposal.pool_type == 0, EInvalidFee);
-        assert!(proposal.pool_id == object::id(pool), EInvalidFee);
-
-        let current_time = clock::timestamp_ms(clock);
-        assert!(current_time >= proposal.execution_time, EProposalNotReady);
-        assert!(current_time <= proposal.expiry_time, EProposalExpired);
-
-        // Execute the change
-        pool::set_protocol_fee_percent(pool, proposal.new_fee_bps);
-        proposal.executed = true;
+        pool::set_protocol_fee_percent(pool, proposal.new_value);
+        
+        // Mark executed
+        let proposal_mut = table::borrow_mut(&mut config.proposals, proposal_id);
+        proposal_mut.executed = true;
 
         event::emit(ProposalExecuted {
             proposal_id,
-            pool_id: proposal.pool_id,
-            new_fee_bps: proposal.new_fee_bps,
+            executed_at: clock::timestamp_ms(clock),
         });
     }
 
     /// Execute fee change for stable pool
     public fun execute_fee_change_stable<CoinA, CoinB>(
-        registry: &mut GovernanceRegistry,
-        pool: &mut StableSwapPool<CoinA, CoinB>,
+        config: &mut GovernanceConfig,
         proposal_id: ID,
+        pool: &mut StableSwapPool<CoinA, CoinB>,
         clock: &Clock,
         _ctx: &mut TxContext
     ) {
-        assert!(table::contains(&registry.proposals, proposal_id), EProposalNotFound);
+        let proposal = validate_proposal_execution(config, proposal_id, TYPE_FEE_CHANGE, object::id(pool), clock);
         
-        let proposal = table::borrow_mut(&mut registry.proposals, proposal_id);
-        assert!(!proposal.executed, EProposalNotReady);
-        assert!(proposal.pool_type == 1, EInvalidFee);
-        assert!(proposal.pool_id == object::id(pool), EInvalidFee);
-
-        let current_time = clock::timestamp_ms(clock);
-        assert!(current_time >= proposal.execution_time, EProposalNotReady);
-        assert!(current_time <= proposal.expiry_time, EProposalExpired);
-
-        stable_pool::set_protocol_fee_percent(pool, proposal.new_fee_bps);
-        proposal.executed = true;
+        stable_pool::set_protocol_fee_percent(pool, proposal.new_value);
+        
+        let proposal_mut = table::borrow_mut(&mut config.proposals, proposal_id);
+        proposal_mut.executed = true;
 
         event::emit(ProposalExecuted {
             proposal_id,
-            pool_id: proposal.pool_id,
-            new_fee_bps: proposal.new_fee_bps,
+            executed_at: clock::timestamp_ms(clock),
         });
     }
 
-    /// FIX [M2]: Governance for risk parameters (ratio tolerance, max price impact)
-    /// Admin can update risk parameters immediately (no timelock for safety)
-    public(friend) fun update_risk_params<CoinA, CoinB>(
-        registry: &GovernanceRegistry,
+    /// Execute parameter change for regular pool
+    public fun execute_parameter_change_regular<CoinA, CoinB>(
+        config: &mut GovernanceConfig,
+        proposal_id: ID,
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        ratio_tolerance_bps: u64,
-        max_price_impact_bps: u64,
-        ctx: &TxContext
+        clock: &Clock,
+        _ctx: &mut TxContext
     ) {
-        assert!(tx_context::sender(ctx) == registry.admin, EUnauthorized);
-        pool::set_risk_params(pool, ratio_tolerance_bps, max_price_impact_bps);
+        let proposal = validate_proposal_execution(config, proposal_id, TYPE_PARAMETER_CHANGE, object::id(pool), clock);
+        
+        // new_value = max_price_impact, aux_value = ratio_tolerance
+        pool::set_risk_params(pool, proposal.aux_value, proposal.new_value);
+        
+        let proposal_mut = table::borrow_mut(&mut config.proposals, proposal_id);
+        proposal_mut.executed = true;
+
+        event::emit(ProposalExecuted {
+            proposal_id,
+            executed_at: clock::timestamp_ms(clock),
+        });
     }
 
-    /// FIX [M2]: Governance for stable pool risk parameters
-    public(friend) fun update_stable_risk_params<CoinA, CoinB>(
-        registry: &GovernanceRegistry,
+    /// Execute parameter change for stable pool
+    public fun execute_parameter_change_stable<CoinA, CoinB>(
+        config: &mut GovernanceConfig,
+        proposal_id: ID,
         pool: &mut StableSwapPool<CoinA, CoinB>,
-        max_price_impact_bps: u64,
-        ctx: &TxContext
+        clock: &Clock,
+        _ctx: &mut TxContext
     ) {
-        assert!(tx_context::sender(ctx) == registry.admin, EUnauthorized);
-        stable_pool::set_max_price_impact_bps(pool, max_price_impact_bps);
+        let proposal = validate_proposal_execution(config, proposal_id, TYPE_PARAMETER_CHANGE, object::id(pool), clock);
+        
+        // Stable pool only has max_price_impact
+        stable_pool::set_max_price_impact_bps(pool, proposal.new_value);
+        
+        let proposal_mut = table::borrow_mut(&mut config.proposals, proposal_id);
+        proposal_mut.executed = true;
+
+        event::emit(ProposalExecuted {
+            proposal_id,
+            executed_at: clock::timestamp_ms(clock),
+        });
     }
 
-    // View functions
-    public fun get_proposal(registry: &GovernanceRegistry, proposal_id: ID): FeeChangeProposal {
-        assert!(table::contains(&registry.proposals, proposal_id), EProposalNotFound);
-        *table::borrow(&registry.proposals, proposal_id)
+    // Helper to validate execution conditions
+    fun validate_proposal_execution(
+        config: &GovernanceConfig, 
+        proposal_id: ID, 
+        expected_type: u8,
+        target_pool: ID,
+        clock: &Clock
+    ): &Proposal {
+        assert!(table::contains(&config.proposals, proposal_id), EProposalNotFound);
+        let proposal = table::borrow(&config.proposals, proposal_id);
+        
+        assert!(proposal.proposal_type == expected_type, EInvalidProposalType);
+        assert!(proposal.target_pool == target_pool, EInvalidProposalType);
+        assert!(!proposal.executed, EProposalAlreadyExecuted);
+        assert!(!proposal.cancelled, EProposalAlreadyExecuted);
+        
+        let now = clock::timestamp_ms(clock);
+        assert!(now >= proposal.executable_at, EProposalNotReady);
+        assert!(now < proposal.executable_at + PROPOSAL_EXPIRY_MS, EProposalExpired);
+        
+        proposal
     }
 
-    public fun timelock_duration(): u64 { TIMELOCK_DURATION_MS }
-    public fun max_protocol_fee(): u64 { MAX_PROTOCOL_FEE_BPS }
-    public fun admin(registry: &GovernanceRegistry): address { registry.admin }
+    /// Cancel a proposal (Admin only)
+    public fun cancel_proposal(
+        _admin: &AdminCap,
+        config: &mut GovernanceConfig,
+        proposal_id: ID,
+        ctx: &mut TxContext
+    ) {
+        assert!(table::contains(&config.proposals, proposal_id), EProposalNotFound);
+        let proposal = table::borrow_mut(&mut config.proposals, proposal_id);
+        assert!(!proposal.executed, EProposalAlreadyExecuted);
+        
+        proposal.cancelled = true;
+        
+        event::emit(ProposalCancelled {
+            proposal_id,
+            cancelled_by: tx_context::sender(ctx),
+        });
+    }
 }

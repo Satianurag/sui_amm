@@ -27,7 +27,8 @@ module sui_amm::stable_pool {
     const ETooHighFee: u64 = 5;  // NEW: For protocol fee validation
     const EOverflow: u64 = 6;  // NEW: For overflow protection
     const EArithmeticError: u64 = 7; // NEW: For arithmetic safety
-    const EUnauthorized: u64 = 8; // NEW: Access control
+    const EInsufficientOutput: u64 = 8; // NEW: For slippage protection
+    const EUnauthorized: u64 = 9; // NEW: Access control
     
     // Constants
     const ACC_PRECISION: u128 = 1_000_000_000_000;
@@ -410,8 +411,11 @@ module sui_amm::stable_pool {
     public(friend) fun withdraw_fees<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         position: &mut LPPosition,
+        clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
 
         let liquidity = position::liquidity(position);
@@ -529,6 +533,17 @@ module sui_amm::stable_pool {
             pool.acc_fee_per_share_a = pool.acc_fee_per_share_a + ((lp_fee_amount as u128) * ACC_PRECISION / (pool.total_liquidity as u128));
         };
 
+        // S2: Verify D-invariant (post-swap check)
+        // Note: D may decrease slightly due to integer rounding in stable math.
+        // We allow a small tolerance (0.01% = 1 bps) to account for this.
+        // The fee accumulation should generally keep D stable or increasing.
+        let reserve_a_new = balance::value(&pool.reserve_a);
+        let reserve_b_new = balance::value(&pool.reserve_b);
+        let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
+        // Allow 1 bps tolerance for rounding: d_new >= d * 9999 / 10000
+        let d_min = ((d as u128) * 9999 / 10000 as u64);
+        assert!(d_new >= d_min, EInsufficientLiquidity);
+
         event::emit(SwapExecuted {
             pool_id: object::id(pool),
             sender: tx_context::sender(ctx),
@@ -617,6 +632,16 @@ module sui_amm::stable_pool {
         );
         assert!(impact <= pool.max_price_impact_bps, EExcessivePriceImpact);
 
+        // S2: Verify D-invariant (post-swap check)
+        // Note: D may decrease slightly due to integer rounding in stable math.
+        // We allow a small tolerance (0.01% = 1 bps) to account for this.
+        let reserve_a_new = balance::value(&pool.reserve_a);
+        let reserve_b_new = balance::value(&pool.reserve_b);
+        let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
+        // Allow 1 bps tolerance for rounding: d_new >= d * 9999 / 10000
+        let d_min = ((d as u128) * 9999 / 10000 as u64);
+        assert!(d_new >= d_min, EInsufficientLiquidity);
+
         event::emit(SwapExecuted {
             pool_id: object::id(pool),
             sender: tx_context::sender(ctx),
@@ -701,6 +726,7 @@ module sui_amm::stable_pool {
         position: &mut LPPosition,
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
+        min_liquidity: u64,
         clock: &Clock,
         deadline: u64,
         ctx: &mut TxContext
@@ -717,6 +743,8 @@ module sui_amm::stable_pool {
         let share_a = ((amount_a as u128) * (pool.total_liquidity as u128)) / (balance::value(&pool.reserve_a) as u128);
         let share_b = ((amount_b as u128) * (pool.total_liquidity as u128)) / (balance::value(&pool.reserve_b) as u128);
         let liquidity_added = if (share_a < share_b) { (share_a as u64) } else { (share_b as u64) };
+        
+        assert!(liquidity_added >= min_liquidity, EInsufficientOutput);
 
         let amount_a_optimal = (((liquidity_added as u128) * (balance::value(&pool.reserve_a) as u128) / (pool.total_liquidity as u128)) as u64);
         let amount_b_optimal = (((liquidity_added as u128) * (balance::value(&pool.reserve_b) as u128) / (pool.total_liquidity as u128)) as u64);

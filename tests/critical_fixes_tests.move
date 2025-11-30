@@ -9,6 +9,8 @@ module sui_amm::critical_fixes_tests {
     use sui_amm::stable_pool::{Self as stable_pool, StableSwapPool};
     use sui_amm::position::{Self as position, LPPosition};
     use sui_amm::admin::{Self as admin, AdminCap};
+    use sui_amm::governance::{Self, GovernanceConfig};
+    use sui::object;
     use std::option;
 
     struct USDT has drop {}
@@ -117,7 +119,7 @@ module sui_amm::critical_fixes_tests {
             let ctx = ts::ctx(scenario);
             
             // Claim remaining fees
-            let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
+            let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees(pool, position, &clock, 0, ctx);
             
             let fee_val_a = coin::value(&fee_a);
             
@@ -169,7 +171,7 @@ module sui_amm::critical_fixes_tests {
     // ========== TEST [S2]: PROTOCOL FEE CAP ========== //
 
     #[test]
-    #[expected_failure(abort_code = pool::ETooHighFee)]
+    #[expected_failure(abort_code = governance::EInvalidFee)]
     fun test_protocol_fee_cap() {
         let scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -179,17 +181,22 @@ module sui_amm::critical_fixes_tests {
             let pool = pool::create_pool_for_testing<USDT, USDC>(30, 0, 0, ts::ctx(scenario));
             pool::share(pool);
             admin::test_init(ts::ctx(scenario));
+            governance::test_init(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(scenario);
             let pool_val = ts::take_shared<LiquidityPool<USDT, USDC>>(scenario);
-            let pool = &mut pool_val;
+            let pool = &pool_val; // Use immutable reference since we only need the ID
+            let config = ts::take_shared<GovernanceConfig>(scenario);
+            let clock = clock::create_for_testing(ts::ctx(scenario));
             
             // Try 20% (2000 bps) -> Should fail (Cap is 10% = 1000)
-            admin::set_pool_protocol_fee(&admin_cap, pool, 2000);
+            governance::propose_fee_change(&admin_cap, &mut config, object::id(pool), 2000, &clock, ts::ctx(scenario));
             
+            clock::destroy_for_testing(clock);
+            ts::return_shared(config);
             ts::return_to_sender(scenario, admin_cap);
             ts::return_shared(pool_val);
         };

@@ -9,6 +9,8 @@ module sui_amm::feature_tests {
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
     use sui_amm::admin::{Self, AdminCap};
+    use sui_amm::governance::{Self, GovernanceConfig};
+    use sui::object;
 
     struct USDT has drop {}
     struct USDC has drop {}
@@ -130,7 +132,6 @@ module sui_amm::feature_tests {
             ts::return_shared(pool_val);
         };
 
-        // Stop ramp at 30s
         ts::next_tx(scenario, ADMIN);
         {
             let pool_val = ts::take_shared<StableSwapPool<USDT, USDC>>(scenario);
@@ -170,6 +171,7 @@ module sui_amm::feature_tests {
             let pool = pool::create_pool_for_testing<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
             pool::share(pool);
             admin::test_init(ts::ctx(scenario));
+            governance::test_init(ts::ctx(scenario));
         };
 
         // Update fee
@@ -178,15 +180,33 @@ module sui_amm::feature_tests {
             let pool_val = ts::take_shared<LiquidityPool<USDT, USDC>>(scenario);
             let pool = &mut pool_val;
             let cap = ts::take_from_sender<AdminCap>(scenario);
+            let config = ts::take_shared<GovernanceConfig>(scenario);
+            let clock = clock::create_for_testing(ts::ctx(scenario));
             
-            admin::set_pool_protocol_fee<USDT, USDC>(
+            let proposal_id = governance::propose_fee_change(
                 &cap,
+                &mut config,
+                object::id(pool),
+                200, // 2%
+                &clock,
+                ts::ctx(scenario)
+            );
+            
+            // Advance clock past timelock (48h + 1ms)
+            clock::increment_for_testing(&mut clock, 172_800_001);
+            
+            governance::execute_fee_change_regular(
+                &mut config,
+                proposal_id,
                 pool,
-                200 // 2%
+                &clock,
+                ts::ctx(scenario)
             );
             
             assert!(pool::get_protocol_fee_percent(pool) == 200, 0);
             
+            clock::destroy_for_testing(clock);
+            ts::return_shared(config);
             ts::return_to_sender(scenario, cap);
             ts::return_shared(pool_val);
         };
@@ -204,6 +224,7 @@ module sui_amm::feature_tests {
             let pool = stable_pool::create_pool_for_testing<USDT, USDC>(5, 0, 100, ts::ctx(scenario));
             stable_pool::share(pool);
             admin::test_init(ts::ctx(scenario));
+            governance::test_init(ts::ctx(scenario));
         };
 
         // Update fee
@@ -212,15 +233,33 @@ module sui_amm::feature_tests {
             let pool_val = ts::take_shared<StableSwapPool<USDT, USDC>>(scenario);
             let pool = &mut pool_val;
             let cap = ts::take_from_sender<AdminCap>(scenario);
+            let config = ts::take_shared<GovernanceConfig>(scenario);
+            let clock = clock::create_for_testing(ts::ctx(scenario));
             
-            admin::set_stable_pool_protocol_fee<USDT, USDC>(
+            let proposal_id = governance::propose_fee_change(
                 &cap,
+                &mut config,
+                object::id(pool),
+                200, // 2%
+                &clock,
+                ts::ctx(scenario)
+            );
+            
+            // Advance clock past timelock
+            clock::increment_for_testing(&mut clock, 172_800_001);
+            
+            governance::execute_fee_change_stable(
+                &mut config,
+                proposal_id,
                 pool,
-                200 // 2%
+                &clock,
+                ts::ctx(scenario)
             );
             
             assert!(stable_pool::get_protocol_fee_percent(pool) == 200, 0);
             
+            clock::destroy_for_testing(clock);
+            ts::return_shared(config);
             ts::return_to_sender(scenario, cap);
             ts::return_shared(pool_val);
         };
@@ -229,7 +268,7 @@ module sui_amm::feature_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = pool::ETooHighFee)] // ETooHighFee
+    #[expected_failure(abort_code = governance::EInvalidFee)] // EInvalidFee
     fun test_reject_excessive_protocol_fee() {
         let scenario_val = ts::begin(ADMIN);
         let scenario = &mut scenario_val;
@@ -239,21 +278,28 @@ module sui_amm::feature_tests {
             let pool = pool::create_pool_for_testing<USDT, USDC>(30, 10, 5, ts::ctx(scenario));
             pool::share(pool);
             admin::test_init(ts::ctx(scenario));
+            governance::test_init(ts::ctx(scenario));
         };
 
         ts::next_tx(scenario, ADMIN);
         {
             let pool_val = ts::take_shared<LiquidityPool<USDT, USDC>>(scenario);
-            let pool = &mut pool_val;
             let cap = ts::take_from_sender<AdminCap>(scenario);
+            let config = ts::take_shared<GovernanceConfig>(scenario);
+            let clock = clock::create_for_testing(ts::ctx(scenario));
             
             // Try 25% (max is 10%)
-            admin::set_pool_protocol_fee<USDT, USDC>(
+            governance::propose_fee_change(
                 &cap,
-                pool,
-                2500
+                &mut config,
+                object::id(&pool_val),
+                2500,
+                &clock,
+                ts::ctx(scenario)
             );
             
+            clock::destroy_for_testing(clock);
+            ts::return_shared(config);
             ts::return_to_sender(scenario, cap);
             ts::return_shared(pool_val);
         };

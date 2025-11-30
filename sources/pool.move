@@ -26,6 +26,7 @@ module sui_amm::pool {
     const EArithmeticError: u64 = 6; // NEW: For underflow protection
     const EUnauthorized: u64 = 7; // NEW: Access control
     const EInvalidLiquidityRatio: u64 = 8; // FIX [L2]: For ratio tolerance violations
+    const EInsufficientOutput: u64 = 9; // NEW: For slippage protection
 
     // Constants
     const MINIMUM_LIQUIDITY: u64 = 1000;
@@ -421,8 +422,11 @@ module sui_amm::pool {
     public(friend) fun withdraw_fees<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         position: &mut LPPosition,
+        clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
 
         let liquidity = position::liquidity(position);
@@ -642,6 +646,7 @@ module sui_amm::pool {
         position: &mut LPPosition,
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
+        min_liquidity: u64,
         clock: &Clock,
         deadline: u64,
         ctx: &mut TxContext
@@ -657,6 +662,8 @@ module sui_amm::pool {
         let share_a = ((amount_a as u128) * (pool.total_liquidity as u128)) / (balance::value(&pool.reserve_a) as u128);
         let share_b = ((amount_b as u128) * (pool.total_liquidity as u128)) / (balance::value(&pool.reserve_b) as u128);
         let liquidity_added = if (share_a < share_b) { (share_a as u64) } else { (share_b as u64) };
+        
+        assert!(liquidity_added >= min_liquidity, EInsufficientOutput);
 
         let amount_a_optimal = (((liquidity_added as u128) * (balance::value(&pool.reserve_a) as u128) / (pool.total_liquidity as u128)) as u64);
         let amount_b_optimal = (((liquidity_added as u128) * (balance::value(&pool.reserve_b) as u128) / (pool.total_liquidity as u128)) as u64);
