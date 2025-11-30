@@ -140,7 +140,7 @@ module sui_amm::pool {
             creator_fee_percent,
             acc_fee_per_share_a: 0,
             acc_fee_per_share_b: 0,
-            ratio_tolerance_bps: 500, // 5% default
+            ratio_tolerance_bps: 50, // FIX [M2]: 0.5% tolerance (reduced from 5%)
             max_price_impact_bps: MAX_PRICE_IMPACT_BPS,
         };
         
@@ -928,6 +928,49 @@ module sui_amm::pool {
         let amount_out = ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64);
         
         cp_price_impact_bps(reserve_b, reserve_a, amount_in_after_fee, amount_out)
+    }
+
+    /// FIX [V2]: Calculate expected slippage for a trade
+    /// Slippage = (Expected Output - Actual Output) / Expected Output
+    public fun calculate_swap_slippage_bps<CoinA, CoinB>(
+        pool: &LiquidityPool<CoinA, CoinB>,
+        amount_in: u64,
+        is_a_to_b: bool
+    ): u64 {
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        if (reserve_a == 0 || reserve_b == 0 || amount_in == 0) return 0;
+
+        let fee_amount = (amount_in * pool.fee_percent) / 10000;
+        let amount_in_after_fee = amount_in - fee_amount;
+
+        // 1. Calculate Actual Output
+        let actual_out = if (is_a_to_b) {
+             ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64)
+        } else {
+             ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64)
+        };
+
+        // 2. Calculate Expected Output (Spot Price)
+        // For CP, Spot Price = Reserve_Out / Reserve_In
+        let expected_out = if (is_a_to_b) {
+            (amount_in_after_fee as u128) * (reserve_b as u128) / (reserve_a as u128)
+        } else {
+            (amount_in_after_fee as u128) * (reserve_a as u128) / (reserve_b as u128)
+        };
+        
+        if (expected_out > MAX_SAFE_VALUE) {
+             return 10000 // 100% slippage if overflow
+        };
+
+        let expected_out_u64 = (expected_out as u64);
+
+        if (expected_out_u64 <= actual_out) {
+            return 0
+        };
+
+        let diff = expected_out_u64 - actual_out;
+        ((diff as u128) * 10000 / (expected_out_u64 as u128) as u64)
     }
 
     public fun get_quote_a_to_b<CoinA, CoinB>(

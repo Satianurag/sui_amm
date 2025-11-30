@@ -1111,6 +1111,21 @@ module sui_amm::stable_pool {
         stable_price_impact_bps(reserve_b, reserve_a, d, current_amp, amount_in_after_fee, amount_out)
     }
 
+    /// FIX [V2]: Calculate expected slippage for a trade
+    /// For StableSwap, this is equivalent to price impact
+    public fun calculate_swap_slippage_bps<CoinA, CoinB>(
+        pool: &StableSwapPool<CoinA, CoinB>,
+        amount_in: u64,
+        is_a_to_b: bool,
+        clock: &Clock
+    ): u64 {
+        if (is_a_to_b) {
+            calculate_swap_price_impact_a2b(pool, amount_in, clock)
+        } else {
+            calculate_swap_price_impact_b2a(pool, amount_in, clock)
+        }
+    }
+
     /// Stop ongoing amp ramp and fix amp at current interpolated value
     public(friend) fun stop_ramp_amp<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,

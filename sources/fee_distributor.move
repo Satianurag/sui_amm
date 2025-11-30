@@ -19,6 +19,7 @@ module sui_amm::fee_distributor {
     const ENoPositions: u64 = 0;
     const EInvalidDeadline: u64 = 1;
     const EBatchTooLarge: u64 = 2; // NEW: DoS protection
+    const EReentrancy: u64 = 3; // FIX [S1]: Reentrancy protection
 
     // Constants
     const MAX_BATCH_SIZE: u64 = 50; // FIX L5: Reduced from 100 to 50 to prevent gas limit issues
@@ -266,14 +267,14 @@ module sui_amm::fee_distributor {
             // Final Reentrancy Check
             // Final Reentrancy Check
             let k_after = pool::get_k(pool);
-            assert!(k_after >= k_before, 999); // EReentrancy
+            assert!(k_after >= k_before, EReentrancy);
             
             (leftover_a, leftover_b)
         } else {
             // Final Reentrancy Check
             // Final Reentrancy Check
             let k_after = pool::get_k(pool);
-            assert!(k_after >= k_before, 999); // EReentrancy
+            assert!(k_after >= k_before, EReentrancy);
             
             (coin_a, coin_b)
         }

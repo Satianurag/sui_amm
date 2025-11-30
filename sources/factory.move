@@ -77,6 +77,8 @@ module sui_amm::factory {
         fee_percent: u64,
         is_stable: bool,
         creation_fee_paid: u64,  // NEW: Transparency for fee tracking
+        initial_liquidity_a: u64, // FIX [M1]: For indexer efficiency
+        initial_liquidity_b: u64, // FIX [M1]: For indexer efficiency
     }
 
     struct PoolRegistry has key {
@@ -245,6 +247,8 @@ module sui_amm::factory {
             fee_percent,
             is_stable: false,
             creation_fee_paid: creation_fee_amount,
+            initial_liquidity_a: coin::value(&coin_a),
+            initial_liquidity_b: coin::value(&coin_b),
         });
 
 
@@ -349,6 +353,8 @@ module sui_amm::factory {
             fee_percent,
             is_stable: true,
             creation_fee_paid: creation_fee_amount,
+            initial_liquidity_a: coin::value(&coin_a),
+            initial_liquidity_b: coin::value(&coin_b),
         });
 
         // Add initial liquidity

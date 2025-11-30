@@ -261,8 +261,8 @@ module sui_amm::position {
         let values = vector[
             string::utf8(b"{name}"),
             string::utf8(b"{description}"),
-            // Off-chain renderer: construct image URL by position id
-            string::utf8(b"https://sui-amm.com/positions/{id}/image"),
+            // Off-chain renderer: construct image URL by position id with cache busting
+            string::utf8(b"https://sui-amm.com/positions/{id}/image?v={cached_value_a}_{cached_value_b}"),
             string::utf8(b"https://sui-amm.com"),
             string::utf8(b"{liquidity} shares"),
             string::utf8(b"{cached_value_a} / {cached_value_b}"),

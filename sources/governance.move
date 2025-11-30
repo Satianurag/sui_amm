@@ -169,6 +169,30 @@ module sui_amm::governance {
         });
     }
 
+    /// FIX [M2]: Governance for risk parameters (ratio tolerance, max price impact)
+    /// Admin can update risk parameters immediately (no timelock for safety)
+    public(friend) fun update_risk_params<CoinA, CoinB>(
+        registry: &GovernanceRegistry,
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        ratio_tolerance_bps: u64,
+        max_price_impact_bps: u64,
+        ctx: &TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == registry.admin, EUnauthorized);
+        pool::set_risk_params(pool, ratio_tolerance_bps, max_price_impact_bps);
+    }
+
+    /// FIX [M2]: Governance for stable pool risk parameters
+    public(friend) fun update_stable_risk_params<CoinA, CoinB>(
+        registry: &GovernanceRegistry,
+        pool: &mut StableSwapPool<CoinA, CoinB>,
+        max_price_impact_bps: u64,
+        ctx: &TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == registry.admin, EUnauthorized);
+        stable_pool::set_max_price_impact_bps(pool, max_price_impact_bps);
+    }
+
     // View functions
     public fun get_proposal(registry: &GovernanceRegistry, proposal_id: ID): FeeChangeProposal {
         assert!(table::contains(&registry.proposals, proposal_id), EProposalNotFound);
