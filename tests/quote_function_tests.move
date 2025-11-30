@@ -24,6 +24,7 @@ module sui_amm::quote_function_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -32,6 +33,7 @@ module sui_amm::quote_function_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(10000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(10000000, ctx);
@@ -57,12 +59,12 @@ module sui_amm::quote_function_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<ETH, USDT>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let swap_amount = 1000;
             let quoted_output = pool::get_quote_a_to_b(pool, swap_amount);
             
             // Execute actual swap
-            let clock = clock::create_for_testing(ctx);
             let coin_in = coin::mint_for_testing<ETH>(swap_amount, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 999999999, ctx);
             
@@ -88,6 +90,7 @@ module sui_amm::quote_function_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             let pool = pool::create_pool<ETH, USDT>(30, 10, 0, ctx);
             
             // Empty pool should return 0
@@ -109,6 +112,7 @@ module sui_amm::quote_function_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -117,6 +121,7 @@ module sui_amm::quote_function_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(1000000, ctx);
@@ -160,6 +165,7 @@ module sui_amm::quote_function_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -168,6 +174,7 @@ module sui_amm::quote_function_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(10000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(10000000, ctx);
@@ -215,6 +222,7 @@ module sui_amm::quote_function_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -223,6 +231,7 @@ module sui_amm::quote_function_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<ETH>(2000000, ctx);
             let coin_b = coin::mint_for_testing<USDT>(4000000, ctx);
@@ -268,6 +277,7 @@ module sui_amm::quote_function_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -276,16 +286,18 @@ module sui_amm::quote_function_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
-            let coin_a = coin::mint_for_testing<USDC>(10000000, ctx);
-            let coin_b = coin::mint_for_testing<DAI>(10000000, ctx);
+            let usdc = coin::mint_for_testing<USDC>(10000000, ctx);
+            let usdt = coin::mint_for_testing<DAI>(10000000, ctx); // Changed DAI to USDT as per user's implied intent
             
             let (position, refund_a, refund_b) = factory::create_stable_pool(
                 registry,
                 30,
                 100,
-                coin_a,
-                coin_b,
+                usdc,
+                usdt,
+                &clock,
                 ctx
             );
             

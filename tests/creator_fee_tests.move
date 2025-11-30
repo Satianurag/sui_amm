@@ -22,6 +22,7 @@ module sui_amm::creator_fee_tests {
         test_scenario::next_tx(scenario, creator);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -31,6 +32,7 @@ module sui_amm::creator_fee_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let coin_a = coin::mint_for_testing<TokenX>(10000000, ctx);
             let coin_b = coin::mint_for_testing<TokenY>(10000000, ctx);
@@ -41,6 +43,7 @@ module sui_amm::creator_fee_tests {
                 0, // creator_fee_percent
                 coin_a,
                 coin_b,
+                &clock,
                 ctx
             );
             
@@ -56,8 +59,8 @@ module sui_amm::creator_fee_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<TokenX, TokenY>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
-            
             let clock = clock::create_for_testing(ctx);
+            
             let coin_in = coin::mint_for_testing<TokenX>(100000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 999999999, ctx);
             
@@ -72,6 +75,7 @@ module sui_amm::creator_fee_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<TokenX, TokenY>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let (fee_a, fee_b) = pool::withdraw_creator_fees(pool, ctx);
             
@@ -98,6 +102,7 @@ module sui_amm::creator_fee_tests {
         test_scenario::next_tx(scenario, creator);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -106,6 +111,7 @@ module sui_amm::creator_fee_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<TokenX>(1000000, ctx);
             let coin_b = coin::mint_for_testing<TokenY>(1000000, ctx);
@@ -131,6 +137,7 @@ module sui_amm::creator_fee_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<TokenX, TokenY>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let (fee_a, fee_b) = pool::withdraw_creator_fees(pool, ctx);
             
@@ -151,6 +158,7 @@ module sui_amm::creator_fee_tests {
         test_scenario::next_tx(scenario, creator);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -159,6 +167,7 @@ module sui_amm::creator_fee_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<TokenX>(1000000, ctx);
             let coin_b = coin::mint_for_testing<TokenY>(1000000, ctx);

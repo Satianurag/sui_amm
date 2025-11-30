@@ -26,6 +26,7 @@ module sui_amm::multi_lp_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
@@ -36,11 +37,12 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
 
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp1);
@@ -54,11 +56,12 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
 
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp2);
@@ -90,6 +93,7 @@ module sui_amm::multi_lp_tests {
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let (fee_a_lp1, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
             let fee_amount_lp1 = coin::value(&fee_a_lp1);
@@ -111,6 +115,7 @@ module sui_amm::multi_lp_tests {
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let (fee_a_lp2, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
             let fee_amount_lp2 = coin::value(&fee_a_lp2);
@@ -141,6 +146,7 @@ module sui_amm::multi_lp_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
@@ -151,11 +157,12 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(900000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(900000, ctx);
 
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, big_lp);
@@ -169,11 +176,12 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
 
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, small_lp);
@@ -205,6 +213,7 @@ module sui_amm::multi_lp_tests {
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
             // Big LP gets ~90% of fees (verified in small_lp test)
@@ -223,6 +232,7 @@ module sui_amm::multi_lp_tests {
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             
             let (fee_a, fee_b) = sui_amm::fee_distributor::claim_fees_simple(pool, position, ctx);
             let small_lp_fee = coin::value(&fee_a);
@@ -254,6 +264,7 @@ module sui_amm::multi_lp_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool);
         };
@@ -264,10 +275,11 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(200000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(200000, ctx);
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
@@ -280,10 +292,11 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp1);
@@ -296,10 +309,11 @@ module sui_amm::multi_lp_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(100000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(100000, ctx);
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, lp2);
@@ -314,8 +328,9 @@ module sui_amm::multi_lp_tests {
             let pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
-            let (coin_a, coin_b) = pool::remove_liquidity(pool, position_val, 0, 0, ctx);
+            let (coin_a, coin_b) = pool::remove_liquidity(pool, position_val, 0, 0, &clock, 18446744073709551615, ctx);
             
             // LP1 should get back their share
             assert!(coin::value(&coin_a) == 100000, 0);

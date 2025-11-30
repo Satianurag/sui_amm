@@ -209,26 +209,33 @@ module sui_amm::fee_distributor {
         
         let (coin_a, coin_b) = claim_fees(registry, pool, position, clock, ctx);
         
-        // Swap half of single-sided fees to the other token
-        // SECURITY FIX: Use min_out parameters instead of hardcoded 0
+        // FIX V4: Auto-compound slippage protection - use min_out parameters properly
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) == 0) {
             let amount_to_swap = coin::value(&coin_a) / 2;
             if (amount_to_swap > 0) {
-                let coin_in = coin::split(&mut coin_a, amount_to_swap, ctx);
-                let coin_out = pool::swap_a_to_b(pool, coin_in, min_out_b, option::none(), clock, deadline_ms, ctx);
+                let coin_a_split = coin::split(&mut coin_a, amount_to_swap, ctx);
+                let coin_out = pool::swap_a_to_b(pool, coin_a_split, min_out_b, option::none(), clock, deadline_ms, ctx);
                 coin::join(&mut coin_b, coin_out);
             }
         } else if (coin::value(&coin_b) > 0 && coin::value(&coin_a) == 0) {
             let amount_to_swap = coin::value(&coin_b) / 2;
             if (amount_to_swap > 0) {
-                let coin_in = coin::split(&mut coin_b, amount_to_swap, ctx);
-                let coin_out = pool::swap_b_to_a(pool, coin_in, min_out_a, option::none(), clock, deadline_ms, ctx);
+                let coin_b_split = coin::split(&mut coin_b, amount_to_swap, ctx);
+                let coin_out = pool::swap_b_to_a(pool, coin_b_split, min_out_a, option::none(), clock, deadline_ms, ctx);
                 coin::join(&mut coin_a, coin_out);
             }
         };
 
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) > 0) {
-            let (leftover_a, leftover_b) = pool::increase_liquidity(pool, position, coin_a, coin_b, ctx);
+            let (leftover_a, leftover_b) = pool::increase_liquidity(
+                pool, 
+                position, 
+                coin_a, 
+                coin_b,
+                clock,
+                deadline_ms,
+                ctx
+            );
             (leftover_a, leftover_b)
         } else {
             (coin_a, coin_b)
@@ -269,7 +276,15 @@ module sui_amm::fee_distributor {
         };
 
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) > 0) {
-            let (leftover_a, leftover_b) = stable_pool::increase_liquidity(pool, position, coin_a, coin_b, ctx);
+            let (leftover_a, leftover_b) = stable_pool::increase_liquidity(
+                pool,
+                position,
+                coin_a,
+                coin_b,
+                clock,
+                deadline_ms,
+                ctx
+            );
             (leftover_a, leftover_b)
         } else {
             (coin_a, coin_b)
@@ -424,7 +439,15 @@ module sui_amm::fee_distributor {
         };
 
         if (coin::value(&coin_a) > 0 && coin::value(&coin_b) > 0) {
-            let (leftover_a, leftover_b) = pool::increase_liquidity(pool, position, coin_a, coin_b, ctx);
+            let (leftover_a, leftover_b) = pool::increase_liquidity(
+                pool,
+                position,
+                coin_a,
+                coin_b,
+                clock,
+                18446744073709551615,
+                ctx
+            );
             (leftover_a, leftover_b)
         } else {
             (coin_a, coin_b)

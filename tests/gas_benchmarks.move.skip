@@ -72,7 +72,7 @@ module sui_amm::gas_benchmarks {
                 500,
                 coin_a,
                 coin_b,
-                ts::ctx(&mut scenario)
+                &clock_val, ts::ctx(&mut scenario)
             );
             
             coin::burn_for_testing(refund_a);
@@ -421,18 +421,20 @@ module sui_amm::gas_benchmarks {
         // Setup stable pool
         factory::test_init(ts::ctx(&mut scenario));
         
-        ts::next_tx(&mut scenario, ADMIN);
+        ts::next_tx(&mut scenario, ALICE);
         {
+            let clock_val = clock::create_for_testing(ts::ctx(&mut scenario));
             let registry = ts::take_shared<PoolRegistry>(&scenario);
-            let coin_a = coin::mint_for_testing<USDC>(200000, ts::ctx(&mut scenario));
-            let coin_b = coin::mint_for_testing<USDT>(200000, ts::ctx(&mut scenario));
+            let usdc = coin::mint_for_testing<USDC>(10_000_000, ts::ctx(&mut scenario));
+            let usdt = coin::mint_for_testing<USDT>(10_000_000, ts::ctx(&mut scenario));
+            
             let (pos, ref_a, ref_b) = factory::create_stable_pool<USDC, USDT>(
                 &mut registry,
                 factory::fee_tier_low(), // 0.05% for stables
                 500,
-                coin_a,
-                coin_b,
-                ts::ctx(&mut scenario)
+                usdc,
+                usdt,
+                &clock_val, ts::ctx(&mut scenario)
             );
             coin::burn_for_testing(ref_a);
             coin::burn_for_testing(ref_b);
@@ -445,7 +447,7 @@ module sui_amm::gas_benchmarks {
             let pool = ts::take_shared<StableSwapPool<USDC, USDT>>(&scenario);
             let usdc = coin::mint_for_testing<USDC>(1000000, ts::ctx(&mut scenario));
             let usdt = coin::mint_for_testing<USDT>(1000000, ts::ctx(&mut scenario));
-            let (pos, r_a, r_b) = stable_pool::add_liquidity(&mut pool, usdc, usdt, 0, ts::ctx(&mut scenario));
+            let (pos, r_a, r_b) = stable_pool::add_liquidity(&mut pool, usdc, usdt, 0, &clock_val, 18446744073709551615, ts::ctx(&mut scenario));
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);

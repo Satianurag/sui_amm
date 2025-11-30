@@ -81,6 +81,7 @@ module sui_amm::factory {
         creator_fee_percent: u64,
         coin_a: sui::coin::Coin<CoinA>,
         coin_b: sui::coin::Coin<CoinB>,
+        clock: &sui::clock::Clock,
         ctx: &mut TxContext
     ): (position::LPPosition, sui::coin::Coin<CoinA>, sui::coin::Coin<CoinB>) {
         assert!(is_valid_fee_tier(fee_percent), EInvalidFeeTier);
@@ -128,11 +129,14 @@ module sui_amm::factory {
         });
 
         // Add initial liquidity
+        let deadline_ms = 18446744073709551615; // Max u64 value
         let (position, refund_a, refund_b) = pool::add_liquidity(
             &mut pool, 
             coin_a, 
             coin_b, 
             1, // Min liquidity 1 to prevent zero liquidity positions
+            clock,
+            deadline_ms,
             ctx
         );
 
@@ -150,6 +154,7 @@ module sui_amm::factory {
         amp: u64,
         coin_a: sui::coin::Coin<CoinA>,
         coin_b: sui::coin::Coin<CoinB>,
+        clock: &sui::clock::Clock,
         ctx: &mut TxContext
     ): (position::LPPosition, sui::coin::Coin<CoinA>, sui::coin::Coin<CoinB>) {
         assert!(is_valid_fee_tier(fee_percent), EInvalidFeeTier);
@@ -195,11 +200,14 @@ module sui_amm::factory {
         });
 
         // Add initial liquidity
+        let deadline_ms = 18446744073709551615; // Max u64
         let (position, refund_a, refund_b) = stable_pool::add_liquidity(
             &mut pool, 
             coin_a, 
             coin_b, 
-            1, 
+            1,
+            clock,
+            deadline_ms,
             ctx
         );
 

@@ -13,6 +13,7 @@ module sui_amm::stable_pool {
     
     friend sui_amm::fee_distributor;
     friend sui_amm::admin;
+    friend sui_amm::governance;
 
     // Error codes
     const EZeroAmount: u64 = 0;
@@ -21,12 +22,15 @@ module sui_amm::stable_pool {
     const EExcessivePriceImpact: u64 = 3;
     const EInvalidAmp: u64 = 4;
     const ETooHighFee: u64 = 5;  // NEW: For protocol fee validation
+    const EOverflow: u64 = 6;  // NEW: For overflow protection
     
     // Constants
     const ACC_PRECISION: u128 = 1_000_000_000_000;
     const MAX_PRICE_IMPACT_BPS: u64 = 1000; // 10%
     const MIN_AMP: u64 = 1;
     const MAX_AMP: u64 = 10000;
+    const MIN_RAMP_DURATION: u64 = 86_400_000; // 24 hours in milliseconds
+    const MAX_SAFE_VALUE: u128 = 34028236692093846346337460743176821145; // u128::MAX / 10000 - for price impact overflow check
 
     struct StableSwapPool<phantom CoinA, phantom CoinB> has key {
         id: UID,
@@ -145,8 +149,13 @@ module sui_amm::stable_pool {
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
         min_liquidity: u64,
+        clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (LPPosition, Coin<CoinA>, Coin<CoinB>) {
+        // FIX V2: Deadline enforcement
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
         let amount_a = coin::value(&coin_a);
         let amount_b = coin::value(&coin_b);
         assert!(amount_a > 0 || amount_b > 0, EZeroAmount); // Allow single-sided
@@ -230,8 +239,13 @@ module sui_amm::stable_pool {
         position: LPPosition,
         min_amount_a: u64,
         min_amount_b: u64,
+        clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        // FIX V2: Deadline enforcement
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
         assert!(position::pool_id(&position) == object::id(pool), EWrongPool);
 
         let liquidity = position::liquidity(&position);
@@ -280,8 +294,13 @@ module sui_amm::stable_pool {
         liquidity_to_remove: u64,
         min_amount_a: u64,
         min_amount_b: u64,
+        clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        // FIX V2: Deadline enforcement
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
 
         let total_position_liquidity = position::liquidity(position);
@@ -330,8 +349,18 @@ module sui_amm::stable_pool {
         let debt_removed_a = (old_debt_a * (liquidity_to_remove as u128)) / (total_position_liquidity as u128);
         let debt_removed_b = (old_debt_b * (liquidity_to_remove as u128)) / (total_position_liquidity as u128);
         
-        let new_debt_a = old_debt_a - debt_removed_a;
-        let new_debt_b = old_debt_b - debt_removed_b;
+        // FIX L5: Underflow protection - clamp to zero if rounding causes issues
+        let new_debt_a = if (debt_removed_a > old_debt_a) { 
+            0  // Clamp to zero if rounding causes issues
+        } else { 
+            old_debt_a - debt_removed_a 
+        };
+        
+        let new_debt_b = if (debt_removed_b > old_debt_b) { 
+            0 
+        } else { 
+            old_debt_b - debt_removed_b 
+        };
         
         position::update_fee_debt(position, new_debt_a, new_debt_b);
 
@@ -623,8 +652,13 @@ module sui_amm::stable_pool {
         position: &mut LPPosition,
         coin_a: Coin<CoinA>,
         coin_b: Coin<CoinB>,
+        clock: &Clock,
+        deadline: u64,
         ctx: &mut TxContext
     ): (Coin<CoinA>, Coin<CoinB>) {
+        // FIX V2: Deadline enforcement
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
 
         let amount_a = coin::value(&coin_a);
@@ -823,6 +857,7 @@ module sui_amm::stable_pool {
     ///    current reserves using the same D and amp.
     /// 2. Ideal_out = amount_in_after_fee * out_for_1.
     /// 3. Impact = max(0, Ideal_out - Actual_out) / Ideal_out.
+    /// FIX L4: Added overflow protection
     fun stable_price_impact_bps(
         reserve_in: u64,
         reserve_out: u64,
@@ -853,6 +888,9 @@ module sui_amm::stable_pool {
             abort EExcessivePriceImpact
         };
 
+        // FIX L4: Check for overflow before multiplication
+        assert!(ideal_out <= MAX_SAFE_VALUE, EOverflow);
+
         let actual_out = (amount_out as u128);
         if (ideal_out <= actual_out) {
             0
@@ -871,17 +909,83 @@ module sui_amm::stable_pool {
         clock: &Clock
     ) {
         assert!(target_amp >= MIN_AMP && target_amp <= MAX_AMP, EInvalidAmp);
-        assert!(ramp_duration_ms > 0, EInvalidAmp);
+        
+        // FIX L3: Safety limits on amp changes
+        let current_amp = get_current_amp(pool, clock);
+        
+        // Max 2x increase or 0.5x decrease per ramp
+        if (target_amp > current_amp) {
+            assert!(target_amp <= current_amp * 2, EInvalidAmp);
+        } else {
+            assert!(target_amp >= current_amp / 2, EInvalidAmp);
+        };
+        
+        // Minimum ramp duration: 24 hours
+        assert!(ramp_duration_ms >= MIN_RAMP_DURATION, EInvalidAmp);
         
         let current_time = clock::timestamp_ms(clock);
         
         // Update current amp to interpolated value if already ramping
-        pool.amp = get_current_amp(pool, clock);
+        pool.amp = current_amp;
         
         // Set new ramp parameters
         pool.target_amp = target_amp;
         pool.amp_ramp_start_time = current_time;
         pool.amp_ramp_end_time = current_time + ramp_duration_ms;
+    }
+
+    /// FIX M4: Calculate price impact for a hypothetical A to B swap (view function)
+    /// Returns price impact in basis points without executing the swap
+    public fun calculate_swap_price_impact_a2b<CoinA, CoinB>(
+        pool: &StableSwapPool<CoinA, CoinB>,
+        amount_in: u64,
+        clock: &Clock,
+    ): u64 {
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        assert!(reserve_a > 0 && reserve_b > 0, EInsufficientLiquidity);
+        
+        let fee_amount = (amount_in * pool.fee_percent) / 10000;
+        let amount_in_after_fee = amount_in - fee_amount;
+        
+        let current_amp = get_current_amp(pool, clock);
+        let d = stable_math::get_d(reserve_a, reserve_b, current_amp);
+        let new_reserve_a = reserve_a + amount_in_after_fee;
+        let new_reserve_b = stable_math::get_y(new_reserve_a, d, current_amp);
+        
+        if (new_reserve_b >= reserve_b || new_reserve_b == 0) {
+            return 10000  // 100% impact - invalid trade
+        };
+        
+        let amount_out = reserve_b - new_reserve_b;
+        stable_price_impact_bps(reserve_a, reserve_b, d, current_amp, amount_in_after_fee, amount_out)
+    }
+
+    /// FIX M4: Calculate price impact for a hypothetical B to A swap (view function)
+    /// Returns price impact in basis points without executing the swap
+    public fun calculate_swap_price_impact_b2a<CoinA, CoinB>(
+        pool: &StableSwapPool<CoinA, CoinB>,
+        amount_in: u64,
+        clock: &Clock,
+    ): u64 {
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        assert!(reserve_a > 0 && reserve_b > 0, EInsufficientLiquidity);
+        
+        let fee_amount = (amount_in * pool.fee_percent) / 10000;
+        let amount_in_after_fee = amount_in - fee_amount;
+        
+        let current_amp = get_current_amp(pool, clock);
+        let d = stable_math::get_d(reserve_a, reserve_b, current_amp);
+        let new_reserve_b = reserve_b + amount_in_after_fee;
+        let new_reserve_a = stable_math::get_y(new_reserve_b, d, current_amp);
+        
+        if (new_reserve_a >= reserve_a || new_reserve_a == 0) {
+            return 10000  // 100% impact - invalid trade
+        };
+        
+        let amount_out = reserve_a - new_reserve_a;
+        stable_price_impact_bps(reserve_b, reserve_a, d, current_amp, amount_in_after_fee, amount_out)
     }
 
     /// Stop ongoing amp ramp and fix amp at current interpolated value

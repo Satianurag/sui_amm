@@ -35,12 +35,13 @@ module sui_amm::feature_tests {
         // Add liquidity
         ts::next_tx(scenario, ALICE);
         {
-            let pool_val = ts::take_shared<StableSwapPool<USDT, USDC>>(scenario);
-            let pool = &mut pool_val;
-            let coin_a = coin::mint_for_testing<USDT>(1000000, ts::ctx(scenario));
-            let coin_b = coin::mint_for_testing<USDC>(1000000, ts::ctx(scenario));
-            
-            let (position, r_a, r_b) = stable_pool::add_liquidity(pool, coin_a, coin_b, 0, ts::ctx(scenario));
+            let pool = ts::take_shared<StableSwapPool<USDC, USDT>>(&scenario);
+            let ctx = ts::ctx(scenario);
+
+            let coin_a = coin::mint_for_testing<USDC>(1_000_000, ctx);
+            let coin_b = coin::mint_for_testing<USDT>(1_000_000, ctx);
+
+            let (position, r_a, r_b) = stable_pool::add_liquidity(pool, coin_a, coin_b, 0, &clock, 18446744073709551615, ts::ctx(scenario));
             
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
@@ -281,7 +282,7 @@ module sui_amm::feature_tests {
             let coin_a = coin::mint_for_testing<USDT>(1000000, ts::ctx(scenario));
             let coin_b = coin::mint_for_testing<USDC>(1000000, ts::ctx(scenario));
             
-            let (position, r_a, r_b) = pool::add_liquidity(&mut pool, coin_a, coin_b, 0, ts::ctx(scenario));
+            let (position, r_a, r_b) = pool::add_liquidity(&mut pool, coin_a, coin_b, 0, &clock, 18446744073709551615, ts::ctx(scenario));
             
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
@@ -306,6 +307,8 @@ module sui_amm::feature_tests {
                 remove_amt,
                 0,
                 0,
+                &clock,
+                18446744073709551615,
                 ts::ctx(scenario)
             );
             

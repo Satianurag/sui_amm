@@ -24,6 +24,7 @@ module sui_amm::concurrent_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -33,6 +34,7 @@ module sui_amm::concurrent_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<WETH>(10000000, ctx);
             let coin_b = coin::mint_for_testing<WBTC>(10000000, ctx);
@@ -58,8 +60,8 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
-            
             let clock = clock::create_for_testing(ctx);
+            
             let coin_in = coin::mint_for_testing<WETH>(10000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 999999999, ctx);
             
@@ -76,8 +78,8 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
-            
             let clock = clock::create_for_testing(ctx);
+            
             let coin_in = coin::mint_for_testing<WBTC>(10000, ctx);
             let coin_out = pool::swap_b_to_a(pool, coin_in, 0, option::none(), &clock, 999999999, ctx);
             
@@ -101,6 +103,7 @@ module sui_amm::concurrent_tests {
         test_scenario::next_tx(scenario, lp1);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -110,6 +113,7 @@ module sui_amm::concurrent_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<WETH>(5000000, ctx);
             let coin_b = coin::mint_for_testing<WBTC>(5000000, ctx);
@@ -135,11 +139,12 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<WETH>(1000000, ctx);
             let coin_b = coin::mint_for_testing<WBTC>(1000000, ctx);
             
-            let (position, refund_a, refund_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, refund_a, refund_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             
             assert!(position::liquidity(&position) > 0, 0);
             
@@ -155,8 +160,8 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
-            
             let clock = clock::create_for_testing(ctx);
+            
             let coin_in = coin::mint_for_testing<WETH>(5000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 999999999, ctx);
             
@@ -180,6 +185,7 @@ module sui_amm::concurrent_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             factory::test_init(ctx);
         };
 
@@ -189,6 +195,7 @@ module sui_amm::concurrent_tests {
             let registry_val = test_scenario::take_shared<factory::PoolRegistry>(scenario);
             let registry = &mut registry_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<WETH>(10000000, ctx);
             let coin_b = coin::mint_for_testing<WBTC>(10000000, ctx);
@@ -214,11 +221,12 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<WETH>(500000, ctx);
             let coin_b = coin::mint_for_testing<WBTC>(500000, ctx);
             
-            let (position, refund_a, refund_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, refund_a, refund_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
@@ -232,8 +240,8 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
-            
             let clock = clock::create_for_testing(ctx);
+            
             let coin_in = coin::mint_for_testing<WETH>(10000, ctx);
             let coin_out = pool::swap_a_to_b(pool, coin_in, 0, option::none(), &clock, 999999999, ctx);
             
@@ -248,11 +256,12 @@ module sui_amm::concurrent_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<WETH, WBTC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<WETH>(500000, ctx);
             let coin_b = coin::mint_for_testing<WBTC>(500000, ctx);
             
-            let (position, refund_a, refund_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, refund_a, refund_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);

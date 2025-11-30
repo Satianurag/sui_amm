@@ -25,6 +25,7 @@ module sui_amm::edge_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool); 
         };
@@ -35,11 +36,12 @@ module sui_amm::edge_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
 
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
@@ -93,6 +95,7 @@ module sui_amm::edge_tests {
         test_scenario::next_tx(scenario, owner);
         {
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
             let pool = pool::create_pool<BTC, USDC>(30, 0, 0, ctx);
             pool::share(pool); 
         };
@@ -103,11 +106,12 @@ module sui_amm::edge_tests {
             let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
+            let clock = clock::create_for_testing(ctx);
 
             let coin_a = coin::mint_for_testing<BTC>(1000000, ctx);
             let coin_b = coin::mint_for_testing<USDC>(1000000, ctx);
 
-            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, ctx);
+            let (position, r_a, r_b) = pool::add_liquidity(pool, coin_a, coin_b, 100, &clock, 18446744073709551615, ctx);
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             transfer::public_transfer(position, owner);
