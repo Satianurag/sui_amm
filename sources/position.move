@@ -6,6 +6,10 @@ module sui_amm::position {
     use sui::package;
     use sui::display;
 
+    // Error codes
+    const EInsufficientLiquidity: u64 = 0;
+    const EPrecisionLoss: u64 = 1;
+
     /// The LP Position NFT with cached values for dynamic display
     /// WARNING: Cached values may be stale. Call refresh_position_metadata() for accurate data.
     public struct LPPosition has key, store {
@@ -305,7 +309,7 @@ module sui_amm::position {
         pos: &mut LPPosition,
         liquidity_amount: u64
     ) {
-        assert!(liquidity_amount <= pos.liquidity, 0); // Basic validation
+        assert!(liquidity_amount <= pos.liquidity, EInsufficientLiquidity);
         
         let original_liquidity = pos.liquidity;
         pos.liquidity = pos.liquidity - liquidity_amount;
@@ -338,8 +342,8 @@ module sui_amm::position {
             };
             
             // Allow 1 basis point tolerance for rounding
-            assert!(actual_ratio_a >= expected_ratio - 1 && actual_ratio_a <= expected_ratio + 1, 0);
-            assert!(actual_ratio_b >= expected_ratio - 1 && actual_ratio_b <= expected_ratio + 1, 0);
+            assert!(actual_ratio_a >= expected_ratio - 1 && actual_ratio_a <= expected_ratio + 1, EPrecisionLoss);
+            assert!(actual_ratio_b >= expected_ratio - 1 && actual_ratio_b <= expected_ratio + 1, EPrecisionLoss);
             
             pos.min_a = new_min_a;
             pos.min_b = new_min_b;

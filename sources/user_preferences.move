@@ -64,11 +64,10 @@ module sui_amm::user_preferences {
         }
     }
 
-    /// Create and transfer preferences to sender
-    #[allow(lint(public_entry))]
-    public entry fun create_and_transfer(ctx: &mut tx_context::TxContext) {
+    /// Create and transfer preferences to recipient
+    public fun create_and_transfer(recipient: address, ctx: &mut tx_context::TxContext) {
         let prefs = create_preferences(ctx);
-        transfer::transfer(prefs, tx_context::sender(ctx));
+        transfer::transfer(prefs, recipient);
     }
 
     /// Update slippage tolerance
@@ -114,7 +113,7 @@ module sui_amm::user_preferences {
         deadline_seconds: u64,
         auto_compound: bool,
         max_price_impact_bps: u64,
-        ctx: &TxContext
+        ctx: &mut TxContext
     ) {
         assert!(slippage_bps <= MAX_SLIPPAGE_BPS, EInvalidSlippage);
         assert!(deadline_seconds >= MIN_DEADLINE_SECONDS, EInvalidDeadline);

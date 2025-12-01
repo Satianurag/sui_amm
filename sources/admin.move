@@ -10,19 +10,13 @@ module sui_amm::admin {
     }
 
     /// Initialize the admin module and create admin capability
-    /// SECURITY FIX [P1-15.1]: AdminCap is now frozen to prevent unauthorized transfers
-    /// This prevents capability leaks and ensures only the initial admin can use it
-    /// 
-    /// IMPORTANT: Once frozen, the AdminCap cannot be transferred. If you need
-    /// multi-sig or transferable admin rights, modify this to transfer to a
-    /// multi-sig address instead of freezing.
+    /// The AdminCap is transferred to the deployer address for protocol management
     fun init(ctx: &mut tx_context::TxContext) {
         let admin_cap = AdminCap {
             id: object::new(ctx),
         };
-        // FIX [P1-15.1]: Freeze AdminCap to prevent unauthorized transfers
-        // This makes the capability immutable and bound to the deployer's address
-        transfer::freeze_object(admin_cap);
+        // Transfer AdminCap to the deployer
+        transfer::transfer(admin_cap, tx_context::sender(ctx));
     }
 
     /// Withdraw protocol fees from a regular liquidity pool

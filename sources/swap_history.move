@@ -82,11 +82,10 @@ module sui_amm::swap_history {
         }
     }
 
-    /// Create and transfer user history to sender
-    #[allow(lint(self_transfer))]
-    public fun create_and_transfer_history(ctx: &mut tx_context::TxContext) {
+    /// Create and transfer user history to recipient
+    public fun create_and_transfer_history(recipient: address, ctx: &mut tx_context::TxContext) {
         let history = create_user_history(ctx);
-        transfer::transfer(history, tx_context::sender(ctx));
+        transfer::transfer(history, recipient);
     }
 
     /// Initialize pool statistics (called when pool is created)
@@ -313,7 +312,7 @@ module sui_amm::swap_history {
     /// Clear user history (owner only)
     public fun clear_user_history(
         history: &mut UserSwapHistory,
-        ctx: &TxContext
+        ctx: &mut TxContext
     ) {
         assert!(history.owner == tx_context::sender(ctx), EUnauthorized);
         history.swaps = vector::empty();
