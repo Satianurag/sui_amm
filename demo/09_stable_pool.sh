@@ -2,16 +2,13 @@
 # ============================================
 # STEP 9: StableSwap Pool Demo
 # ============================================
-# PRD: StableSwapPool Contract (2.1.4)
-# - Optimized for stable asset pairs
-# - Amplification coefficient
-# - Lower slippage for similar-priced assets
+# PRD: StableSwap Pool (2.1.4)
 # ============================================
 
 set -e
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║          StableSwap Pool Demo (USDC-USDT Style)            ║"
+echo "║          StableSwap Pool Demo                              ║"
 echo "╚════════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -20,148 +17,84 @@ source .env 2>/dev/null || { echo "Run 01_deploy.sh first!"; exit 1; }
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-MAGENTA='\033[0;35m'
 NC='\033[0m'
 
-echo -e "${CYAN}PRD Requirement: StableSwapPool Contract (Section 2.1.4)${NC}"
-echo ""
-echo "Key Features:"
-echo "  • Lower slippage for similar-priced assets"
-echo "  • Amplification coefficient for curve adjustment"
-echo "  • Efficient stable-to-stable swaps"
-echo "  • Same NFT position system"
-echo ""
-echo "════════════════════════════════════════════════════════════"
+echo -e "${CYAN}PRD Requirement: StableSwap Pool (Section 2.1.4)${NC}"
 echo ""
 
-echo -e "${BLUE}[1/5]${NC} StableSwap vs Constant Product Comparison:"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │                    CURVE COMPARISON                     │"
-echo "  │                                                         │"
-echo "  │  Price                                                  │"
-echo "  │    │                                                    │"
-echo "  │    │     ╭──────╮  Constant Product (x*y=k)             │"
-echo "  │    │    ╱        ╲                                      │"
-echo "  │    │   ╱          ╲                                     │"
-echo "  │ 1.0├──┼────────────┼── StableSwap (flat in middle)     │"
-echo "  │    │   ╲__________╱                                     │"
-echo "  │    │                                                    │"
-echo "  │    └────────────────────────────────── Quantity         │"
-echo "  │                                                         │"
-echo "  │  StableSwap provides MUCH lower slippage near 1:1 ratio │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
+echo -e "${BLUE}[1/3]${NC} Creating Stable Pool (USDC-USDT)..."
 
-echo -e "${BLUE}[2/5]${NC} Amplification Coefficient (A):"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ The 'A' parameter controls curve flatness:              │"
-echo "  │                                                         │"
-echo "  │   A = 1     → Behaves like constant product (x*y=k)     │"
-echo "  │   A = 10    → Slightly flatter curve                    │"
-echo "  │   A = 100   → Very flat (ideal for stablecoins)         │"
-echo "  │   A = 1000  → Maximum flatness (use with caution)       │"
-echo "  │                                                         │"
-echo "  │ Typical Values:                                         │"
-echo "  │   USDC/USDT:    A = 100-200                             │"
-echo "  │   DAI/USDC:     A = 50-100                              │"
-echo "  │   wBTC/renBTC:  A = 10-50                               │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
+# Get coins
+GAS_COINS=$(sui client gas --json)
+CREATION_FEE_COIN=$(echo "$GAS_COINS" | jq -r '.[] | select(.mistBalance >= 5000000000) | .gasCoinId' | head -n 1)
+USDC_COIN=$(sui client objects --json | jq -r ".[] | select(.data.type | contains(\"$COIN_PACKAGE_ID::usdc::USDC\")) | .data.objectId" | head -n 1)
+USDT_COIN=$(sui client objects --json | jq -r ".[] | select(.data.type | contains(\"$COIN_PACKAGE_ID::usdt::USDT\")) | .data.objectId" | head -n 1)
 
-echo -e "${BLUE}[3/5]${NC} Create Stable Pool:"
-echo ""
-echo -e "${YELLOW}Command:${NC}"
-cat << 'EOF'
-sui client call \
+if [ -z "$USDC_COIN" ] || [ -z "$USDT_COIN" ]; then
+    echo "Error: Missing coins."
+    exit 1
+fi
+
+# Split coins for liquidity
+SPLIT_USDC=$(sui client split-coin --coin-id $USDC_COIN --amounts 1000000000 --gas-budget 50000000 --json | jq -r '.objectChanges[] | select(.type == "created") | .objectId' | head -n 1)
+SPLIT_USDT=$(sui client split-coin --coin-id $USDT_COIN --amounts 1000000000 --gas-budget 50000000 --json | jq -r '.objectChanges[] | select(.type == "created") | .objectId' | head -n 1)
+
+CLOCK="0x6"
+
+# create_stable_pool<A, B>(registry, stats, fee, creator_fee, amp, coin_a, coin_b, fee_coin, clock)
+# amp = 100 (amplification coefficient)
+
+CREATE_STABLE_OUTPUT=$(sui client call \
   --package $PACKAGE_ID \
   --module factory \
   --function create_stable_pool \
-  --type-args "USDC_TYPE" "USDT_TYPE" \
+  --type-args "$COIN_PACKAGE_ID::usdc::USDC" "$COIN_PACKAGE_ID::usdt::USDT" \
   --args \
     $POOL_REGISTRY \
     $STATS_REGISTRY \
-    5 \                 # fee_percent (0.05% - lower for stables)
-    0 \                 # creator_fee_percent
-    100 \               # amplification coefficient
-    $COIN_USDC \        # initial USDC
-    $COIN_USDT \        # initial USDT
-    $CREATION_FEE \     # 5 SUI creation fee
+    5 \
+    0 \
+    100 \
+    $SPLIT_USDC \
+    $SPLIT_USDT \
+    $CREATION_FEE_COIN \
     $CLOCK \
-  --gas-budget 100000000
-EOF
+  --gas-budget 100000000 \
+  --json)
+
+STABLE_POOL_ID=$(echo "$CREATE_STABLE_OUTPUT" | jq -r '.objectChanges[] | select(.objectType != null) | select(.objectType | contains("LiquidityPool")) | .objectId' | head -n 1)
+
+echo -e "Stable Pool ID: ${GREEN}$STABLE_POOL_ID${NC}"
 echo ""
 
-echo "  ┌─────────────────────────────────────────┐"
-echo "  │ Stable Pool Created:                    │"
-echo "  │   Pool Type:    StableSwap              │"
-echo "  │   Fee Tier:     0.05%                   │"
-echo "  │   Amp (A):      100                     │"
-echo "  │   Reserve A:    10,000,000,000 USDC     │"
-echo "  │   Reserve B:    10,000,000,000 USDT     │"
-echo "  └─────────────────────────────────────────┘"
-echo ""
+echo -e "${BLUE}[2/3]${NC} Swapping in Stable Pool..."
 
-echo -e "${BLUE}[4/5]${NC} Slippage Comparison (1M Swap):"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ Swapping 1,000,000 USDC → USDT                          │"
-echo "  │                                                         │"
-echo "  │ CONSTANT PRODUCT (x*y=k):                               │"
-echo "  │   Input:        1,000,000 USDC                          │"
-echo "  │   Output:       ~909,090 USDT                           │"
-echo -e "  │   Slippage:     ${RED}~9.1%${NC}                                   │"
-echo "  │                                                         │"
-echo "  │ STABLESWAP (A=100):                                     │"
-echo "  │   Input:        1,000,000 USDC                          │"
-echo "  │   Output:       ~999,500 USDT                           │"
-echo -e "  │   Slippage:     ${GREEN}~0.05%${NC}                                  │"
-echo "  │                                                         │"
-echo -e "  │ ${GREEN}StableSwap is 180x more efficient for stable pairs!${NC}   │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
+# Swap 10 USDC for USDT
+SPLIT_SWAP_USDC=$(sui client call --package 0x2 --module coin --function split --type-args "$COIN_PACKAGE_ID::usdc::USDC" --args $USDC_COIN "10000000" --gas-budget 50000000 --json | jq -r '.objectChanges[] | select(.type == "created") | .objectId' | head -n 1)
 
-echo -e "${BLUE}[5/5]${NC} Amp Ramping (Dynamic Optimization):"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ Admins can gradually adjust A over time:                │"
-echo "  │                                                         │"
-echo "  │   Current A:    100                                     │"
-echo "  │   Target A:     200                                     │"
-echo "  │   Ramp Duration: 7 days                                 │"
-echo "  │                                                         │"
-echo "  │ This prevents sudden curve changes that could be        │"
-echo "  │ exploited by arbitrageurs.                              │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
-echo -e "${YELLOW}Command (Admin Only):${NC}"
-cat << 'EOF'
-sui client call \
+DEADLINE="18446744073709551615"
+
+SWAP_OUTPUT=$(sui client call \
   --package $PACKAGE_ID \
-  --module admin \
-  --function ramp_stable_pool_amp \
-  --type-args "USDC_TYPE" "USDT_TYPE" \
+  --module pool \
+  --function swap_a_to_b \
+  --type-args "$COIN_PACKAGE_ID::usdc::USDC" "$COIN_PACKAGE_ID::usdt::USDT" \
   --args \
-    $ADMIN_CAP \
     $STABLE_POOL_ID \
-    200 \               # target_amp
-    604800000 \         # ramp_duration_ms (7 days)
+    $SPLIT_SWAP_USDC \
+    0 \
+    "[]" \
     $CLOCK \
-  --gas-budget 50000000
-EOF
-echo ""
+    $DEADLINE \
+  --gas-budget 100000000 \
+  --json)
 
-echo -e "${GREEN}✓ StableSwap Demo Complete!${NC}"
+echo "$SWAP_OUTPUT" > stable_swap.json
+
+echo -e "${BLUE}[3/3]${NC} Stable Swap Complete!"
 echo ""
-echo "Key Features Demonstrated:"
-echo "  ✓ StableSwap curve (Curve-like)"
-echo "  ✓ Amplification coefficient"
-echo "  ✓ Lower slippage for stable pairs"
-echo "  ✓ Same NFT position system"
-echo "  ✓ Amp ramping for dynamic optimization"
-echo "  ✓ D-invariant verification"
+echo -e "Transaction Digest: $(echo "$SWAP_OUTPUT" | jq -r '.digest')"
+
+echo -e "${GREEN}✓ Stable Pool Demo Complete!${NC}"
 echo ""
-echo -e "${YELLOW}Next: Run ./10_advanced_features.sh${NC}"
+echo -e "${YELLOW}Demo Walkthrough Finished!${NC}"

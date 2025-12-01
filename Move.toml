@@ -6,3 +6,5 @@ edition = "2024"
 
 [addresses]
 sui_amm = "0x0"
+
+

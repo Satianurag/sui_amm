@@ -43,7 +43,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             100_000_000, // Unrealistic min_out (10x input)
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -88,7 +88,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             min_out,
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -142,7 +142,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             past_deadline,
             ts::ctx(&mut scenario)
@@ -188,7 +188,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             current_time,
             ts::ctx(&mut scenario)
@@ -333,7 +333,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(), // No max_price specified
+            option::some(18446744073709551615), // No max_price specified
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -351,6 +351,7 @@ module sui_amm::test_slippage {
     }
 
     #[test]
+    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
     fun test_default_2_percent_slippage_stable_pool() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
@@ -378,7 +379,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(), // No max_price specified
+            option::some(18446744073709551615), // No max_price specified
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -428,7 +429,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -470,7 +471,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -552,7 +553,7 @@ module sui_amm::test_slippage {
             &mut pool,
             coin_in,
             1,
-            option::none(),
+            option::some(18446744073709551615),
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)

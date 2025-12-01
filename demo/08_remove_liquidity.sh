@@ -3,10 +3,6 @@
 # STEP 8: Remove Liquidity
 # ============================================
 # PRD: Remove Liquidity Workflow (3.2.5)
-# - Partial or full removal
-# - Calculate token amounts
-# - Slippage protection
-# - NFT burn on full removal
 # ============================================
 
 set -e
@@ -21,66 +17,9 @@ source .env 2>/dev/null || { echo "Run 01_deploy.sh first!"; exit 1; }
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
-RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${CYAN}PRD Requirement: Remove Liquidity Workflow (Section 3.2.5)${NC}"
-echo ""
-echo "Steps:"
-echo "  1. LP specifies amount of liquidity to remove"
-echo "  2. System calculates token amounts:"
-echo "     - amount_a = (lp_tokens × reserve_a) / total_supply"
-echo "     - amount_b = (lp_tokens × reserve_b) / total_supply"
-echo "  3. Validate minimum amounts (slippage protection)"
-echo "  4. Transfer tokens to LP"
-echo "  5. Update/burn NFT position if fully removed"
-echo "  6. Update reserves"
-echo "  7. Emit LiquidityRemoved event"
-echo ""
-echo "════════════════════════════════════════════════════════════"
-echo ""
-
-echo -e "${BLUE}[1/4]${NC} Current Position State:"
-echo ""
-echo "  ┌─────────────────────────────────────────┐"
-echo "  │ Your Liquidity:        499,999,500      │"
-echo "  │ Pool Reserve A:        1,600,000,000    │"
-echo "  │ Pool Reserve B:        1,406,543,211    │"
-echo "  │ Total Pool Liquidity:  999,999,000      │"
-echo "  └─────────────────────────────────────────┘"
-echo ""
-
-echo "════════════════════════════════════════════════════════════"
-echo -e "${YELLOW}OPTION A: Partial Removal (50%)${NC}"
-echo "════════════════════════════════════════════════════════════"
-echo ""
-
-echo -e "${BLUE}[A.1]${NC} Removal Request:"
-echo ""
-echo "  ┌─────────────────────────────────────────┐"
-echo "  │ Liquidity to Remove:   249,999,750      │"
-echo "  │ Min Amount A:          380,000,000      │"
-echo "  │ Min Amount B:          330,000,000      │"
-echo "  │ Deadline:              +20 minutes      │"
-echo "  └─────────────────────────────────────────┘"
-echo ""
-
-echo -e "${BLUE}[A.2]${NC} Token Amount Calculation:"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ amount_a = (lp_tokens × reserve_a) / total_supply       │"
-echo "  │ amount_a = (249,999,750 × 1,600,000,000) / 999,999,000  │"
-echo -e "  │ amount_a = ${GREEN}400,000,000 SUI${NC}                              │"
-echo "  │                                                         │"
-echo "  │ amount_b = (lp_tokens × reserve_b) / total_supply       │"
-echo "  │ amount_b = (249,999,750 × 1,406,543,211) / 999,999,000  │"
-echo -e "  │ amount_b = ${GREEN}351,635,802 USDC${NC}                             │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
-
-echo -e "${BLUE}[A.3]${NC} Slippage Check:"
 echo ""
 echo "  amount_a (400M) >= min_amount_a (380M) ✓"
 echo "  amount_b (351M) >= min_amount_b (330M) ✓"

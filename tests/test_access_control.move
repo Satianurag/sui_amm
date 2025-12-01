@@ -71,7 +71,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
+            let mut pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             
@@ -136,7 +136,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
+            let mut pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             let clock = clock::create_for_testing(ctx);

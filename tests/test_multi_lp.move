@@ -42,7 +42,7 @@ module sui_amm::test_multi_lp {
         let mut pool = test_scenario::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         
         // LP1 adds 60% of initial liquidity (600M each)
-        let lp1_position = test_utils::add_liquidity_helper(
+        let mut lp1_position = test_utils::add_liquidity_helper(
             &mut pool,
             600_000_000,
             600_000_000,
@@ -57,7 +57,7 @@ module sui_amm::test_multi_lp {
         test_scenario::next_tx(&mut scenario, lp2);
         
         // LP2 adds 30% of initial liquidity (300M each)
-        let lp2_position = test_utils::add_liquidity_helper(
+        let mut lp2_position = test_utils::add_liquidity_helper(
             &mut pool,
             300_000_000,
             300_000_000,
@@ -72,7 +72,7 @@ module sui_amm::test_multi_lp {
         test_scenario::next_tx(&mut scenario, lp3);
         
         // LP3 adds 10% of initial liquidity (100M each)
-        let lp3_position = test_utils::add_liquidity_helper(
+        let mut lp3_position = test_utils::add_liquidity_helper(
             &mut pool,
             100_000_000,
             100_000_000,

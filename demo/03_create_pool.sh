@@ -3,10 +3,6 @@
 # STEP 3: Create Liquidity Pool
 # ============================================
 # PRD: Pool Creation Workflow (3.2.1)
-# - Create token pair pool with fee tier
-# - Pool registry indexing
-# - Initial liquidity provision
-# - NFT position minting
 # ============================================
 
 set -e
@@ -27,84 +23,136 @@ NC='\033[0m'
 
 echo -e "${CYAN}PRD Requirement: Pool Creation Workflow (Section 3.2.1)${NC}"
 echo ""
-echo "Steps:"
-echo "  1. Call create_pool with token pair and fee tier"
-echo "  2. Validate tokens aren't already paired"
-echo "  3. Provide initial liquidity"
-echo "  4. Calculate initial K value (reserve_a * reserve_b)"
-echo "  5. Mint LP tokens: sqrt(amount_a * amount_b)"
-echo "  6. Create NFT position for creator"
-echo "  7. Emit PoolCreated event"
-echo "  8. Index pool in factory registry"
-echo ""
-echo "════════════════════════════════════════════════════════════"
-echo ""
 
-# Get a SUI coin to use for creation fee
+# Get a SUI coin to use for creation fee (5 SUI)
 echo -e "${BLUE}[1/4]${NC} Getting SUI coins for pool creation..."
-COINS=$(sui client gas --json | jq -r '.[0].gasCoinId')
-echo -e "Using coin: ${GREEN}$COINS${NC}"
+# We need a coin with at least 5 SUI (5,000,000,000 MIST)
+# We'll pick the first gas coin that has enough balance
+GAS_COINS=$(sui client gas --json)
+CREATION_FEE_COIN=$(echo "$GAS_COINS" | jq -r '.[] | select(.mistBalance >= 5000000000) | .gasCoinId' | head -n 1)
+
+if [ -z "$CREATION_FEE_COIN" ]; then
+    echo "Error: No SUI coin with at least 5 SUI found for creation fee."
+    exit 1
+fi
+echo -e "Using creation fee coin: ${GREEN}$CREATION_FEE_COIN${NC}"
 echo ""
 
-# For demo, we need to show the PTB (Programmable Transaction Block) approach
-# Since we can't create actual custom coins easily, we'll show the command structure
+# Get USDC and USDT coins for initial liquidity
+echo -e "${BLUE}[2/4]${NC} Getting Token Coins..."
+# We need to find the object IDs of the minted USDC and USDT
+# Since we just minted them, they should be in our address
+USDC_COIN=$(sui client objects --json | jq -r ".[] | select(.data.type | contains(\"$COIN_PACKAGE_ID::usdc::USDC\")) | .data.objectId" | head -n 1)
+USDT_COIN=$(sui client objects --json | jq -r ".[] | select(.data.type | contains(\"$COIN_PACKAGE_ID::usdt::USDT\")) | .data.objectId" | head -n 1)
 
-echo -e "${BLUE}[2/4]${NC} Pool Configuration:"
-echo ""
-echo "  ┌─────────────────────────────────────────┐"
-echo "  │ Pool Type:     Standard AMM (x*y=k)     │"
-echo "  │ Fee Tier:      0.30% (30 bps)           │"
-echo "  │ Protocol Fee:  1% of swap fees          │"
-echo "  │ Creator Fee:   0%                       │"
-echo "  └─────────────────────────────────────────┘"
+if [ -z "$USDC_COIN" ] || [ -z "$USDT_COIN" ]; then
+    echo "Error: Could not find USDC or USDT coins. Run 02_create_test_coins.sh first."
+    exit 1
+fi
+
+echo -e "USDC Coin: ${GREEN}$USDC_COIN${NC}"
+echo -e "USDT Coin: ${GREEN}$USDT_COIN${NC}"
 echo ""
 
 echo -e "${BLUE}[3/4]${NC} Creating pool via Move call..."
-echo ""
-echo -e "${YELLOW}Command Structure:${NC}"
-echo ""
-cat << 'EOF'
-sui client call \
+echo "Creating USDC-USDT Pool (Stable)..."
+
+# Note: For stable pool we use create_stable_pool, for standard we use create_pool
+# Let's create a standard pool first as per script name, but maybe USDC/USDT should be stable?
+# The PRD mentions both. Let's stick to standard pool for this script as it's "03_create_pool.sh"
+# and "09_stable_pool.sh" is for stable.
+# So we will create a SUI-USDC pool here?
+# The original script used SUI and COIN_B.
+# Let's create SUI-USDC pool.
+
+# We need SUI coin for liquidity too.
+SUI_LIQ_COIN=$(echo "$GAS_COINS" | jq -r '.[] | select(.mistBalance >= 101000000000) | select(.gasCoinId != "'$CREATION_FEE_COIN'") | .gasCoinId' | head -n 1)
+echo "SUI_LIQ_COIN: $SUI_LIQ_COIN"
+if [ -z "$SUI_LIQ_COIN" ]; then
+    # If we don't have another coin, we might need to split.
+    # For simplicity, let's assume we have enough gas objects or use the same one if allowed (but usually consumed)
+    # Actually, we can pass the same coin object for creation fee and liquidity? No, creation fee is transferred.
+    # Let's just use USDC and USDT for the pool to avoid SUI coin management issues?
+    # But standard pool is usually volatile.
+    # Let's do SUI-USDC.
+    echo "Need distinct SUI coin for liquidity."
+    exit 1
+fi
+
+# Actually, let's just use USDC and USDT for the standard pool demo too, or maybe create a new pair?
+# Let's stick to SUI-USDC for standard pool.
+# Wait, I need to make sure I have SUI coin for liquidity.
+# Let's just use the USDC and USDT we minted.
+# We will create a USDC-USDT standard pool? No that's bad for stable pairs.
+# Let's create SUI-USDC pool.
+
+echo "Creating SUI-USDC Pool..."
+
+# We need to split SUI coin for liquidity if we don't have a separate one
+# But for now let's assume we use USDC and USDT for the pool?
+# No, let's use SUI and USDC.
+
+CLOCK="0x6"
+
+# Create Pool
+# create_pool<A, B>(registry, stats, fee, creator_fee, coin_a, coin_b, fee_coin, clock)
+# We use SUI as A, USDC as B.
+
+# We need to make sure we pass the coin objects.
+# SUI_LIQ_COIN needs to be a Coin<SUI>.
+# USDC_COIN needs to be Coin<USDC>.
+
+# We need to ensure SUI_LIQ_COIN has specific amount?
+# The function takes the whole coin object.
+# So we should probably split it to the exact amount we want to add.
+# But for demo simplicity, we can just pass the coin and it will use it all?
+# The PRD says "User provides initial liquidity".
+# The contract likely takes the passed coin.
+
+# Let's split the coins to exact amounts to be clean.
+echo "Splitting 100 SUI for liquidity..."
+sui client split-coin --coin-id $SUI_LIQ_COIN --amounts 100000000000 --gas-budget 50000000 --json > split_sui.json
+cat split_sui.json
+SPLIT_SUI=$(cat split_sui.json | jq -r '.objectChanges[] | select(.type == "created") | .objectId' | head -n 1)
+echo "SPLIT_SUI: $SPLIT_SUI"
+
+echo "Using full USDC coin for liquidity..."
+SPLIT_USDC=$USDC_COIN
+
+echo "Initial Liquidity: 100 SUI, ~1M USDC"
+
+CREATE_OUTPUT=$(sui client call \
   --package $PACKAGE_ID \
   --module factory \
   --function create_pool \
-  --type-args "0x2::sui::SUI" "COIN_B_TYPE" \
+  --type-args "0x2::sui::SUI" "$COIN_PACKAGE_ID::usdc::USDC" \
   --args \
     $POOL_REGISTRY \
     $STATS_REGISTRY \
-    30 \                    # fee_percent (0.30%)
-    0 \                     # creator_fee_percent
-    $COIN_A \               # initial liquidity token A
-    $COIN_B \               # initial liquidity token B
-    $CREATION_FEE_COIN \    # 5 SUI creation fee
+    30 \
+    0 \
+    $SPLIT_SUI \
+    $SPLIT_USDC \
+    $CREATION_FEE_COIN \
     $CLOCK \
-  --gas-budget 100000000
-EOF
-echo ""
+  --gas-budget 100000000 \
+  --json)
 
-echo -e "${BLUE}[4/4]${NC} Expected Output:"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ Event: PoolCreated                                      │"
-echo "  │   pool_id: 0x...                                        │"
-echo "  │   creator: $MY_ADDRESS                                  │"
-echo "  │   type_a: 0x2::sui::SUI                                 │"
-echo "  │   type_b: COIN_B_TYPE                                   │"
-echo "  │   fee_percent: 30                                       │"
-echo "  │   is_stable: false                                      │"
-echo "  │   creation_fee_paid: 5000000000                         │"
-echo "  │   initial_liquidity_a: 1000000000                       │"
-echo "  │   initial_liquidity_b: 1000000000                       │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ Created Objects:                                        │"
-echo "  │   • LiquidityPool<SUI, COIN_B>                          │"
-echo "  │   • LPPosition NFT (for creator)                        │"
-echo "  └─────────────────────────────────────────────────────────┘"
-echo ""
+echo "$CREATE_OUTPUT" > create_pool.json
 
-echo -e "${GREEN}✓ Pool Creation Workflow Complete!${NC}"
+POOL_ID=$(echo "$CREATE_OUTPUT" | jq -r '.objectChanges[] | select(.objectType != null) | select(.objectType | contains("LiquidityPool")) | .objectId' | head -n 1)
+NFT_ID=$(echo "$CREATE_OUTPUT" | jq -r '.objectChanges[] | select(.objectType != null) | select(.objectType | contains("LPPosition")) | .objectId' | head -n 1)
+
+echo "POOL_ID=$POOL_ID" >> .env
+echo "NFT_ID=$NFT_ID" >> .env
+
+echo ""
+echo -e "${BLUE}[4/4]${NC} Pool Created!"
+echo ""
+echo -e "Pool ID: ${GREEN}$POOL_ID${NC}"
+echo -e "NFT ID: ${GREEN}$NFT_ID${NC}"
+echo ""
+echo -e "${GREEN}✓ Pool created successfully!${NC}"
 echo ""
 echo "Key Features Demonstrated:"
 echo "  ✓ Fee tier validation (0.05%, 0.30%, 1.00%)"

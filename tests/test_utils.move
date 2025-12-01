@@ -465,11 +465,12 @@ module sui_amm::test_utils {
         ctx: &mut TxContext
     ): Coin<CoinB> {
         let coin_in = mint_coin<CoinA>(amount_in, ctx);
+        let max_price_val = if (_max_price > 0) { _max_price } else { 18446744073709551615 };
         pool::swap_a_to_b(
             pool,
             coin_in,
             min_out,
-            option::none(),
+            option::some(max_price_val),
             clock,
             deadline,
             ctx
@@ -487,11 +488,12 @@ module sui_amm::test_utils {
         ctx: &mut TxContext
     ): Coin<CoinA> {
         let coin_in = mint_coin<CoinB>(amount_in, ctx);
+        let max_price_val = if (_max_price > 0) { _max_price } else { 18446744073709551615 };
         pool::swap_b_to_a(
             pool,
             coin_in,
             min_out,
-            option::none(),
+            option::some(max_price_val),
             clock,
             deadline,
             ctx

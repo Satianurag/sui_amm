@@ -29,7 +29,7 @@ module sui_amm::amm_tests {
         let user1 = @0xB;
         let user2 = @0xC;
 
-        let scenario_val = test_scenario::begin(owner);
+        let mut scenario_val = test_scenario::begin(owner);
         let scenario = &mut scenario_val;
         
         // 1. Create Pool
@@ -43,7 +43,7 @@ module sui_amm::amm_tests {
         // Owner adds initial liquidity to eat the lock cost
         test_scenario::next_tx(scenario, owner);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -67,7 +67,7 @@ module sui_amm::amm_tests {
         // 2. Add Liquidity
         test_scenario::next_tx(scenario, user1);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -87,7 +87,7 @@ module sui_amm::amm_tests {
         // 3. Swap
         test_scenario::next_tx(scenario, user2);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -106,10 +106,10 @@ module sui_amm::amm_tests {
         // 4. Claim Fees
         test_scenario::next_tx(scenario, user1);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             
-            let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
+            let mut position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = &mut position_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -136,7 +136,7 @@ module sui_amm::amm_tests {
         let user1 = @0xB;
         let user2 = @0xC;
 
-        let scenario_val = test_scenario::begin(owner);
+        let mut scenario_val = test_scenario::begin(owner);
         let scenario = &mut scenario_val;
         
         // 1. Create Stable Pool (Amp = 100)
@@ -150,7 +150,7 @@ module sui_amm::amm_tests {
         // 2. Add Liquidity
         test_scenario::next_tx(scenario, user1);
         {
-            let pool_val = test_scenario::take_shared<StableSwapPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<StableSwapPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -170,7 +170,7 @@ module sui_amm::amm_tests {
         // 3. Swap
         test_scenario::next_tx(scenario, user2);
         {
-            let pool_val = test_scenario::take_shared<StableSwapPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<StableSwapPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -194,7 +194,7 @@ module sui_amm::amm_tests {
         let owner = @0xA;
         let user1 = @0xB;
         
-        let scenario_val = test_scenario::begin(owner);
+        let mut scenario_val = test_scenario::begin(owner);
         let scenario = &mut scenario_val;
         
         // 1. Create Pool
@@ -208,7 +208,7 @@ module sui_amm::amm_tests {
         // Owner adds initial liquidity to eat the lock cost
         test_scenario::next_tx(scenario, owner);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -227,7 +227,7 @@ module sui_amm::amm_tests {
         // 2. Add Liquidity
         test_scenario::next_tx(scenario, user1);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let ctx = test_scenario::ctx(scenario);
             let clock = clock::create_for_testing(ctx);
@@ -247,7 +247,7 @@ module sui_amm::amm_tests {
         // 3. Remove Liquidity
         test_scenario::next_tx(scenario, user1);
         {
-            let pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
+            let mut pool_val = test_scenario::take_shared<LiquidityPool<BTC, USDC>>(scenario);
             let mut pool = &mut pool_val;
             let position_val = test_scenario::take_from_sender<LPPosition>(scenario);
             let position = position_val;
@@ -290,7 +290,7 @@ module sui_amm::amm_tests {
     fun test_swap_with_tiny_amount() {
         let owner = @0xA;
         let user = @0xB;
-        let scenario_val = test_scenario::begin(owner);
+        let mut scenario_val = test_scenario::begin(owner);
         let scenario = &mut scenario_val;
         
         test_scenario::next_tx(scenario, owner);

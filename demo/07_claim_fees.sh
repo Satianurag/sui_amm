@@ -3,10 +3,6 @@
 # STEP 7: Claim Accumulated Fees
 # ============================================
 # PRD: Fee Claiming Workflow (3.2.4)
-# - View accumulated fees through NFT position
-# - Calculate pro-rata share
-# - Transfer fees to LP
-# - Auto-compound option
 # ============================================
 
 set -e
@@ -21,57 +17,10 @@ source .env 2>/dev/null || { echo "Run 01_deploy.sh first!"; exit 1; }
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${CYAN}PRD Requirement: Fee Claiming Workflow (Section 3.2.4)${NC}"
 echo ""
-echo "Steps:"
-echo "  1. LP views accumulated fees through NFT position"
-echo "  2. LP calls claim_fees with position NFT"
-echo "  3. System calculates pro-rata share:"
-echo "     - LP share = (lp_tokens / total_supply)"
-echo "     - Claimable fees = accumulated_fees × LP share"
-echo "  4. Transfer fees to LP"
-echo "  5. Update position metadata"
-echo "  6. Emit FeeClaimed event"
-echo ""
-echo "════════════════════════════════════════════════════════════"
-echo ""
-
-echo -e "${BLUE}[1/5]${NC} Current Fee Pool State:"
-echo ""
-echo "  ┌─────────────────────────────────────────┐"
-echo "  │ Total LP Fee Pool A:   297,000 SUI      │"
-echo "  │ Total LP Fee Pool B:   0 USDC           │"
-echo "  │ Protocol Fees A:       3,000 SUI        │"
-echo "  │ Protocol Fees B:       0 USDC           │"
-echo "  └─────────────────────────────────────────┘"
-echo ""
-
-echo -e "${BLUE}[2/5]${NC} Your Position Share:"
-echo ""
-echo "  ┌─────────────────────────────────────────┐"
-echo "  │ Your Liquidity:        499,999,500      │"
-echo "  │ Total Pool Liquidity:  999,999,000      │"
-echo "  │ Your Share:            50.00%           │"
-echo "  └─────────────────────────────────────────┘"
-echo ""
-
-echo -e "${BLUE}[3/5]${NC} Claimable Fees Calculation:"
-echo ""
-echo "  ┌─────────────────────────────────────────────────────────┐"
-echo "  │ Formula: claimable = accumulated_fees × (your_lp / total_lp)"
-echo "  │                                                         │"
-echo "  │ Fee A Claimable:                                        │"
-echo "  │   297,000 × (499,999,500 / 999,999,000)                 │"
-echo "  │   = 297,000 × 0.5                                       │"
-echo -e "  │   = ${GREEN}148,500 SUI${NC}                                       │"
-echo "  │                                                         │"
-echo "  │ Fee B Claimable:                                        │"
-echo "  │   0 × 0.5                                               │"
-echo -e "  │   = ${GREEN}0 USDC${NC}                                             │"
 echo "  └─────────────────────────────────────────────────────────┘"
 echo ""
 
