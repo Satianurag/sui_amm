@@ -1153,6 +1153,18 @@ module sui_amm::pool {
         (balance::value(&pool.protocol_fee_a), balance::value(&pool.protocol_fee_b))
     }
 
+    public fun get_fees<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): (u64, u64) {
+        (balance::value(&pool.fee_a), balance::value(&pool.fee_b))
+    }
+
+    public fun get_acc_fee_per_share<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): (u128, u128) {
+        (pool.acc_fee_per_share_a, pool.acc_fee_per_share_b)
+    }
+
+    public fun get_creator_fee_percent<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): u64 {
+        pool.creator_fee_percent
+    }
+
     public fun get_position_view<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
         position: &position::LPPosition,
@@ -1627,5 +1639,40 @@ module sui_amm::pool {
         max_price_impact_bps: u64
     ) {
         set_risk_params(pool, ratio_tolerance_bps, max_price_impact_bps);
+    }
+
+    #[test_only]
+    public fun destroy_for_testing<CoinA, CoinB>(pool: LiquidityPool<CoinA, CoinB>) {
+        let LiquidityPool {
+            id,
+            reserve_a,
+            reserve_b,
+            fee_a,
+            fee_b,
+            protocol_fee_a,
+            protocol_fee_b,
+            creator: _,
+            creator_fee_a,
+            creator_fee_b,
+            total_liquidity: _,
+            fee_percent: _,
+            protocol_fee_percent: _,
+            creator_fee_percent: _,
+            acc_fee_per_share_a: _,
+            acc_fee_per_share_b: _,
+            ratio_tolerance_bps: _,
+            max_price_impact_bps: _,
+            paused: _,
+            paused_at: _,
+        } = pool;
+        object::delete(id);
+        balance::destroy_for_testing(reserve_a);
+        balance::destroy_for_testing(reserve_b);
+        balance::destroy_for_testing(fee_a);
+        balance::destroy_for_testing(fee_b);
+        balance::destroy_for_testing(protocol_fee_a);
+        balance::destroy_for_testing(protocol_fee_b);
+        balance::destroy_for_testing(creator_fee_a);
+        balance::destroy_for_testing(creator_fee_b);
     }
 }

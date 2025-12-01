@@ -106,4 +106,11 @@ module sui_amm::admin {
     public fun test_init(ctx: &mut tx_context::TxContext) {
         init(ctx);
     }
+
+    #[test_only]
+    public fun create_admin_cap_for_testing(ctx: &mut tx_context::TxContext): AdminCap {
+        AdminCap {
+            id: object::new(ctx),
+        }
+    }
 }

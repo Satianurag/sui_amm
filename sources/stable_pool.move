@@ -1704,4 +1704,42 @@ module sui_amm::stable_pool {
     ) {
         ramp_amp(pool, target_amp, ramp_duration_ms, clock);
     }
+
+    #[test_only]
+    public fun destroy_for_testing<CoinA, CoinB>(pool: StableSwapPool<CoinA, CoinB>) {
+        let StableSwapPool {
+            id,
+            reserve_a,
+            reserve_b,
+            fee_a,
+            fee_b,
+            protocol_fee_a,
+            protocol_fee_b,
+            creator: _,
+            creator_fee_a,
+            creator_fee_b,
+            total_liquidity: _,
+            fee_percent: _,
+            protocol_fee_percent: _,
+            creator_fee_percent: _,
+            acc_fee_per_share_a: _,
+            acc_fee_per_share_b: _,
+            amp: _,
+            target_amp: _,
+            amp_ramp_start_time: _,
+            amp_ramp_end_time: _,
+            max_price_impact_bps: _,
+            paused: _,
+            paused_at: _,
+        } = pool;
+        object::delete(id);
+        balance::destroy_for_testing(reserve_a);
+        balance::destroy_for_testing(reserve_b);
+        balance::destroy_for_testing(fee_a);
+        balance::destroy_for_testing(fee_b);
+        balance::destroy_for_testing(protocol_fee_a);
+        balance::destroy_for_testing(protocol_fee_b);
+        balance::destroy_for_testing(creator_fee_a);
+        balance::destroy_for_testing(creator_fee_b);
+    }
 }
