@@ -11,7 +11,7 @@ module sui_amm::security_tests {
     use std::option;
 
     // Test coins
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct ETH has drop {}
 
     const ADMIN: address = @0x1;

@@ -50,7 +50,7 @@ module sui_amm::stable_math {
     /// - Convergence: |D_new - D_old| <= 1 OR relative_diff <= 1e-15
     /// - Aborts if MAX_ITERATIONS reached without convergence
     public fun get_d(x: u64, y: u64, amp: u64): u64 {
-        let mut sum = (x as u256) + (y as u256);
+        let sum = (x as u256) + (y as u256);
         if (sum == 0) return 0;
         if (x == 0 || y == 0) return (sum as u64);
 

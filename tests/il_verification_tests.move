@@ -9,7 +9,7 @@ module sui_amm::il_verification_tests {
     use std::option;
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     const ADMIN: address = @0xA;
     const LP: address = @0xB;

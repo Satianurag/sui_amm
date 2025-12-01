@@ -11,11 +11,8 @@
 ///   - Make pool discovery impractical
 /// The fee is burned (sent to @0x0), providing economic deterrence without extracting value.
 module sui_amm::factory {
-    use sui::object;
     use sui::table;
-    use sui::tx_context;
     use std::type_name;
-    use std::option;
     use sui::event;
     use sui::vec_map;
     use sui::vec_set;
@@ -513,7 +510,7 @@ module sui_amm::factory {
         // Iterate through all allowed fee tiers
         let keys = vec_set::keys(&registry.allowed_fee_tiers);
         let mut i = 0;
-        let mut len = vector::length(keys);
+        let len = vector::length(keys);
         
         while (i < len) {
             let fee = *vector::borrow(keys, i);

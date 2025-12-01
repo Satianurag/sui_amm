@@ -1,12 +1,8 @@
 module sui_amm::pool {
-    use sui::object;
     use sui::coin;
     use sui::balance;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::event;
     use sui::clock;
-    use std::option;
     use std::string;
     use sui_amm::position;
 
@@ -153,7 +149,7 @@ module sui_amm::pool {
         // FIX [S5]: Validate creator fee to protect LPs from value extraction
         assert!(creator_fee_percent <= MAX_CREATOR_FEE_BPS, ECreatorFeeTooHigh);
         
-        let mut pool = LiquidityPool<CoinA, CoinB> {
+        let pool = LiquidityPool<CoinA, CoinB> {
             id: object::new(ctx),
             reserve_a: balance::zero(),
             reserve_b: balance::zero(),

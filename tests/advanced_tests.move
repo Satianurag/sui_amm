@@ -11,7 +11,7 @@ module sui_amm::advanced_tests {
     use sui_amm::admin::{Self, AdminCap};
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_fee_accumulation_precision() {

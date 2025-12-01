@@ -1,6 +1,5 @@
 module sui_amm::string_utils {
     use std::string::{Self, String};
-    use std::vector;
 
     /// Convert u64 to string
     public fun u64_to_string(value: u64): String {
@@ -73,7 +72,7 @@ module sui_amm::string_utils {
     public fun format_with_commas(value: u64): String {
         let base = u64_to_string(value);
         let bytes = string::as_bytes(&base);
-        let mut len = vector::length(bytes);
+        let len = vector::length(bytes);
         
         if (len <= 3) {
             return base
@@ -138,7 +137,7 @@ module sui_amm::string_utils {
     /// Concatenate a vector of strings
     public fun concat(parts: vector<String>): String {
         let mut result = string::utf8(b"");
-        let mut len = vector::length(&parts);
+        let len = vector::length(&parts);
         let mut i = 0;
         
         while (i < len) {
@@ -151,7 +150,7 @@ module sui_amm::string_utils {
 
     /// Append multiple strings to a base string
     public fun append_all(base: &mut String, parts: vector<String>) {
-        let mut len = vector::length(&parts);
+        let len = vector::length(&parts);
         let mut i = 0;
         
         while (i < len) {
@@ -174,7 +173,7 @@ module sui_amm::string_utils {
     /// Truncate string to max length with ellipsis
     public fun truncate(s: &String, max_len: u64): String {
         let bytes = string::as_bytes(s);
-        let mut len = vector::length(bytes);
+        let len = vector::length(bytes);
         
         if (len <= max_len) {
             return *s

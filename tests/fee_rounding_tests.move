@@ -9,7 +9,7 @@ module sui_amm::fee_rounding_tests {
     use sui_amm::pool::{Self, LiquidityPool};
     use std::option;
 
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     const USER: address = @0xCAFE;
@@ -88,7 +88,7 @@ module sui_amm::fee_rounding_tests {
             
             coin::burn_for_testing(refund_a1);
             coin::burn_for_testing(refund_b1);
-            transfer::public_transfer(position1, USER);
+            transfer::transfer(position1, USER);
             pool::share(pool);
         };
 
@@ -122,7 +122,7 @@ module sui_amm::fee_rounding_tests {
             
             coin::burn_for_testing(refund_a2);
             coin::burn_for_testing(refund_b2);
-            transfer::public_transfer(position2, USER);
+            transfer::transfer(position2, USER);
             ts::return_shared(pool);
         };
 

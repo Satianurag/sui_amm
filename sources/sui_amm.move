@@ -1,6 +1,5 @@
 module sui_amm::sui_amm {
     use sui::package;
-    use sui::transfer;
     // TxContext not needed - auto-imported
 
     /// OTW for the package

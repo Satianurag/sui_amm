@@ -12,7 +12,7 @@ module sui_amm::unauthorized_admin_tests {
     use sui::clock::{Self};
     use sui::transfer;
 
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     const ADMIN: address = @0xAD;
@@ -121,8 +121,8 @@ module sui_amm::unauthorized_admin_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -174,8 +174,8 @@ module sui_amm::unauthorized_admin_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -228,8 +228,8 @@ module sui_amm::unauthorized_admin_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };

@@ -12,8 +12,8 @@ module sui_amm::quote_function_tests {
     use sui_amm::factory;
 
     struct ETH has drop {}
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public struct USDT has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     #[test]

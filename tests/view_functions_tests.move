@@ -10,7 +10,7 @@ module sui_amm::view_functions_tests {
     use sui_amm::position::{LPPosition};
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_get_position_value() {

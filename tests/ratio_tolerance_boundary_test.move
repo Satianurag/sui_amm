@@ -11,7 +11,7 @@ module sui_amm::ratio_tolerance_boundary_test {
     use sui_amm::position;
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_ratio_tolerance_boundary() {

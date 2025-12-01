@@ -1,9 +1,7 @@
 module sui_amm::fee_distributor {
     use sui::coin;
     use sui::clock;
-    use sui::tx_context;
     use sui::event;
-    use sui::object;
     
     use sui_amm::pool;
     use sui_amm::stable_pool;

@@ -2,14 +2,10 @@
 /// Description: Implements the StableSwap invariant (Curve-like) for trading stable pairs (e.g., USDC-USDT).
 /// Supports dynamic amplification coefficient (A), admin fees, creator fees, and slippage protection.
 module sui_amm::stable_pool {
-    use sui::object;
     use sui::coin;
     use sui::balance;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::event;
     use sui::clock;
-    use std::option;
     
     use sui_amm::stable_math;
     use sui_amm::position;
@@ -181,7 +177,7 @@ module sui_amm::stable_pool {
         assert!(protocol_fee_percent <= 1000, ETooHighFee);
         // FIX [S5]: Validate creator fee to protect LPs
         assert!(creator_fee_percent <= MAX_CREATOR_FEE_BPS, ETooHighFee);
-        let mut pool = StableSwapPool<CoinA, CoinB> {
+        let pool = StableSwapPool<CoinA, CoinB> {
             id: object::new(ctx),
             reserve_a: balance::zero(),
             reserve_b: balance::zero(),

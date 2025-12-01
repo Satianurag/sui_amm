@@ -11,7 +11,7 @@ module sui_amm::limit_order_tests {
     use sui_amm::limit_orders::{Self, OrderRegistry};
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_create_limit_order() {

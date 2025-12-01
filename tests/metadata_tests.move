@@ -9,8 +9,8 @@ module sui_amm::metadata_tests {
     use sui_amm::factory;
     use sui_amm::position::{Self};
 
-    struct TokenA has drop {}
-    struct TokenB has drop {}
+    public struct TokenA has drop {}
+    public struct TokenB has drop {}
 
     #[test]
     fun test_manual_position_creation_metadata() {

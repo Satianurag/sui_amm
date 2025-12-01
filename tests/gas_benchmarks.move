@@ -11,8 +11,8 @@ module sui_amm::gas_benchmarks {
     use std::option;
 
     // Test coins
-    struct USDC has drop {}
-    struct USDT has drop {}
+    public struct USDC has drop {}
+    public struct USDT has drop {}
 
     const ADMIN: address = @0xAD;
     const LP1: address = @0x11;
@@ -193,7 +193,7 @@ module sui_amm::gas_benchmarks {
             coin::burn_for_testing(r_a);
             coin::burn_for_testing(r_b);
             ts::return_shared(pool);
-            sui::transfer::public_transfer(pos1, LP1);
+            sui::transfer::transfer(pos1, LP1);
             clock::destroy_for_testing(clock_val);
         };
         

@@ -9,8 +9,8 @@ module sui_amm::exchange_rate_view_tests {
     use sui_amm::stable_pool::{Self, StableSwapPool};
 
     struct ETH has drop {}
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public struct USDT has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     #[test]

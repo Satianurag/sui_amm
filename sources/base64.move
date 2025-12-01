@@ -1,6 +1,5 @@
 module sui_amm::base64 {
     use std::string::{Self, String};
-    use std::vector;
 
     /// Encode a string to base64
     public fun encode(input: &String): String {
@@ -10,7 +9,7 @@ module sui_amm::base64 {
 
     /// Encode bytes to base64 string
     public fun encode_bytes(input: &vector<u8>): String {
-        let mut len = vector::length(input);
+        let len = vector::length(input);
         if (len == 0) {
             return string::utf8(b"")
         };

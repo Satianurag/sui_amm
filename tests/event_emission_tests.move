@@ -13,7 +13,7 @@ module sui_amm::event_emission_tests {
     use sui_amm::admin;
     use std::option;
 
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     const ADMIN: address = @0xAD;
@@ -53,8 +53,8 @@ module sui_amm::event_emission_tests {
             // We cannot directly inspect events in Move tests, but we verify operations succeed
             
             transfer::public_transfer(position, USER1);
-            transfer::public_transfer(refund_a, USER1);
-            transfer::public_transfer(refund_b, USER1);
+            transfer::transfer(refund_a, USER1);
+            transfer::transfer(refund_b, USER1);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -92,8 +92,8 @@ module sui_amm::event_emission_tests {
             );
             
             transfer::public_transfer(position, USER1);
-            transfer::public_transfer(refund_a, USER1);
-            transfer::public_transfer(refund_b, USER1);
+            transfer::transfer(refund_a, USER1);
+            transfer::transfer(refund_b, USER1);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -130,8 +130,8 @@ module sui_amm::event_emission_tests {
             );
             
             transfer::public_transfer(position, USER1);
-            transfer::public_transfer(refund_a, USER1);
-            transfer::public_transfer(refund_b, USER1);
+            transfer::transfer(refund_a, USER1);
+            transfer::transfer(refund_b, USER1);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -193,8 +193,8 @@ module sui_amm::event_emission_tests {
             );
             
             transfer::public_transfer(position, USER1);
-            transfer::public_transfer(refund_a, USER1);
-            transfer::public_transfer(refund_b, USER1);
+            transfer::transfer(refund_a, USER1);
+            transfer::transfer(refund_b, USER1);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -312,8 +312,8 @@ module sui_amm::event_emission_tests {
             );
             
             transfer::public_transfer(position, USER1);
-            transfer::public_transfer(refund_a, USER1);
-            transfer::public_transfer(refund_b, USER1);
+            transfer::transfer(refund_a, USER1);
+            transfer::transfer(refund_b, USER1);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };

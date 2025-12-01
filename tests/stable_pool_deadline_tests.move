@@ -7,8 +7,8 @@ module sui_amm::stable_pool_deadline_tests {
     use sui_amm::stable_pool::{Self, StableSwapPool};
     use std::option;
 
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public struct USDT has drop {}
+    public struct USDC has drop {}
 
     const ADMIN: address = @0x1;
     const ALICE: address = @0x2;

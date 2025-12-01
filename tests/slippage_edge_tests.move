@@ -10,7 +10,7 @@ module sui_amm::slippage_edge_tests {
     use sui_amm::slippage_protection;
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     #[expected_failure(abort_code = slippage_protection::EDeadlinePassed)]

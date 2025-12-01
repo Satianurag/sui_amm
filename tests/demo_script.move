@@ -14,7 +14,7 @@ module sui_amm::demo_script {
     use sui_amm::fee_distributor::{Self};
 
     // Test Coins
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct ETH has drop {}
 
     const ADMIN: address = @0xA;

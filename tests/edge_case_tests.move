@@ -9,8 +9,8 @@ module sui_amm::edge_case_tests {
     use sui_amm::position::{Self, LPPosition};
     use std::option;
 
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public struct USDT has drop {}
+    public struct USDC has drop {}
 
     const ADMIN: address = @0xA;
     const ALICE: address = @0xB;

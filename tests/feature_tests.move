@@ -12,8 +12,8 @@ module sui_amm::feature_tests {
     use sui_amm::governance::{Self, GovernanceConfig};
     use sui::object;
 
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public public struct USDT has drop {}
+    public public struct USDC has drop {}
 
     const ADMIN: address = @0x1;
     const ALICE: address = @0x2;
@@ -196,6 +196,7 @@ module sui_amm::feature_tests {
             clock::increment_for_testing(&mut clock, 172_800_001);
             
             governance::execute_fee_change_regular(
+                &cap,
                 &mut config,
                 proposal_id,
                 pool,
@@ -249,6 +250,7 @@ module sui_amm::feature_tests {
             clock::increment_for_testing(&mut clock, 172_800_001);
             
             governance::execute_fee_change_stable(
+                &cap,
                 &mut config,
                 proposal_id,
                 pool,

@@ -12,7 +12,7 @@ module sui_amm::flashloan_attack_tests {
     use sui::sui::SUI;
     use std::option;
 
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     const USER: address = @0xCAFE;
@@ -230,8 +230,8 @@ module sui_amm::flashloan_attack_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             ts::return_shared(registry);
         };
 

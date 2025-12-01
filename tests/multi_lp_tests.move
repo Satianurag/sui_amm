@@ -9,8 +9,8 @@ module sui_amm::multi_lp_tests {
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{LPPosition};
 
-    struct BTC has drop {}
-    struct USDC has drop {}
+    public struct BTC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_multiple_lps_same_pool() {
@@ -344,8 +344,8 @@ module sui_amm::multi_lp_tests {
             assert!(coin::value(&coin_a) >= 99999, 0);
             assert!(coin::value(&coin_b) >= 99999, 1);
             
-            transfer::public_transfer(coin_a, lp1);
-            transfer::public_transfer(coin_b, lp1);
+            transfer::transfer(coin_a, lp1);
+            transfer::transfer(coin_b, lp1);
             clock::destroy_for_testing(clock);
             test_scenario::return_shared(pool_val);
         };

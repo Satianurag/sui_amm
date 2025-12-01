@@ -13,8 +13,8 @@ module sui_amm::critical_fixes_tests {
     use sui::object;
     use std::option;
 
-    public struct USDT has drop {}
-    public struct USDC has drop {}
+    public public struct USDT has drop {}
+    public public struct USDC has drop {}
 
     const ADMIN: address = @0x1;
     const ALICE: address = @0x2;
@@ -275,7 +275,7 @@ module sui_amm::critical_fixes_tests {
             // If price impact logic were still CP-based, this scenario could either revert
             // with EExcessivePriceImpact or produce obviously nonsensical output.
             assert!(coin::value(&out) > 0, 0);
-            transfer::public_transfer(out, ADMIN);
+            transfer::transfer(out, ADMIN);
             clock::destroy_for_testing(clock);
             ts::return_shared(pool_val);
         };

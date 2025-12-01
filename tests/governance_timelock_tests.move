@@ -7,8 +7,8 @@ module sui_amm::governance_timelock_tests {
     use sui_amm::admin::{Self, AdminCap};
     use sui_amm::governance::{Self, GovernanceConfig};
 
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public struct USDT has drop {}
+    public struct USDC has drop {}
 
     const ADMIN: address = @0x1;
     #[allow(unused_const)]

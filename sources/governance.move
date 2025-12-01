@@ -1,7 +1,4 @@
 module sui_amm::governance {
-    use sui::object;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::table;
     use sui::clock;
     use sui::event;

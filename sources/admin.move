@@ -1,7 +1,4 @@
 module sui_amm::admin {
-    use sui::object;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::coin;
 
     use sui_amm::pool;

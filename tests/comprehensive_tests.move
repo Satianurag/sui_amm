@@ -13,8 +13,8 @@ module sui_amm::comprehensive_tests {
     use sui_amm::user_preferences;
     use sui_amm::slippage_protection;
 
-    struct USDC has drop {}
-    struct USDT has drop {}
+    public struct USDC has drop {}
+    public struct USDT has drop {}
     struct BTC has drop {}
 
     // ============================================

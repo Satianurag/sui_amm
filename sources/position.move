@@ -2,15 +2,13 @@
 /// This module manages the LPPosition struct which represents a user's liquidity position,
 /// tracks fees, and stores metadata for dynamic NFT display.
 module sui_amm::position {
-    use sui::object;
-    use sui::tx_context;
     use std::string;
     use sui::package;
     use sui::display;
 
     /// The LP Position NFT with cached values for dynamic display
     /// WARNING: Cached values may be stale. Call refresh_position_metadata() for accurate data.
-    public struct LPPosition has key {
+    public struct LPPosition has key, store {
         id: object::UID,
         pool_id: object::ID,
         liquidity: u64,

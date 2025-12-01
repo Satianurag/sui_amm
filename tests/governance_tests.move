@@ -10,7 +10,7 @@ module sui_amm::governance_tests {
     use sui_amm::admin::{Self, AdminCap};
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_propose_fee_change() {

@@ -1,13 +1,9 @@
 module sui_amm::limit_orders {
-    use sui::object;
     use sui::table;
     use sui::coin;
     use sui::balance;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::event;
     use sui::clock;
-    use std::option;
     
     use sui_amm::pool::{Self, LiquidityPool};
 

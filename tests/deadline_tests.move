@@ -8,8 +8,8 @@ module sui_amm::deadline_tests {
     use sui_amm::position::{LPPosition};
     use std::option;
 
-    struct USDT has drop {}
-    struct USDC has drop {}
+    public struct USDT has drop {}
+    public struct USDC has drop {}
 
     const ADMIN: address = @0x1;
     const ALICE: address = @0x2;

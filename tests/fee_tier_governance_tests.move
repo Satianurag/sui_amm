@@ -10,7 +10,7 @@ module sui_amm::fee_tier_governance_tests {
     use sui_amm::factory::{Self, PoolRegistry};
     use sui_amm::admin::{Self, AdminCap};
 
-    struct USDC has drop {}
+    public struct USDC has drop {}
     struct DAI has drop {}
 
     const ADMIN: address = @0xAD;
@@ -223,8 +223,8 @@ module sui_amm::fee_tier_governance_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -276,8 +276,8 @@ module sui_amm::fee_tier_governance_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };
@@ -329,8 +329,8 @@ module sui_amm::fee_tier_governance_tests {
             );
             
             transfer::public_transfer(position, USER);
-            transfer::public_transfer(refund_a, USER);
-            transfer::public_transfer(refund_b, USER);
+            transfer::transfer(refund_a, USER);
+            transfer::transfer(refund_b, USER);
             clock::destroy_for_testing(clock);
             ts::return_shared(registry);
         };

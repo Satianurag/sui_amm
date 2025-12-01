@@ -11,7 +11,7 @@ module sui_amm::partial_removal_tests {
     use sui_amm::position::{Self};
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_remove_50_percent() {

@@ -2,9 +2,6 @@
 /// Description: On-chain swap history tracking for users.
 /// This satisfies PRD requirement: "View swap history and statistics"
 module sui_amm::swap_history {
-    use sui::object;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::table;
     use sui::clock;
 
@@ -86,6 +83,7 @@ module sui_amm::swap_history {
     }
 
     /// Create and transfer user history to sender
+    #[allow(lint(self_transfer))]
     public fun create_and_transfer_history(ctx: &mut tx_context::TxContext) {
         let history = create_user_history(ctx);
         transfer::transfer(history, tx_context::sender(ctx));
@@ -292,7 +290,7 @@ module sui_amm::swap_history {
         limit: u64
     ): vector<SwapRecord> {
         let mut result = vector::empty<SwapRecord>();
-        let mut len = vector::length(&history.swaps);
+        let len = vector::length(&history.swaps);
         
         if (start >= len) {
             return result

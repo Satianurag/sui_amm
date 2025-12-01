@@ -2,9 +2,6 @@
 /// Description: Stores user preferences for slippage tolerance and other settings.
 /// This satisfies PRD requirement: "Set slippage tolerance preferences"
 module sui_amm::user_preferences {
-    use sui::object;
-    use sui::tx_context;
-    use sui::transfer;
     use sui::event;
 
     // Error codes

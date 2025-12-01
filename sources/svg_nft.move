@@ -3,7 +3,6 @@
 /// This satisfies PRD requirement: "Display my LP NFT in wallets and marketplaces"
 module sui_amm::svg_nft {
     use std::string::{Self, String};
-    use std::vector;
     use sui_amm::string_utils;
     use sui_amm::base64;
 
@@ -19,7 +18,7 @@ module sui_amm::svg_nft {
         il_bps: u64,
         fee_tier_bps: u64,
     ): String {
-        let mut svg = build_svg(
+        let svg = build_svg(
             pool_type,
             liquidity,
             value_a,

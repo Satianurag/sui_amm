@@ -10,7 +10,7 @@ module sui_amm::il_edge_tests {
     use sui_amm::position::{LPPosition};
 
     struct BTC has drop {}
-    struct USDC has drop {}
+    public struct USDC has drop {}
 
     #[test]
     fun test_il_no_price_change() {
