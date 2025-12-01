@@ -2,7 +2,26 @@
 
 A sophisticated automated market maker (AMM) protocol on Sui blockchain featuring NFT-based LP positions, StableSwap pools, and advanced DeFi capabilities.
 
+## Testnet Deployment
+
+**Network:** Sui Testnet
+
+| Resource | Address |
+|----------|---------|
+| Package ID | `0xbee008f7d698b99ba3dd2efc48f9143d34e1b35a9d65cf45587c307f3475c733` |
+| PoolRegistry | `0x82383421e87ba28d3d8ffcf274d83c20c985df660f2034a34a0cdf4fa82125d7` |
+| StatisticsRegistry | `0x45274f9d63eb5ac7da83d546c47e5b545086a01942459496d7ab15b48b322533` |
+| OrderRegistry | `0x883c3d313cc5202cc597dfe24109c211cce39dbe1671ca1822b9c18341123c46` |
+| GovernanceConfig | `0xeb87f8cc247f12efb07efa9a76e094c6085c870eee5d9caba598f22d5995d1ce` |
+| AdminCap | `0xedb3e6dd5a03b3d8286c05b6671bef6bdfa473bc6dd7562a7058bbeb6de8cd30` |
+| UpgradeCap | `0x0986f457c639d6f26073f287aa5b17bf53d0b0960ccde06ce3da926307e1bb2c` |
+
+**Transaction Digest:** `414dUtDPCaR6VySpyyKxN8tYFyECYjDFksGLnk6jbtBe`
+
+**Explorer:** [View on Sui Explorer](https://suiscan.xyz/testnet/tx/414dUtDPCaR6VySpyyKxN8tYFyECYjDFksGLnk6jbtBe)
+
 ## Table of Contents
+- [Testnet Deployment](#testnet-deployment)
 - [Features](#features)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)

@@ -65,7 +65,6 @@ module sui_amm::test_fee_distributor {
         
         // Create pool with 30 bps fee, 100 bps protocol fee, 0 creator fee
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,    // 0.3% fee
             100,   // 1% protocol fee
             0,     // 0% creator fee
@@ -127,7 +126,6 @@ module sui_amm::test_fee_distributor {
         
         // Create pool with initial liquidity from ADMIN
         let (pool_id, position_admin) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,    // 0.3% fee
             100,   // 1% protocol fee
             0,     // 0% creator fee
@@ -742,7 +740,6 @@ module sui_amm::test_fee_distributor {
         let clock = test_utils::create_clock_at(0, test_scenario::ctx(&mut scenario));
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             1_000_000_000,
             1_000_000_000,
@@ -794,7 +791,6 @@ module sui_amm::test_fee_distributor {
         let clock = test_utils::create_clock_at(0, test_scenario::ctx(&mut scenario));
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             1_000_000_000,
             1_000_000_000,

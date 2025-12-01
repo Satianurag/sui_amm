@@ -84,7 +84,6 @@ module sui_amm::test_governance {
         
         // Create pool
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,  // fee_bps
             100, // protocol_fee_bps
             0,   // creator_fee_bps
@@ -383,7 +382,6 @@ module sui_amm::test_governance {
         
         // Create pool
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,
             100,
             0,
@@ -459,7 +457,6 @@ module sui_amm::test_governance {
         
         // Create pool
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,
             100,
             0,
@@ -596,11 +593,10 @@ module sui_amm::test_governance {
         
         // Create stable pool
         let (pool_id, position) = test_utils::create_initialized_stable_pool<USDC, USDT>(
-            &mut scenario,
+            200, // amp
             5,   // fee_bps
             100, // protocol_fee_bps
             0,   // creator_fee_bps
-            100, // amp
             1_000_000_000,
             1_000_000_000,
             admin,
@@ -672,11 +668,10 @@ module sui_amm::test_governance {
         
         // Create stable pool
         let (pool_id, position) = test_utils::create_initialized_stable_pool<USDC, USDT>(
-            &mut scenario,
-            5,
-            100,
-            0,
-            100,
+            100, // amp
+            5,   // fee_bps
+            100, // protocol_fee_bps
+            0,   // creator_fee_bps
             1_000_000_000,
             1_000_000_000,
             admin,

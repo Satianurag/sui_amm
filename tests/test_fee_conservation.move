@@ -22,7 +22,6 @@ module sui_amm::test_fee_conservation {
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, _position1) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -243,7 +242,6 @@ module sui_amm::test_fee_conservation {
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, mut position) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -357,7 +355,6 @@ module sui_amm::test_fee_conservation {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, position1) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,

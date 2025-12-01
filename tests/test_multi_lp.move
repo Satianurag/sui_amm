@@ -29,7 +29,6 @@ module sui_amm::test_multi_lp {
         let (initial_a, initial_b) = (1_000_000_000u64, 1_000_000_000u64);
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -201,7 +200,6 @@ module sui_amm::test_multi_lp {
         let (initial_a, initial_b) = fixtures::minimum_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -341,7 +339,6 @@ module sui_amm::test_multi_lp {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,

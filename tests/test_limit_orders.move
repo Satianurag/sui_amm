@@ -32,7 +32,6 @@ module sui_amm::test_limit_orders {
         let (initial_a, initial_b) = fixtures::balanced_large_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -156,7 +155,6 @@ module sui_amm::test_limit_orders {
         let (initial_a, initial_b) = fixtures::balanced_large_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -267,7 +265,6 @@ module sui_amm::test_limit_orders {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -364,7 +361,6 @@ module sui_amm::test_limit_orders {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -453,7 +449,6 @@ module sui_amm::test_limit_orders {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, admin_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
