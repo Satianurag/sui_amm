@@ -270,22 +270,11 @@ module sui_amm::position {
         pos.min_a = pos.min_a + amount_a;
         pos.min_b = pos.min_b + amount_b;
         
-        // FIX [P2-16.4]: Entry Price Ratio Tracking - INTENTIONAL DESIGN DECISION
-        // 
-        // DO NOT update entry_price_ratio_scaled, original_deposit_a, or original_deposit_b
-        // when increasing liquidity. These fields track the INITIAL entry price for accurate
-        // impermanent loss (IL) calculation.
-        //
-        // Rationale:
-        // - IL is calculated relative to the original entry price, not the average entry price
-        // - Updating these values would incorrectly reduce displayed IL
-        // - Users need to see IL from their first deposit to make informed decisions
-        //
-        // If users want to track IL for new deposits separately, they should:
-        // 1. Create a new position for the additional liquidity, OR
-        // 2. Use external tracking tools to monitor multiple entry points
-        //
-        // This behavior is documented and intentional, not a bug.
+        // FIX [IL Tracking]: Update original deposits to track total HODL value
+        // We must track the total amount deposited to correctly calculate IL
+        // (Held Value vs LP Value)
+        pos.original_deposit_a = pos.original_deposit_a + amount_a;
+        pos.original_deposit_b = pos.original_deposit_b + amount_b;
     }
 
     /// Decrease liquidity (for partial removal)
@@ -319,12 +308,18 @@ module sui_amm::position {
             // Complete removal - zero everything
             pos.min_a = 0;
             pos.min_b = 0;
+            pos.original_deposit_a = 0;
+            pos.original_deposit_b = 0;
         } else {
             // Partial removal - reduce min_a and min_b proportionally
             // Formula: new_min = old_min * remaining_liquidity / original_liquidity
             // Using u128 to prevent any precision loss
             let new_min_a = ((pos.min_a as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
             let new_min_b = ((pos.min_b as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
+            
+            // Also reduce original_deposit_a/b proportionally to maintain correct IL tracking
+            let new_original_a = ((pos.original_deposit_a as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
+            let new_original_b = ((pos.original_deposit_b as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
             
             // FIX [P2-16.5]: Verify no precision loss occurred
             // The new values should be proportional to the remaining liquidity
@@ -347,6 +342,8 @@ module sui_amm::position {
             
             pos.min_a = new_min_a;
             pos.min_b = new_min_b;
+            pos.original_deposit_a = new_original_a;
+            pos.original_deposit_b = new_original_b;
         };
     }
 
@@ -373,6 +370,16 @@ module sui_amm::position {
         // Regenerate on-chain SVG with updated values
         refresh_nft_image(pos);
     }
+
+    /// Update only the timestamp without changing cached values
+    /// Used by refresh_position_metadata when values haven't changed but staleness tracking needs update
+    public(package) fun touch_metadata_timestamp(
+        pos: &mut LPPosition,
+        clock: &sui::clock::Clock,
+    ) {
+        pos.last_metadata_update_ms = sui::clock::timestamp_ms(clock);
+    }
+
 
     public(package) fun set_pool_metadata(
         pos: &mut LPPosition,
@@ -466,12 +473,10 @@ module sui_amm::position {
         original_deposit_a: u64,
         original_deposit_b: u64,
         current_price_ratio_scaled: u64,
-        entry_price_ratio_scaled: u64
+        _entry_price_ratio_scaled: u64
     ): u128 {
-        // If price hasn't changed, held value equals LP value (no IL)
-        if (current_price_ratio_scaled == entry_price_ratio_scaled) {
-            return ((original_deposit_a as u128) + (original_deposit_b as u128))
-        };
+        // FIX [IL Calculation]: Removed incorrect optimization that returned sum of raw amounts
+        // We must always calculate value in terms of Token A to be correct
         
         // Calculate current value of original token A holdings
         let value_a = (original_deposit_a as u128);

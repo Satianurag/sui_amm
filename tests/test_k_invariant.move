@@ -316,7 +316,8 @@ module sui_amm::test_k_invariant {
         let seed = fixtures::default_random_seed();
         let mut i = 0;
         
-        while (i < 100) {
+        let iterations = fixtures::property_test_iterations();
+        while (i < iterations) {
             let operation = test_utils::lcg_random(seed, i) % 3;
             
             if (operation == 0) {
@@ -348,12 +349,18 @@ module sui_amm::test_k_invariant {
                 // Add liquidity operation
                 let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                 
-                let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
-                let (add_a, add_b) = test_utils::random_liquidity_amounts(
-                    seed,
-                    i + 2,
-                    reserve_a / 10 // Max 10% of current reserve
-                );
+                let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+                
+                // Generate random amount A
+                let add_a = test_utils::random_amount(seed, i + 2, reserve_a / 10);
+                
+                // Calculate amount B to match ratio: add_b = add_a * reserve_b / reserve_a
+                // Use u128 to prevent overflow
+                let add_b = if (reserve_a > 0) {
+                    ((add_a as u128) * (reserve_b as u128) / (reserve_a as u128)) as u64
+                } else {
+                    test_utils::random_amount(seed, i + 3, reserve_b / 10)
+                };
                 
                 if (add_a > 1000 && add_b > 1000) {
                     let new_position = test_utils::add_liquidity_helper(

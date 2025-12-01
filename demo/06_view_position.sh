@@ -17,7 +17,11 @@ source .env 2>/dev/null || { echo "Run 01_deploy.sh first!"; exit 1; }
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 NC='\033[0m'
+
+echo -e "${CYAN}PRD Requirement: LP Position NFT (Section 2.1.3)${NC}"
 
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────┐"

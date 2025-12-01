@@ -39,7 +39,20 @@ module sui_amm::slippage_protection {
         // We want Price <= max_price
         // amount_in * 1e9 / amount_out <= max_price
         
-        assert!(amount_out > 0, EInsufficientOutput);
+        // If max_price is u64::MAX, we treat it as "no limit"
+        if (max_price == 18446744073709551615) {
+            return
+        };
+        
+        // Special case: If amount_out == 0, only allow if max_price is effectively unlimited
+        // This allows dust swaps (with min_out=0) to pass when user explicitly disables price limits
+        // by passing a very large max_price (e.g., u64::MAX)
+        if (amount_out == 0) {
+            // Only allow zero output if max_price is close to u64::MAX (> 1e18)
+            // This prevents abuse while allowing legitimate dust swaps with max_price=u64::MAX
+            assert!(max_price > 1_000_000_000_000_000_000, EInsufficientOutput);
+            return
+        };
         
         let price = (amount_in as u128) * 1_000_000_000 / (amount_out as u128);
         assert!(price <= (max_price as u128), EExcessiveSlippage);

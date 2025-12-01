@@ -561,10 +561,11 @@ module sui_amm::stable_pool {
         } else {
             // Default: enforce 2% maximum slippage (200 bps) for stable pools when max_price not specified
             // Stable pools should have lower slippage tolerance than regular pools
-            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (A per B)
+            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 200 / 10000); // 2% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate and check price impact for StableSwap based on the
@@ -682,10 +683,11 @@ module sui_amm::stable_pool {
         } else {
             // Default: enforce 2% maximum slippage (200 bps) for stable pools when max_price not specified
             // Stable pools should have lower slippage tolerance than regular pools
-            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (A per B)
+            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 200 / 10000); // 2% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate and check price impact for StableSwap
@@ -807,10 +809,11 @@ module sui_amm::stable_pool {
         } else {
             // Default: enforce 2% maximum slippage (200 bps) for stable pools when max_price not specified
             // Stable pools should have lower slippage tolerance than regular pools
-            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (B per A)
+            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 200 / 10000); // 2% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         balance::join(&mut pool.reserve_b, coin::into_balance(coin_in));
@@ -923,10 +926,11 @@ module sui_amm::stable_pool {
         } else {
             // Default: enforce 2% maximum slippage (200 bps) for stable pools when max_price not specified
             // Stable pools should have lower slippage tolerance than regular pools
-            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (B per A)
+            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 200 / 10000); // 2% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         balance::join(&mut pool.reserve_b, coin::into_balance(coin_in));
@@ -1284,6 +1288,19 @@ module sui_amm::stable_pool {
         let fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
         
+        // FIX [Metadata Staleness]: Always update timestamp on explicit refresh
+        let cached_value_a = position::cached_value_a(position);
+        let cached_value_b = position::cached_value_b(position);
+        let cached_fee_a = position::cached_fee_a(position);
+        let cached_fee_b = position::cached_fee_b(position);
+        
+        if (value_a == cached_value_a && value_b == cached_value_b && 
+            (fee_a as u64) == cached_fee_a && (fee_b as u64) == cached_fee_b) {
+            // Values unchanged but still update timestamp to mark metadata as fresh
+            position::touch_metadata_timestamp(position, clock);
+            return
+        };
+        
         let il_bps = get_impermanent_loss(pool, position);
         position::update_cached_values(position, value_a, value_b, (fee_a as u64), (fee_b as u64), il_bps, clock);
     }
@@ -1443,10 +1460,12 @@ module sui_amm::stable_pool {
     /// Returns interpolated value if ramping is active
     public fun get_current_amp<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
-        clock: &clock::Clock
+        clock: &sui::clock::Clock
     ): u64 {
-        // If not ramping, return current amp
-        if (pool.amp_ramp_start_time == 0 || pool.amp_ramp_end_time == 0) {
+        // FIX [Amp Ramping Sentinel]: Use end_time == 0 instead of start_time == 0
+        // This allows ramping to start at timestamp 0 (e.g., in test environments)
+        // If not ramping, amp_ramp_end_time will be 0
+        if (pool.amp_ramp_end_time == 0) {
             return pool.amp
         };
 

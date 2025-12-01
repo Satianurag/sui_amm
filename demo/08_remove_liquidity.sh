@@ -17,6 +17,9 @@ source .env 2>/dev/null || { echo "Run 01_deploy.sh first!"; exit 1; }
 
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${CYAN}PRD Requirement: Remove Liquidity Workflow (Section 3.2.5)${NC}"

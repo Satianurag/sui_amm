@@ -435,8 +435,12 @@ module sui_amm::test_position {
         let mut pool = ts::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Execute swap to move price (reduced to avoid price impact limits)
-        let swap_amount = initial_b / 5; // Swap 20% of reserve B for A
+        // Increase price impact limit to allow large swap
+        pool::set_risk_params_for_testing(&mut pool, 100, 10000); // 100% max impact
+
+        // Execute swap to move price to ~2x
+        // Target: swap ~41.5% of B to A
+        let swap_amount = initial_b * 415 / 1000;
         let _coin_out = test_utils::swap_b_to_a_helper(
             &mut pool,
             swap_amount,
@@ -451,9 +455,8 @@ module sui_amm::test_position {
         // Get IL
         let il_bps = pool::get_impermanent_loss(&pool, &position);
         
-        // For 2x price movement, theoretical IL is ~5.7%
-        // Allow tolerance since we can't achieve exact 2x with discrete swaps
-        assert!(il_bps > 400 && il_bps < 800, 0); // Between 4% and 8%
+        // For 2x price movement, theoretical IL is ~5.7% (570 bps)
+        assert!(il_bps > 500 && il_bps < 650, 0);
         
         clock::destroy_for_testing(clock);
         ts::return_shared(pool);
@@ -484,8 +487,12 @@ module sui_amm::test_position {
         let mut pool = ts::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Execute swap to move price (reduced to avoid price impact limits)
-        let swap_amount = initial_b / 4; // Swap 25% of reserve B
+        // Increase price impact limit to allow large swap
+        pool::set_risk_params_for_testing(&mut pool, 100, 10000); // 100% max impact
+
+        // Execute swap to move price to ~5x
+        // Target: swap ~123.6% of B to A
+        let swap_amount = 1_236_000_000;
         let _coin_out = test_utils::swap_b_to_a_helper(
             &mut pool,
             swap_amount,
@@ -500,8 +507,8 @@ module sui_amm::test_position {
         // Get IL
         let il_bps = pool::get_impermanent_loss(&pool, &position);
         
-        // For 5x price movement, theoretical IL is ~25.5%
-        assert!(il_bps > 2000 && il_bps < 3000, 0); // Between 20% and 30%
+        // For 5x price movement, theoretical IL is ~25.5% (2550 bps)
+        assert!(il_bps > 2400 && il_bps < 2700, 0);
         
         clock::destroy_for_testing(clock);
         ts::return_shared(pool);
@@ -532,8 +539,12 @@ module sui_amm::test_position {
         let mut pool = ts::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
+        // Increase price impact limit to allow large swap
+        pool::set_risk_params_for_testing(&mut pool, 100, 10000); // 100% max impact
+
         // Execute extreme swap to move price to ~10x
-        let swap_amount = initial_b * 4 / 5; // Swap 80% of reserve B
+        // Target: swap ~216.2% of B to A
+        let swap_amount = 2_162_000_000;
         let _coin_out = test_utils::swap_b_to_a_helper(
             &mut pool,
             swap_amount,
@@ -548,8 +559,8 @@ module sui_amm::test_position {
         // Get IL
         let il_bps = pool::get_impermanent_loss(&pool, &position);
         
-        // For 10x price movement, theoretical IL is ~42.3%
-        assert!(il_bps > 3500 && il_bps < 5000, 0); // Between 35% and 50%
+        // For 10x price movement, theoretical IL is ~42.3% (4230 bps)
+        assert!(il_bps > 4100 && il_bps < 4400, 0);
         
         clock::destroy_for_testing(clock);
         ts::return_shared(pool);
@@ -958,8 +969,11 @@ module sui_amm::test_position {
         assert!(new_min_a > original_min_a, 0);
         assert!(new_min_b > original_min_b, 1);
         
-        // Execute swap to change price
-        let swap_amount = fixtures::large_swap();
+        // Increase price impact limit to allow large swap
+        pool::set_risk_params_for_testing(&mut pool, 100, 10000); // 100% max impact
+
+        // Execute swap to change price significantly
+        let swap_amount = (initial_b + add_b) / 2; // 50% of total B
         let _coin_out = test_utils::swap_a_to_b_helper(
             &mut pool,
             swap_amount,
@@ -976,7 +990,7 @@ module sui_amm::test_position {
         
         // IL should be non-zero since price changed
         // The key test is that IL is calculated from original entry, not diluted by increase
-        assert!(il_bps > 0, 2);
+        assert!(il_bps > 100, 2);
         
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
@@ -1009,8 +1023,11 @@ module sui_amm::test_position {
         let mut pool = ts::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Change price (reduced to avoid price impact limits)
-        let swap_amount = initial_b / 5;
+        // Increase price impact limit to allow large swap
+        pool::set_risk_params_for_testing(&mut pool, 100, 10000); // 100% max impact
+
+        // Change price significantly (to ~2x)
+        let swap_amount = initial_b * 415 / 1000;
         let _coin_out = test_utils::swap_b_to_a_helper(
             &mut pool,
             swap_amount,

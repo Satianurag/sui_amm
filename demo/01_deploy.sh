@@ -16,33 +16,45 @@ echo ""
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 echo -e "${BLUE}[1/3]${NC} Checking localnet connection..."
 sui client active-env
 echo ""
 
 echo -e "${BLUE}[2/3]${NC} Building contracts..."
-cd ..
-sui move build
-cd demo
+sui move build -p "$PROJECT_DIR"
 echo ""
 
 echo -e "${BLUE}[3/3]${NC} Publishing to localnet..."
 echo ""
 
 # Publish and capture output
-PUBLISH_OUTPUT=$(sui client publish --gas-budget 1000000000 --json)
+RAW_OUTPUT=$(sui client publish "$PROJECT_DIR" --gas-budget 2000000000 --json 2>&1)
+
+# Extract JSON from output (starts with { and ends with })
+PUBLISH_OUTPUT=$(echo "$RAW_OUTPUT" | sed -n '/^{/,/^}/p')
 
 # Save full output for debugging
-echo "$PUBLISH_OUTPUT" > deploy_output.json
+echo "$PUBLISH_OUTPUT" > "$SCRIPT_DIR/deploy_output.json"
+
+# Check for errors
+if echo "$PUBLISH_OUTPUT" | jq -e '.effects.status.status == "failure"' > /dev/null 2>&1; then
+    echo -e "${RED}Deployment failed:${NC}"
+    echo "$PUBLISH_OUTPUT" | jq -r '.effects.status.error // "Unknown error"'
+    exit 1
+fi
 
 # Extract package ID
-PACKAGE_ID=$(echo "$PUBLISH_OUTPUT" | jq -r '.objectChanges[] | select(.type == "published") | .packageId' | head -n 1)
+PACKAGE_ID=$(echo "$PUBLISH_OUTPUT" | jq -r '.objectChanges[] | select(.type == "published") | .packageId' 2>/dev/null | head -n 1)
 
 if [ -z "$PACKAGE_ID" ] || [ "$PACKAGE_ID" == "null" ]; then
     echo -e "${YELLOW}Could not parse JSON, trying alternative method...${NC}"
-    # Fallback parsing if jq fails or structure is different
     PACKAGE_ID=$(echo "$PUBLISH_OUTPUT" | grep -oP 'packageId.*?0x[a-fA-F0-9]+' | head -1 | grep -oP '0x[a-fA-F0-9]+')
 fi
 
@@ -61,7 +73,7 @@ echo -e "Package ID: ${GREEN}$PACKAGE_ID${NC}"
 echo ""
 
 # Save package ID for other scripts
-echo "PACKAGE_ID=$PACKAGE_ID" > .env
+echo "PACKAGE_ID=$PACKAGE_ID" > "$SCRIPT_DIR/.env"
 
 # Extract important object IDs
 echo -e "${BLUE}Extracting created objects...${NC}"
@@ -69,7 +81,7 @@ echo -e "${BLUE}Extracting created objects...${NC}"
 # Helper function to extract object ID by type
 get_object_id() {
     local type=$1
-    echo "$PUBLISH_OUTPUT" | jq -r ".objectChanges[] | select(.objectType != null) | select(.objectType | contains(\"$type\")) | .objectId" | head -n 1
+    echo "$PUBLISH_OUTPUT" | jq -r ".objectChanges[] | select(.objectType != null) | select(.objectType | contains(\"$type\")) | .objectId" 2>/dev/null | head -n 1
 }
 
 POOL_REGISTRY=$(get_object_id "PoolRegistry")
@@ -78,25 +90,11 @@ STATS_REGISTRY=$(get_object_id "StatisticsRegistry")
 ORDER_REGISTRY=$(get_object_id "OrderRegistry")
 GOV_CONFIG=$(get_object_id "GovernanceConfig")
 
-# Extract TreasuryCaps for USDC and USDT
-USDC_TREASURY=$(get_object_id "Coin<0x$PACKAGE_ID::usdc::USDC>")
-USDT_TREASURY=$(get_object_id "Coin<0x$PACKAGE_ID::usdt::USDT>")
-
-# If TreasuryCaps are not found directly (sometimes they are wrapped or different), try to find by type
-if [ -z "$USDC_TREASURY" ]; then
-    USDC_TREASURY=$(get_object_id "TreasuryCap<0x$PACKAGE_ID::usdc::USDC>")
-fi
-if [ -z "$USDT_TREASURY" ]; then
-    USDT_TREASURY=$(get_object_id "TreasuryCap<0x$PACKAGE_ID::usdt::USDT>")
-fi
-
-echo "POOL_REGISTRY=$POOL_REGISTRY" >> .env
-echo "ADMIN_CAP=$ADMIN_CAP" >> .env
-echo "STATS_REGISTRY=$STATS_REGISTRY" >> .env
-echo "ORDER_REGISTRY=$ORDER_REGISTRY" >> .env
-echo "GOV_CONFIG=$GOV_CONFIG" >> .env
-echo "USDC_TREASURY=$USDC_TREASURY" >> .env
-echo "USDT_TREASURY=$USDT_TREASURY" >> .env
+echo "POOL_REGISTRY=$POOL_REGISTRY" >> "$SCRIPT_DIR/.env"
+echo "ADMIN_CAP=$ADMIN_CAP" >> "$SCRIPT_DIR/.env"
+echo "STATS_REGISTRY=$STATS_REGISTRY" >> "$SCRIPT_DIR/.env"
+echo "ORDER_REGISTRY=$ORDER_REGISTRY" >> "$SCRIPT_DIR/.env"
+echo "GOV_CONFIG=$GOV_CONFIG" >> "$SCRIPT_DIR/.env"
 
 echo ""
 echo "Created Objects:"
@@ -105,8 +103,6 @@ echo "  - AdminCap:          $ADMIN_CAP"
 echo "  - StatisticsRegistry: $STATS_REGISTRY"
 echo "  - OrderRegistry:     $ORDER_REGISTRY"
 echo "  - GovernanceConfig:  $GOV_CONFIG"
-echo "  - USDC Treasury:     $USDC_TREASURY"
-echo "  - USDT Treasury:     $USDT_TREASURY"
 echo ""
 echo -e "${GREEN}✓ Environment saved to demo/.env${NC}"
 echo ""

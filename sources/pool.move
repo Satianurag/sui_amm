@@ -578,10 +578,14 @@ module sui_amm::pool {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
         } else {
             // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
-            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (A per B)
+            // spot_price = reserve_a / reserve_b (how much A per unit B)
+            // effective_price = amount_in / amount_out (how much A user pays per unit B)
+            // A worse trade means HIGHER effective_price, so we check: effective_price <= spot * 1.05
+            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate price impact using INITIAL reserves
@@ -686,10 +690,11 @@ module sui_amm::pool {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
         } else {
             // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
-            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (A per B)
+            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate price impact using INITIAL reserves
@@ -803,10 +808,11 @@ module sui_amm::pool {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
         } else {
             // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
-            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (B per A)
+            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate price impact using INITIAL reserves
@@ -910,10 +916,11 @@ module sui_amm::pool {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
         } else {
             // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
-            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
-            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            // Use "input per output" price representation (B per A)
+            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+            let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
             let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
-            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+            assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate price impact using INITIAL reserves
@@ -1289,7 +1296,9 @@ module sui_amm::pool {
         let fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
         
-        // FIX [P2]: Optimization - skip update if all values unchanged
+        // FIX [Metadata Staleness]: Always update timestamp on explicit refresh
+        // Even if values haven't changed, an explicit refresh should update last_metadata_update_ms
+        // to ensure is_metadata_stale() returns false after this call
         let cached_value_a = position::cached_value_a(position);
         let cached_value_b = position::cached_value_b(position);
         let cached_fee_a = position::cached_fee_a(position);
@@ -1297,7 +1306,8 @@ module sui_amm::pool {
         
         if (value_a == cached_value_a && value_b == cached_value_b && 
             (fee_a as u64) == cached_fee_a && (fee_b as u64) == cached_fee_b) {
-            // All values match - skip update to save gas
+            // Values unchanged but still update timestamp to mark metadata as fresh
+            position::touch_metadata_timestamp(position, clock);
             return
         };
 

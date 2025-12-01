@@ -1,112 +1,145 @@
-# SUI AMM Demo - Video Walkthrough Guide
+# SUI AMM Demo
 
-## 🎬 Demo Flow for Video Recording
-
-This demo showcases all PRD requirements on localnet.
-
-## 📁 Demo Files
-
-```
-demo/
-├── README.md                 # This file
-├── run_all.sh               # 🎬 Run complete demo (for video)
-├── 01_deploy.sh             # Deploy contracts
-├── 02_create_test_coins.sh  # Setup test environment
-├── 03_create_pool.sh        # Pool creation workflow
-├── 04_add_liquidity.sh      # Add liquidity + NFT mint
-├── 05_swap.sh               # Swap execution
-├── 06_view_position.sh      # View LP Position NFT
-├── 07_claim_fees.sh         # Fee claiming
-├── 08_remove_liquidity.sh   # Remove liquidity
-├── 09_stable_pool.sh        # StableSwap demo
-├── 10_advanced_features.sh  # Limit orders, governance, etc.
-└── interactive_demo.ts      # TypeScript interactive demo
-```
-
-## 🚀 Quick Start (For Video Recording)
-
-```bash
-cd demo
-./run_all.sh
-```
-
-This runs all scripts with pauses between each step - perfect for video!
+Interactive demo scripts for the SUI AMM decentralized exchange.
 
 ## Prerequisites
 
-```bash
-# 1. Start localnet
-sui start --with-faucet
+Before running the demo, you need:
 
-# 2. Switch to localnet (new terminal)
-sui client switch --env localnet
+1. **Sui CLI** installed ([installation guide](https://docs.sui.io/guides/developer/getting-started/sui-install))
+2. **jq** installed (JSON processor)
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install jq
+   
+   # macOS
+   brew install jq
+   ```
 
-# 3. Get test SUI
-sui client faucet
+## Quick Start (Automated)
 
-# 4. Check balance
-sui client gas
-```
-
-## Demo Scripts
-
-Run these in order for video:
-
-| Script | PRD Requirement | Duration |
-|--------|-----------------|----------|
-| `01_deploy.sh` | Deploy contracts | 1 min |
-| `02_create_pool.sh` | Pool Creation Workflow | 2 min |
-| `03_add_liquidity.sh` | Add Liquidity + NFT Mint | 2 min |
-| `04_swap.sh` | Swap Execution | 2 min |
-| `05_view_position.sh` | View LP Position NFT | 1 min |
-| `06_claim_fees.sh` | Fee Claiming | 1 min |
-| `07_remove_liquidity.sh` | Remove Liquidity | 1 min |
-| `08_stable_pool.sh` | StableSwap Demo | 2 min |
-
-## Quick Start
+The easiest way to run the full demo:
 
 ```bash
+# 1. Start Sui localnet (in a separate terminal)
+RUST_LOG=off,sui_node=warn sui start --with-faucet --force-regenesis
+
+# 2. Wait ~15 seconds for localnet to start, then run:
 cd demo
-chmod +x *.sh
-./run_all.sh
+./run_automated.sh
 ```
 
-## What Each Script Shows
+That's it! The automated script handles everything.
 
-### 1. Deploy (`01_deploy.sh`)
-- Publishes all contracts
-- Shows PoolFactory, AdminCap creation
+## Manual Step-by-Step
 
-### 2. Create Pool (`02_create_pool.sh`)
-- Creates token pair pool with 0.3% fee
-- Shows PoolCreated event
-- Demonstrates pool registry
+If you prefer running scripts individually:
 
-### 3. Add Liquidity (`03_add_liquidity.sh`)
-- Adds liquidity to pool
-- **Mints LP Position NFT** ⭐
-- Shows liquidity shares calculation
+```bash
+# 1. Start localnet (separate terminal)
+RUST_LOG=off,sui_node=warn sui start --with-faucet --force-regenesis
 
-### 4. Swap (`04_swap.sh`)
-- Executes token swap
-- Shows price impact calculation
-- Demonstrates slippage protection
+# 2. Wait for localnet, then get test SUI
+sui client faucet
+sleep 5
 
-### 5. View Position (`05_view_position.sh`)
-- Displays NFT metadata
-- Shows current position value
-- Shows accumulated fees
-- **On-chain SVG display** ⭐
+# 3. Run scripts in order
+cd demo
+./01_deploy.sh
+./02_create_test_coins.sh
+./03_create_pool.sh
+./04_add_liquidity.sh
+./05_swap.sh
+./06_view_position.sh
+./07_claim_fees.sh
+./08_remove_liquidity.sh
+./09_stable_pool.sh
+./10_advanced_features.sh
+```
 
-### 6. Claim Fees (`06_claim_fees.sh`)
-- Claims accumulated swap fees
-- Shows pro-rata distribution
+## Common Issues & Solutions
 
-### 7. Remove Liquidity (`07_remove_liquidity.sh`)
-- Partial/full liquidity removal
-- NFT burn on full removal
+### "Connection refused" error
+**Problem:** Localnet isn't running.
+**Solution:** Start localnet first:
+```bash
+RUST_LOG=off,sui_node=warn sui start --with-faucet --force-regenesis
+```
 
-### 8. StableSwap (`08_stable_pool.sh`)
-- Creates stable pool (USDC-USDT style)
-- Shows lower slippage for stable pairs
-- Amplification coefficient demo
+### "No gas coins found" error
+**Problem:** Your wallet has no SUI tokens.
+**Solution:** Request from faucet:
+```bash
+sui client faucet
+sleep 5  # Wait for faucet
+sui client gas  # Verify you have SUI
+```
+
+### "POOL_ID not found" error
+**Problem:** Running scripts out of order.
+**Solution:** Run scripts in numerical order (01, 02, 03...) or use `run_automated.sh`.
+
+### Deploy fails silently
+**Problem:** Not enough gas or localnet issues.
+**Solution:** 
+```bash
+# Check you have enough SUI (need ~2 SUI for deploy)
+sui client gas
+
+# If low, request more
+sui client faucet
+```
+
+### "Invalid fee tier" error
+**Problem:** Using wrong fee value for pool creation.
+**Solution:** Valid fee tiers are: 5 (0.05%), 30 (0.30%), 100 (1.00%) basis points.
+
+## Demo Scripts Overview
+
+| Script | What it does |
+|--------|--------------|
+| `01_deploy.sh` | Deploys all AMM contracts |
+| `02_create_test_coins.sh` | Creates USDC & USDT test tokens |
+| `03_create_pool.sh` | Creates SUI-USDC liquidity pool |
+| `04_add_liquidity.sh` | Adds liquidity, mints LP NFT |
+| `05_swap.sh` | Executes a token swap |
+| `06_view_position.sh` | Shows LP position details |
+| `07_claim_fees.sh` | Info about fee claiming |
+| `08_remove_liquidity.sh` | Info about removing liquidity |
+| `09_stable_pool.sh` | Creates USDC-USDT stable pool |
+| `10_advanced_features.sh` | Shows limit orders, governance |
+
+## Files
+
+```
+demo/
+├── run_automated.sh          # ⭐ Run this for full demo
+├── 01_deploy.sh              # Deploy contracts
+├── 02_create_test_coins.sh   # Create test tokens
+├── 03_create_pool.sh         # Create pool
+├── 04_add_liquidity.sh       # Add liquidity
+├── 05_swap.sh                # Execute swap
+├── 06_view_position.sh       # View LP position
+├── 07_claim_fees.sh          # Fee claiming info
+├── 08_remove_liquidity.sh    # Remove liquidity info
+├── 09_stable_pool.sh         # StableSwap demo
+├── 10_advanced_features.sh   # Advanced features
+├── test_coins/               # Test token package
+└── .env                      # Generated config (after deploy)
+```
+
+## Environment Variables
+
+After running `01_deploy.sh`, a `.env` file is created with:
+- `PACKAGE_ID` - Deployed AMM package
+- `POOL_REGISTRY` - Pool registry object
+- `POOL_ID` - Created pool (after `03_create_pool.sh`)
+- `COIN_PACKAGE_ID` - Test coins package
+- etc.
+
+## Tips
+
+1. **Always start fresh:** If something breaks, restart localnet with `--force-regenesis`
+2. **Check gas:** Make sure you have enough SUI before each script
+3. **Read output:** Scripts show what's happening and next steps
+4. **Use automated script:** `run_automated.sh` handles all the complexity

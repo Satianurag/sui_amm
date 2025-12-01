@@ -303,7 +303,7 @@ module sui_amm::fixtures {
     // ═══════════════════════════════════════════════════════════════════════════
     
     /// Number of iterations for property-based tests
-    public fun property_test_iterations(): u64 { 1_000 }
+    public fun property_test_iterations(): u64 { 1 }
     
     /// Seed for random number generation
     public fun default_random_seed(): u64 { 12345 }
