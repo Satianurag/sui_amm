@@ -16,7 +16,6 @@ module sui_amm::test_fee_conservation {
     #[test]
     fun test_fee_conservation_1000_random_claims() {
         let mut scenario = test_scenario::begin(fixtures::admin());
-        let ctx = test_scenario::ctx(&mut scenario);
         
         // Create pool with standard liquidity
         let (retail_a, retail_b) = fixtures::retail_liquidity();
@@ -28,14 +27,15 @@ module sui_amm::test_fee_conservation {
             retail_a,
             retail_b,
             fixtures::admin(),
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
+        position::destroy_for_testing(_position1);
         
         test_scenario::next_tx(&mut scenario, fixtures::user1());
         
         // Add second LP position
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
         let _position2 = test_utils::add_liquidity_helper(
             &mut pool,
@@ -45,8 +45,9 @@ module sui_amm::test_fee_conservation {
             0,
             test_utils::far_future(),
             &clock,
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
+        position::destroy_for_testing(_position2);
         
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);
@@ -55,7 +56,7 @@ module sui_amm::test_fee_conservation {
         
         // Add third LP position
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
         let _position3 = test_utils::add_liquidity_helper(
             &mut pool,
@@ -65,8 +66,9 @@ module sui_amm::test_fee_conservation {
             0,
             test_utils::far_future(),
             &clock,
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
+        position::destroy_for_testing(_position3);
         
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);
@@ -75,7 +77,7 @@ module sui_amm::test_fee_conservation {
         
         // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         let mut position1 = test_scenario::take_from_sender<position::LPPosition>(&scenario);
         
         test_scenario::next_tx(&mut scenario, fixtures::user1());
@@ -115,7 +117,7 @@ module sui_amm::test_fee_conservation {
                         0,
                         test_utils::far_future(),
                         &clock,
-                        ctx
+                        test_scenario::ctx(&mut scenario)
                     );
                     coin::burn_for_testing(coin_out);
                     
@@ -133,7 +135,7 @@ module sui_amm::test_fee_conservation {
                         0,
                         test_utils::far_future(),
                         &clock,
-                        ctx
+                        test_scenario::ctx(&mut scenario)
                     );
                     coin::burn_for_testing(coin_out);
                     
@@ -152,7 +154,7 @@ module sui_amm::test_fee_conservation {
                     &mut position1,
                     &clock,
                     fixtures::far_future_deadline(),
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 
                 let claimed_a = coin::value(&fee_a);
@@ -174,7 +176,7 @@ module sui_amm::test_fee_conservation {
                     &mut position2,
                     &clock,
                     fixtures::far_future_deadline(),
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 
                 let claimed_a = coin::value(&fee_a);
@@ -196,7 +198,7 @@ module sui_amm::test_fee_conservation {
                     &mut position3,
                     &clock,
                     fixtures::far_future_deadline(),
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 
                 let claimed_a = coin::value(&fee_a);
@@ -236,7 +238,6 @@ module sui_amm::test_fee_conservation {
     #[test]
     fun test_no_fee_double_claiming() {
         let mut scenario = test_scenario::begin(fixtures::admin());
-        let ctx = test_scenario::ctx(&mut scenario);
         
         // Create pool with standard liquidity
         let (retail_a, retail_b) = fixtures::retail_liquidity();
@@ -248,14 +249,14 @@ module sui_amm::test_fee_conservation {
             retail_a,
             retail_b,
             fixtures::admin(),
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
         // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
         let seed = fixtures::alt_random_seed();
         let mut i = 0;
@@ -278,7 +279,7 @@ module sui_amm::test_fee_conservation {
                         0,
                         test_utils::far_future(),
                         &clock,
-                        ctx
+                        test_scenario::ctx(&mut scenario)
                     );
                     coin::burn_for_testing(coin_out);
                 } else {
@@ -290,7 +291,7 @@ module sui_amm::test_fee_conservation {
                         0,
                         test_utils::far_future(),
                         &clock,
-                        ctx
+                        test_scenario::ctx(&mut scenario)
                     );
                     coin::burn_for_testing(coin_out);
                 };
@@ -304,7 +305,7 @@ module sui_amm::test_fee_conservation {
                 &mut position,
                 &clock,
                 fixtures::far_future_deadline(),
-                ctx
+                test_scenario::ctx(&mut scenario)
             );
             
             let _claimed_a_1 = coin::value(&fee_a_1);
@@ -319,7 +320,7 @@ module sui_amm::test_fee_conservation {
                 &mut position,
                 &clock,
                 fixtures::far_future_deadline(),
-                ctx
+                test_scenario::ctx(&mut scenario)
             );
             
             let claimed_a_2 = coin::value(&fee_a_2);
@@ -349,7 +350,6 @@ module sui_amm::test_fee_conservation {
     #[test]
     fun test_fee_conservation_multiple_lps() {
         let mut scenario = test_scenario::begin(fixtures::admin());
-        let ctx = test_scenario::ctx(&mut scenario);
         
         // Create pool with initial liquidity
         let (initial_a, initial_b) = fixtures::retail_liquidity();
@@ -361,13 +361,13 @@ module sui_amm::test_fee_conservation {
             initial_a,
             initial_b,
             fixtures::admin(),
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
         // Add multiple LP positions with varying amounts
         let seed = fixtures::default_random_seed();
@@ -392,7 +392,7 @@ module sui_amm::test_fee_conservation {
                     0,
                     test_utils::far_future(),
                     &clock,
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 vector::push_back(&mut positions, new_position);
             };
@@ -418,7 +418,7 @@ module sui_amm::test_fee_conservation {
                     0,
                     test_utils::far_future(),
                     &clock,
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 coin::burn_for_testing(coin_out);
                 
@@ -436,7 +436,7 @@ module sui_amm::test_fee_conservation {
                     0,
                     test_utils::far_future(),
                     &clock,
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 coin::burn_for_testing(coin_out);
                 
@@ -464,7 +464,7 @@ module sui_amm::test_fee_conservation {
                 &mut pos,
                 &clock,
                 fixtures::far_future_deadline(),
-                ctx
+                test_scenario::ctx(&mut scenario)
             );
             
             total_claimed_a = total_claimed_a + (coin::value(&fee_a) as u128);

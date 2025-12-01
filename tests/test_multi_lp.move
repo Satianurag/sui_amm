@@ -214,7 +214,7 @@ module sui_amm::test_multi_lp {
         
         // Whale adds massive liquidity (90% of pool)
         let (whale_a, whale_b) = (900_000_000u64, 900_000_000u64);
-        let whale_position = test_utils::add_liquidity_helper(
+        let mut whale_position = test_utils::add_liquidity_helper(
             &mut pool,
             whale_a,
             whale_b,
@@ -230,7 +230,7 @@ module sui_amm::test_multi_lp {
         
         // Retail adds small liquidity (10% of pool)
         let (retail_a, retail_b) = (100_000_000u64, 100_000_000u64);
-        let retail_position = test_utils::add_liquidity_helper(
+        let mut retail_position = test_utils::add_liquidity_helper(
             &mut pool,
             retail_a,
             retail_b,
@@ -354,7 +354,7 @@ module sui_amm::test_multi_lp {
         // All LPs add equal liquidity
         let add_amount = 100_000_000u64;
         
-        let lp1_position = test_utils::add_liquidity_helper(
+        let mut lp1_position = test_utils::add_liquidity_helper(
             &mut pool,
             add_amount,
             add_amount,
@@ -366,7 +366,7 @@ module sui_amm::test_multi_lp {
         );
         
         test_scenario::next_tx(&mut scenario, lp2);
-        let lp2_position = test_utils::add_liquidity_helper(
+        let mut lp2_position = test_utils::add_liquidity_helper(
             &mut pool,
             add_amount,
             add_amount,
@@ -378,7 +378,7 @@ module sui_amm::test_multi_lp {
         );
         
         test_scenario::next_tx(&mut scenario, lp3);
-        let lp3_position = test_utils::add_liquidity_helper(
+        let mut lp3_position = test_utils::add_liquidity_helper(
             &mut pool,
             add_amount,
             add_amount,

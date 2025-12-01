@@ -89,7 +89,7 @@ module sui_amm::base64 {
     fun test_encode_simple() {
         // "Man" in base64 should be "TWFu"
         let input = string::utf8(b"Man");
-        let mut result = encode(&input);
+        let result = encode(&input);
         assert!(result == string::utf8(b"TWFu"), 0);
     }
 
@@ -97,7 +97,7 @@ module sui_amm::base64 {
     fun test_encode_with_padding() {
         // "Ma" should be "TWE="
         let input = string::utf8(b"Ma");
-        let mut result = encode(&input);
+        let result = encode(&input);
         assert!(result == string::utf8(b"TWE="), 0);
 
         // "M" should be "TQ=="
@@ -110,14 +110,14 @@ module sui_amm::base64 {
     fun test_encode_longer() {
         // "Hello World" 
         let input = string::utf8(b"Hello World");
-        let mut result = encode(&input);
+        let result = encode(&input);
         // Expected: "SGVsbG8gV29ybGQ="
         assert!(result == string::utf8(b"SGVsbG8gV29ybGQ="), 0);
     }
 
     #[test]
     fun test_create_svg_data_uri() {
-        let mut svg = string::utf8(b"<svg></svg>");
+        let svg = string::utf8(b"<svg></svg>");
         let uri = create_svg_data_uri(svg);
         
         // Should start with data:image/svg+xml;base64,
@@ -135,7 +135,7 @@ module sui_amm::base64 {
     #[test]
     fun test_empty_string() {
         let input = string::utf8(b"");
-        let mut result = encode(&input);
+        let result = encode(&input);
         assert!(result == string::utf8(b""), 0);
     }
 }

@@ -153,7 +153,6 @@ module sui_amm::test_governance {
         
         // Create pool
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,
             100,
             0,
@@ -225,7 +224,6 @@ module sui_amm::test_governance {
         
         // Create pool
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,
             100, // Initial protocol fee
             0,
@@ -304,7 +302,6 @@ module sui_amm::test_governance {
         
         // Create pool
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,
             100,
             0,

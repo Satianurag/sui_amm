@@ -2,7 +2,7 @@
 name = "sui_amm"
 version = "0.0.1"
 edition = "2024"
-published-at = "0xbee008f7d698b99ba3dd2efc48f9143d34e1b35a9d65cf45587c307f3475c733"
+# published-at = "0xbee008f7d698b99ba3dd2efc48f9143d34e1b35a9d65cf45587c307f3475c733"
 
 [addresses]
-sui_amm = "0xbee008f7d698b99ba3dd2efc48f9143d34e1b35a9d65cf45587c307f3475c733"
+sui_amm = "0x0"

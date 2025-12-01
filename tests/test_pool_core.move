@@ -22,14 +22,14 @@ module sui_amm::test_pool_core {
         ts::next_tx(&mut scenario, owner);
         {
             let ctx = ts::ctx(&mut scenario);
-            let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ctx);
+            let pool = pool::create_pool<USDC, BTC>(30, 100, 0, ctx);
             pool::share(pool);
         };
         
         // Add initial liquidity
         ts::next_tx(&mut scenario, owner);
         {
-            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
+            let mut pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             let clock = clock::create_for_testing(ctx);
@@ -145,7 +145,7 @@ module sui_amm::test_pool_core {
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
         
-        let (position, refund_a, refund_b) = pool::add_liquidity(
+        let (mut position, refund_a, refund_b) = pool::add_liquidity(
             &mut pool,
             coin_a,
             coin_b,

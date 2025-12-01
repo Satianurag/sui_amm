@@ -287,7 +287,7 @@ module sui_amm::test_edge_cases {
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
         
-        let (position, refund_a, refund_b) = pool::add_liquidity(
+        let (mut position, refund_a, refund_b) = pool::add_liquidity(
             &mut pool1,
             coin_a,
             coin_b,
@@ -657,7 +657,7 @@ module sui_amm::test_edge_cases {
         let coin_a2 = test_utils::mint_coin<USDC>(500_000_000_000, ts::ctx(&mut scenario));
         let coin_b2 = test_utils::mint_coin<BTC>(500_000, ts::ctx(&mut scenario));
         
-        let (position2, refund_a2, refund_b2) = pool::add_liquidity(
+        let (mut position2, refund_a2, refund_b2) = pool::add_liquidity(
             &mut pool,
             coin_a2,
             coin_b2,

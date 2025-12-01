@@ -241,7 +241,6 @@ module sui_amm::test_fee_distributor {
         let clock = test_utils::create_clock_at(0, test_scenario::ctx(&mut scenario));
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             1_000_000_000,
             1_000_000_000,
@@ -314,7 +313,6 @@ module sui_amm::test_fee_distributor {
         
         // Create pool with 30 bps fee, 200 bps protocol fee (2% of fees)
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,    // 0.3% total fee
             200,   // 2% protocol fee
             0,
@@ -368,7 +366,6 @@ module sui_amm::test_fee_distributor {
         
         // Create pool with maximum creator fee (500 bps = 5%)
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,    // 0.3% total fee
             100,   // 1% protocol fee
             500,   // 5% creator fee (maximum allowed)
@@ -421,7 +418,6 @@ module sui_amm::test_fee_distributor {
         
         // Try to create pool with creator fee > 500 bps (should fail)
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30,
             100,
             501,   // 5.01% - exceeds limit
@@ -450,7 +446,6 @@ module sui_amm::test_fee_distributor {
         let clock = test_utils::create_clock_at(0, test_scenario::ctx(&mut scenario));
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             1_000_000_000,
             1_000_000_000,
@@ -512,7 +507,6 @@ module sui_amm::test_fee_distributor {
         let clock = test_utils::create_clock_at(0, test_scenario::ctx(&mut scenario));
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             1_000_000_000,
             1_000_000_000,
@@ -578,7 +572,6 @@ module sui_amm::test_fee_distributor {
         let clock = test_utils::create_clock_at(0, test_scenario::ctx(&mut scenario));
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             10_000_000_000, // 10B for larger pool
             10_000_000_000,
@@ -659,7 +652,6 @@ module sui_amm::test_fee_distributor {
         
         // ADMIN creates pool with 10% share
         let (pool_id, position_admin) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             30, 100, 0,
             100_000_000, // 100M
             100_000_000,

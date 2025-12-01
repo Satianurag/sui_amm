@@ -21,7 +21,7 @@ module sui_amm::test_limit_orders {
         let executor = fixtures::user2();
         
         let mut scenario = test_scenario::begin(admin);
-        let mut clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
+        let clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
         
         // Initialize limit order registry
         limit_orders::test_init(test_scenario::ctx(&mut scenario));
@@ -144,7 +144,7 @@ module sui_amm::test_limit_orders {
         let executor = fixtures::user2();
         
         let mut scenario = test_scenario::begin(admin);
-        let mut clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
+        let clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
         
         // Initialize limit order registry
         limit_orders::test_init(test_scenario::ctx(&mut scenario));
@@ -254,7 +254,7 @@ module sui_amm::test_limit_orders {
         let trader = fixtures::user1();
         
         let mut scenario = test_scenario::begin(admin);
-        let mut clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
+        let clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
         
         // Initialize limit order registry
         limit_orders::test_init(test_scenario::ctx(&mut scenario));
@@ -438,7 +438,7 @@ module sui_amm::test_limit_orders {
         let trader = fixtures::user1();
         
         let mut scenario = test_scenario::begin(admin);
-        let mut clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
+        let clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
         
         // Initialize limit order registry
         limit_orders::test_init(test_scenario::ctx(&mut scenario));

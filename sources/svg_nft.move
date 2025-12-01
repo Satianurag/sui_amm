@@ -166,7 +166,7 @@ module sui_amm::svg_nft {
     #[test]
     fun test_generate_svg() {
         let pool_type = string::utf8(b"Standard");
-        let mut svg = generate_lp_position_svg(
+        let svg = generate_lp_position_svg(
             pool_type,
             1000000,
             500000,

@@ -51,7 +51,7 @@ module sui_amm::test_workflows {
         let mut pool = test_scenario::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         
         let (add_a, add_b) = fixtures::micro_liquidity();
-        let user1_position = test_utils::add_liquidity_helper(
+        let mut user1_position = test_utils::add_liquidity_helper(
             &mut pool,
             add_a,
             add_b,
@@ -362,7 +362,7 @@ module sui_amm::test_workflows {
         let user1 = fixtures::user1();
         
         let mut scenario = test_scenario::begin(user1);
-        let mut clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
+        let clock = test_utils::create_clock_at(1000000, test_scenario::ctx(&mut scenario));
         
         // Create user preferences
         let mut prefs = user_preferences::create_for_testing(test_scenario::ctx(&mut scenario));
