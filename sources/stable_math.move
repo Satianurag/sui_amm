@@ -4,33 +4,63 @@ module sui_amm::stable_math {
     const EOverflow: u64 = 1;
     const EInvalidInput: u64 = 2;
 
-    /// Maximum iterations for convergence
-    /// Note: 64 provides good balance between gas cost and edge case handling
-    /// - Most pools converge in < 10 iterations
-    /// - Extreme imbalances may need 20-40 iterations
-    /// - 64 is sufficient while preventing DoS via unbounded iterations
+    /// FIX [P2-19.2]: Maximum iterations for Newton's method convergence
+    /// 
+    /// Convergence Limits Documentation:
+    /// - Most stable pools converge in < 10 iterations under normal conditions
+    /// - Extreme imbalances (e.g., 99:1 ratio) may require 20-40 iterations
+    /// - Maximum of 64 iterations provides safety margin while preventing DoS
+    /// 
+    /// Convergence Criteria:
+    /// - Absolute difference <= 1 (within 1 unit)
+    /// - OR relative difference <= 1e-15 (0.0000000000001%)
+    /// 
+    /// Failure Scenarios:
+    /// - Degenerate pool states (zero reserves, extreme amplification)
+    /// - Invalid amplification parameters (amp too high/low)
+    /// - Numerical instability in edge cases
+    /// 
+    /// If convergence fails, the transaction aborts with EConvergenceFailed
+    /// to prevent incorrect calculations that could drain the pool.
     const MAX_ITERATIONS: u64 = 64;
 
     // Curve uses A.
     
-    /// Calculate D invariant
+    /// Calculate D invariant using Newton's method
     /// A * n^n * sum(x_i) + D = A * n^n * D + D^(n+1) / (n^n * prod(x_i))
     /// For n=2: 4A(x+y) + D = 4AD + D^3 / (4xy)
     /// 
+    /// FIX [P2-19.2]: Explicit convergence failure handling
+    /// 
+    /// # Parameters
+    /// - x: First token reserve
+    /// - y: Second token reserve  
+    /// - amp: Amplification coefficient (must be > 0)
+    /// 
+    /// # Returns
+    /// The D invariant value
+    /// 
     /// # Aborts
-    /// Aborts with EConvergenceFailed if convergence fails
+    /// - EConvergenceFailed: Newton's method did not converge within MAX_ITERATIONS
+    /// - EInvalidInput: Degenerate configuration (zero denominator, invalid amp)
+    /// - EOverflow: Result exceeds u64::MAX
+    /// 
+    /// # Convergence Behavior
+    /// - Iterates using Newton's method until convergence criteria met
+    /// - Convergence: |D_new - D_old| <= 1 OR relative_diff <= 1e-15
+    /// - Aborts if MAX_ITERATIONS reached without convergence
     public fun get_d(x: u64, y: u64, amp: u64): u64 {
-        let sum = (x as u256) + (y as u256);
+        let mut sum = (x as u256) + (y as u256);
         if (sum == 0) return 0;
         if (x == 0 || y == 0) return (sum as u64);
 
         let ann = (amp as u256) * 4;
         let n_coins = 2u256;
 
-        let mut_d = sum;
-        let mut_prev_d;
+        let mut mut_d = sum;
+        let mut mut_prev_d;
         
-        let mut_i = 0;
+        let mut mut_i = 0;
         while (mut_i < MAX_ITERATIONS) {
             // D_{i+1} = (Ann * S + D_p * n) * D / ((Ann - 1) * D + (n + 1) * D_p)
             
@@ -40,7 +70,7 @@ module sui_amm::stable_math {
             // D_p = D_p * D / (x * 2)
             // D_p = D_p * D / (y * 2)
             
-            let d_p = mut_d;
+            let mut d_p = mut_d;
             d_p = (d_p * mut_d) / ((x as u256) * 2);
             d_p = (d_p * mut_d) / ((y as u256) * 2);
             
@@ -73,14 +103,35 @@ module sui_amm::stable_math {
         (mut_d as u64)
     }
 
-    /// Calculate y given x, D, A
+    /// Calculate y given x, D, A using Newton's method
+    /// 
+    /// FIX [P2-19.2]: Explicit convergence failure handling
+    /// 
+    /// # Parameters
+    /// - x: Known token reserve
+    /// - d: D invariant (from get_d)
+    /// - amp: Amplification coefficient
+    /// 
+    /// # Returns
+    /// The calculated y reserve value
+    /// 
+    /// # Aborts
+    /// - EConvergenceFailed: Newton's method did not converge within MAX_ITERATIONS
+    /// - EInvalidInput: Degenerate configuration (zero denominator, invalid parameters)
+    /// - EOverflow: Result exceeds u64::MAX
+    /// 
+    /// # Convergence Behavior
+    /// - Solves: y^2 + (x + D/Ann - D)y = D^3 / (4x * Ann)
+    /// - Uses Newton's method: y_new = (y^2 + c) / (2y + b - D)
+    /// - Convergence: |y_new - y_old| <= 1 OR relative_diff <= 1e-15
+    /// - Aborts if MAX_ITERATIONS reached without convergence
     public fun get_y(x: u64, d: u64, amp: u64): u64 {
         let ann = (amp as u256) * 4;
         
         let d_val = (d as u256);
         if (d_val == 0) return 0;
         
-        let c = d_val;
+        let mut c = d_val;
         
         // c = D^(n+1) / (n^n * P) * P_inputs
         // c = D^3 / (4 * x)
@@ -101,9 +152,9 @@ module sui_amm::stable_math {
         // We need y^2 + (b - D)y = c
         // y_new = (y^2 + c) / (2y + b - D)
         
-        let mut_y = d_val;
-        let mut_prev_y;
-        let mut_i = 0;
+        let mut mut_y = d_val;
+        let mut mut_prev_y;
+        let mut mut_i = 0;
         
         while (mut_i < MAX_ITERATIONS) {
             mut_prev_y = mut_y;

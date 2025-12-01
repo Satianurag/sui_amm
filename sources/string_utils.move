@@ -8,8 +8,8 @@ module sui_amm::string_utils {
             return string::utf8(b"0")
         };
 
-        let digits = vector::empty<u8>();
-        let v = value;
+        let mut digits = vector::empty<u8>();
+        let mut v = value;
         while (v > 0) {
             let digit = ((v % 10) as u8) + 48; // ASCII '0'  is 48
             vector::push_back(&mut digits, digit);
@@ -27,8 +27,8 @@ module sui_amm::string_utils {
             return string::utf8(b"0")
         };
 
-        let digits = vector::empty<u8>();
-        let v = value;
+        let mut digits = vector::empty<u8>();
+        let mut v = value;
         while (v > 0) {
             let digit = (((v % 10) as u8) + 48);
             vector::push_back(&mut digits, digit);
@@ -50,7 +50,7 @@ module sui_amm::string_utils {
         let integer_part = value / divisor;
         let decimal_part = value % divisor;
 
-        let result = u64_to_string(integer_part);
+        let mut result = u64_to_string(integer_part);
         string::append(&mut result, string::utf8(b"."));
         
         // Pad decimal part with leading zeros
@@ -58,7 +58,7 @@ module sui_amm::string_utils {
         let decimal_bytes = string::as_bytes(&decimal_str);
         let decimal_len = vector::length(decimal_bytes);
         
-        let i = (decimals as u64);
+        let mut i = (decimals as u64);
         while (i > decimal_len) {
             string::append(&mut result, string::utf8(b"0"));
             i = i - 1;
@@ -73,16 +73,16 @@ module sui_amm::string_utils {
     public fun format_with_commas(value: u64): String {
         let base = u64_to_string(value);
         let bytes = string::as_bytes(&base);
-        let len = vector::length(bytes);
+        let mut len = vector::length(bytes);
         
         if (len <= 3) {
             return base
         };
 
-        let result = vector::empty<u8>();
-        let count = 0;
+        let mut result = vector::empty<u8>();
+        let mut count = 0;
         
-        let i = len;
+        let mut i = len;
         while (i > 0) {
             i = i - 1;
             if (count == 3) {
@@ -101,10 +101,10 @@ module sui_amm::string_utils {
     /// Example: to_hex_string(255, 2) = "ff"
     public fun to_hex_string(value: u64, padding: u8): String {
         let hex_chars = b"0123456789abcdef";
-        let result = vector::empty<u8>();
+        let mut result = vector::empty<u8>();
         
         if (value == 0) {
-            let i = 0;
+            let mut i = 0;
             while (i < padding) {
                 vector::push_back(&mut result, 48); // '0'
                 i = i + 1;
@@ -112,7 +112,7 @@ module sui_amm::string_utils {
             return string::utf8(result)
         };
 
-        let v = value;
+        let mut v = value;
         while (v > 0) {
             let digit = ((v % 16) as u8);
             vector::push_back(&mut result, *vector::borrow(&hex_chars, (digit as u64)));
@@ -120,7 +120,7 @@ module sui_amm::string_utils {
         };
 
         // Pad with zeros
-        let len = vector::length(&result);
+        let mut len = vector::length(&result);
         while (len < (padding as u64)) {
             vector::push_back(&mut result, 48);
             len = len + 1;
@@ -137,9 +137,9 @@ module sui_amm::string_utils {
 
     /// Concatenate a vector of strings
     public fun concat(parts: vector<String>): String {
-        let result = string::utf8(b"");
-        let len = vector::length(&parts);
-        let i = 0;
+        let mut result = string::utf8(b"");
+        let mut len = vector::length(&parts);
+        let mut i = 0;
         
         while (i < len) {
             string::append(&mut result, *vector::borrow(&parts, i));
@@ -151,8 +151,8 @@ module sui_amm::string_utils {
 
     /// Append multiple strings to a base string
     public fun append_all(base: &mut String, parts: vector<String>) {
-        let len = vector::length(&parts);
-        let i = 0;
+        let mut len = vector::length(&parts);
+        let mut i = 0;
         
         while (i < len) {
             string::append(base, *vector::borrow(&parts, i));
@@ -162,8 +162,8 @@ module sui_amm::string_utils {
 
     /// Helper: Calculate 10^n
     fun pow10(n: u8): u64 {
-        let result = 1u64;
-        let i = 0u8;
+        let mut result = 1u64;
+        let mut i = 0u8;
         while (i < n) {
             result = result * 10;
             i = i + 1;
@@ -174,14 +174,14 @@ module sui_amm::string_utils {
     /// Truncate string to max length with ellipsis
     public fun truncate(s: &String, max_len: u64): String {
         let bytes = string::as_bytes(s);
-        let len = vector::length(bytes);
+        let mut len = vector::length(bytes);
         
         if (len <= max_len) {
             return *s
         };
 
-        let result = vector::empty<u8>();
-        let i = 0;
+        let mut result = vector::empty<u8>();
+        let mut i = 0;
         while (i < max_len - 3) {
             vector::push_back(&mut result, *vector::borrow(bytes, i));
             i = i + 1;
@@ -197,7 +197,7 @@ module sui_amm::string_utils {
     /// Create RGB hex color from components
     /// Example: rgb_to_hex(255, 100, 50) = "#ff6432"
     public fun rgb_to_hex(r: u8, g: u8, b: u8): String {
-        let result = string::utf8(b"#");
+        let mut result = string::utf8(b"#");
         string::append(&mut result, u8_to_hex(r));
         string::append(&mut result, u8_to_hex(g));
         string::append(&mut result, u8_to_hex(b));

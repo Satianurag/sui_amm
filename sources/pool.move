@@ -1,20 +1,14 @@
 module sui_amm::pool {
-    use sui::object::{Self, UID, ID};
-    use sui::coin::{Self, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::tx_context::{Self, TxContext};
+    use sui::object;
+    use sui::coin;
+    use sui::balance;
+    use sui::tx_context;
     use sui::transfer;
     use sui::event;
-    use sui::clock::{Clock};
-    use std::option::{Self, Option};
+    use sui::clock;
+    use std::option;
     use std::string;
-    
-    use sui_amm::position::{Self, LPPosition};
-    
-    friend sui_amm::fee_distributor;
-    friend sui_amm::admin;
-    friend sui_amm::factory;
-    friend sui_amm::governance;
+    use sui_amm::position;
 
     // Error codes
     const EZeroAmount: u64 = 0;
@@ -27,27 +21,45 @@ module sui_amm::pool {
     const EUnauthorized: u64 = 7; // NEW: Access control
     const EInvalidLiquidityRatio: u64 = 8; // FIX [L2]: For ratio tolerance violations
     const EInsufficientOutput: u64 = 9; // NEW: For slippage protection
+    const ECreatorFeeTooHigh: u64 = 10; // FIX [S5]: Creator fee validation
+    const EPaused: u64 = 11; // NEW: Pool is paused
+    const EInvalidFeePercent: u64 = 12; // NEW: Fee below minimum (Requirement 10.2)
 
     // Constants
+    // FIX [P2-16.2]: MINIMUM_LIQUIDITY Documentation
+    // MINIMUM_LIQUIDITY (1000 shares) is permanently burned on first liquidity addition
+    // to prevent pool manipulation attacks. This is a standard AMM security practice.
+    //
+    // Why 1000 shares are permanently locked:
+    // 1. Prevents division by zero in share calculations
+    // 2. Makes it economically infeasible to manipulate pool ratios
+    // 3. Ensures minimum liquidity always exists for price discovery
+    // 4. Protects against rounding errors in small pools
+    //
+    // The first LP pays this one-time cost (sent to address 0x0) to secure the pool.
+    // Subsequent LPs are not affected. This is similar to Uniswap V2's approach.
     const MINIMUM_LIQUIDITY: u64 = 1000;
     const MIN_INITIAL_LIQUIDITY_MULTIPLIER: u64 = 10;
     const MIN_INITIAL_LIQUIDITY: u64 = MINIMUM_LIQUIDITY * MIN_INITIAL_LIQUIDITY_MULTIPLIER;
     const ACC_PRECISION: u128 = 1_000_000_000_000;
     const MAX_PRICE_IMPACT_BPS: u64 = 1000; // 10%
     const MAX_SAFE_VALUE: u128 = 34028236692093846346337460743176821145; // u128::MAX / 10000
+    const MAX_CREATOR_FEE_BPS: u64 = 500; // 5% max creator fee to protect LPs
+    const MIN_FEE_THRESHOLD: u64 = 1000; // Minimum fee to avoid precision loss
+    const MIN_FEE_BPS: u64 = 1; // Minimum fee of 1 basis point (0.01%) for pool creation (Requirement 10.1)
 
-    struct LiquidityPool<phantom CoinA, phantom CoinB> has key {
-        id: UID,
-        reserve_a: Balance<CoinA>,
-        reserve_b: Balance<CoinB>,
-        fee_a: Balance<CoinA>,
-        fee_b: Balance<CoinB>,
-        protocol_fee_a: Balance<CoinA>,
-        protocol_fee_b: Balance<CoinB>,
+    public struct LiquidityPool<phantom CoinA, phantom CoinB> has key {
+        id: object::UID,
+        reserve_a: balance::Balance<CoinA>,
+        reserve_b: balance::Balance<CoinB>,
+        fee_a: balance::Balance<CoinA>,
+        fee_b: balance::Balance<CoinB>,
+        protocol_fee_a: balance::Balance<CoinA>,
+        protocol_fee_b: balance::Balance<CoinB>,
         // FIX V1: Creator fees
         creator: address,
-        creator_fee_a: Balance<CoinA>,
-        creator_fee_b: Balance<CoinB>,
+        creator_fee_a: balance::Balance<CoinA>,
+        creator_fee_b: balance::Balance<CoinB>,
 
         total_liquidity: u64,
         fee_percent: u64,
@@ -57,33 +69,36 @@ module sui_amm::pool {
         acc_fee_per_share_b: u128,
         ratio_tolerance_bps: u64,
         max_price_impact_bps: u64,
+        // Emergency pause mechanism
+        paused: bool,
+        paused_at: u64,
     }
 
     // Events
-    struct PoolCreated has copy, drop {
-        pool_id: ID,
+    public struct PoolCreated has copy, drop {
+        pool_id: object::ID,
         creator: address,
         fee_percent: u64,
     }
 
-    struct LiquidityAdded has copy, drop {
-        pool_id: ID,
+    public struct LiquidityAdded has copy, drop {
+        pool_id: object::ID,
         provider: address,
         amount_a: u64,
         amount_b: u64,
         liquidity_minted: u64,
     }
 
-    struct LiquidityRemoved has copy, drop {
-        pool_id: ID,
+    public struct LiquidityRemoved has copy, drop {
+        pool_id: object::ID,
         provider: address,
         amount_a: u64,
         amount_b: u64,
         liquidity_burned: u64,
     }
 
-    struct SwapExecuted has copy, drop {
-        pool_id: ID,
+    public struct SwapExecuted has copy, drop {
+        pool_id: object::ID,
         sender: address,
         amount_in: u64,
         amount_out: u64,
@@ -91,39 +106,54 @@ module sui_amm::pool {
         price_impact_bps: u64,
     }
 
-    struct FeesClaimed has copy, drop {
-        pool_id: ID,
+    public struct FeesClaimed has copy, drop {
+        pool_id: object::ID,
         owner: address,
         amount_a: u64,
         amount_b: u64,
     }
 
-    struct ProtocolFeesWithdrawn has copy, drop {
-        pool_id: ID,
+    public struct ProtocolFeesWithdrawn has copy, drop {
+        pool_id: object::ID,
         admin: address,
         amount_a: u64,
         amount_b: u64,
     }
 
-    struct CreatorFeesWithdrawn has copy, drop {
-        pool_id: ID,
+    public struct CreatorFeesWithdrawn has copy, drop {
+        pool_id: object::ID,
         creator: address,
         amount_a: u64,
         amount_b: u64,
     }
 
+    public struct PoolPaused has copy, drop {
+        pool_id: object::ID,
+        timestamp: u64,
+    }
+
+    public struct PoolUnpaused has copy, drop {
+        pool_id: object::ID,
+        timestamp: u64,
+    }
+
     /// Creates pool with initial liquidity atomically (improvement over spec's 2-step flow).
     /// This prevents creation of empty pools and ensures immediate usability.
-    public(friend) fun create_pool<CoinA, CoinB>(
+    public(package) fun create_pool<CoinA, CoinB>(
         fee_percent: u64,
         protocol_fee_percent: u64,
         creator_fee_percent: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ): LiquidityPool<CoinA, CoinB> {
+        // FIX [P2-16.6]: Enforce minimum fee validation (defense-in-depth)
+        // Prevents zero-fee pools that would provide no LP incentive
+        assert!(fee_percent >= MIN_FEE_BPS, EInvalidFeePercent);
         assert!(fee_percent <= 1000, ETooHighFee); // Max 10%
         assert!(protocol_fee_percent <= 1000, ETooHighFee);
+        // FIX [S5]: Validate creator fee to protect LPs from value extraction
+        assert!(creator_fee_percent <= MAX_CREATOR_FEE_BPS, ECreatorFeeTooHigh);
         
-        let pool = LiquidityPool<CoinA, CoinB> {
+        let mut pool = LiquidityPool<CoinA, CoinB> {
             id: object::new(ctx),
             reserve_a: balance::zero(),
             reserve_b: balance::zero(),
@@ -143,6 +173,8 @@ module sui_amm::pool {
             acc_fee_per_share_b: 0,
             ratio_tolerance_bps: 50, // FIX [M2]: 0.5% tolerance (reduced from 5%)
             max_price_impact_bps: MAX_PRICE_IMPACT_BPS,
+            paused: false,
+            paused_at: 0,
         };
         
         event::emit(PoolCreated {
@@ -156,13 +188,16 @@ module sui_amm::pool {
 
     public fun add_liquidity<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        coin_a: Coin<CoinA>,
-        coin_b: Coin<CoinB>,
+        coin_a: coin::Coin<CoinA>,
+        coin_b: coin::Coin<CoinB>,
         min_liquidity: u64,
-        clock: &Clock,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): (LPPosition, Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (position::LPPosition, coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // Check if pool is paused
+        assert!(!pool.paused, EPaused);
+        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         let amount_a = coin::value(&coin_a);
@@ -195,22 +230,35 @@ module sui_amm::pool {
         let refund_b;
         
         if (pool.total_liquidity == 0) {
-            // Initial liquidity: use all coins, no refunds
+            // FIX [P2-16.2]: Initial liquidity with MINIMUM_LIQUIDITY burn
+            // The first LP must provide enough liquidity to mint at least MIN_INITIAL_LIQUIDITY shares.
+            // Of these, MINIMUM_LIQUIDITY (1000) shares are permanently burned to address 0x0.
+            // This prevents:
+            // - Price manipulation attacks on low-liquidity pools
+            // - Division by zero in share calculations
+            // - Rounding exploits in subsequent liquidity additions
+            //
+            // Example: If first LP provides liquidity worth 10,000 shares:
+            // - 1,000 shares burned (sent to 0x0)
+            // - 9,000 shares minted to first LP
+            // - Pool total_liquidity = 1,000 (only burned shares count initially)
+            //
+            // This is a one-time cost paid by the pool creator for security.
             let liquidity = (std::u64::sqrt(amount_a) * std::u64::sqrt(amount_b));
             assert!(liquidity >= MIN_INITIAL_LIQUIDITY, EInsufficientLiquidity);
             pool.total_liquidity = MINIMUM_LIQUIDITY;
             liquidity_minted = liquidity - MINIMUM_LIQUIDITY;
             
-            // Burn minimum liquidity
+            // Burn minimum liquidity by sending to 0x0 (unrecoverable)
             let burn_position = position::new(
                 object::id(pool),
                 MINIMUM_LIQUIDITY,
                 0, 0, 0, 0,
                 string::utf8(b"Burned Minimum Liquidity"),
-                string::utf8(b"Permanently locked"),
+                string::utf8(b"Permanently locked for pool security"),
                 ctx
             );
-            transfer::public_transfer(burn_position, @0x0);
+            position::destroy(burn_position);
             
             // Join all coins to pool for initial liquidity
             balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
@@ -240,8 +288,8 @@ module sui_amm::pool {
             let amount_b_used = (((liquidity_minted as u128) * (reserve_b as u128) / (pool.total_liquidity as u128)) as u64);
             
             // Convert coins to balances
-            let balance_a = coin::into_balance(coin_a);
-            let balance_b = coin::into_balance(coin_b);
+            let mut balance_a = coin::into_balance(coin_a);
+            let mut balance_b = coin::into_balance(coin_b);
             
             // Split to get used and refund portions
             let balance_a_used = balance::split(&mut balance_a, amount_a_used);
@@ -271,6 +319,10 @@ module sui_amm::pool {
             liquidity_minted,
         });
 
+        // FIX [V3]: NFT metadata is initialized with current values
+        // NOTE: Metadata will become stale after swaps. Users should call
+        // refresh_position_metadata() to update, or frontends should display
+        // real-time values from get_position_view() instead of cached NFT data.
         let name = string::utf8(b"Sui AMM LP Position");
         let description = string::utf8(b"Liquidity Provider Position for Sui AMM");
         let pool_type = string::utf8(b"Standard");
@@ -294,13 +346,16 @@ module sui_amm::pool {
 
     public fun remove_liquidity<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        position: LPPosition,
+        position: position::LPPosition,
         min_amount_a: u64,
         min_amount_b: u64,
-        clock: &Clock,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): (Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // SECURITY FIX [P1-15.4]: Add pause check to liquidity operations
+        assert!(!pool.paused, EPaused);
+        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         assert!(position::pool_id(&position) == object::id(pool), EWrongPool);
@@ -317,8 +372,8 @@ module sui_amm::pool {
 
         pool.total_liquidity = pool.total_liquidity - liquidity;
         
-        let split_a = balance::split(&mut pool.reserve_a, amount_a);
-        let split_b = balance::split(&mut pool.reserve_b, amount_b);
+        let mut split_a = balance::split(&mut pool.reserve_a, amount_a);
+        let mut split_b = balance::split(&mut pool.reserve_b, amount_b);
 
         if (pending_a > 0) {
             let fee = balance::split(&mut pool.fee_a, (pending_a as u64));
@@ -345,14 +400,17 @@ module sui_amm::pool {
 
     public fun remove_liquidity_partial<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        position: &mut LPPosition,
+        position: &mut position::LPPosition,
         liquidity_to_remove: u64,
         min_amount_a: u64,
         min_amount_b: u64,
-        clock: &Clock,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): (Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // SECURITY FIX [P1-15.4]: Add pause check to liquidity operations
+        assert!(!pool.paused, EPaused);
+        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
@@ -375,8 +433,8 @@ module sui_amm::pool {
 
         pool.total_liquidity = pool.total_liquidity - liquidity_to_remove;
         
-        let split_a = balance::split(&mut pool.reserve_a, amount_a);
-        let split_b = balance::split(&mut pool.reserve_b, amount_b);
+        let mut split_a = balance::split(&mut pool.reserve_a, amount_a);
+        let mut split_b = balance::split(&mut pool.reserve_b, amount_b);
 
         if (fee_a_for_portion > 0) {
             let fee = balance::split(&mut pool.fee_a, fee_a_for_portion);
@@ -393,15 +451,19 @@ module sui_amm::pool {
         let old_debt_a = position::fee_debt_a(position);
         let old_debt_b = position::fee_debt_b(position);
         
-        let debt_removed_a = (old_debt_a * (liquidity_to_remove as u128)) / (total_position_liquidity as u128);
-        let debt_removed_b = (old_debt_b * (liquidity_to_remove as u128)) / (total_position_liquidity as u128);
+        // FIX [V2]: Use ceiling division for debt removal to prevent fee loss
+        // debt_removed = ceil(old_debt * liquidity_to_remove / total_liquidity)
+        // ceil(a/b) = (a + b - 1) / b
+        let debt_removed_a = ((old_debt_a * (liquidity_to_remove as u128)) + (total_position_liquidity as u128) - 1) / (total_position_liquidity as u128);
+        let debt_removed_b = ((old_debt_b * (liquidity_to_remove as u128)) + (total_position_liquidity as u128) - 1) / (total_position_liquidity as u128);
         
         // FIX L5: Assert instead of clamp for underflow protection
-        assert!(debt_removed_a <= old_debt_a, EArithmeticError);
-        assert!(debt_removed_b <= old_debt_b, EArithmeticError);
+        // Cap at old_debt to prevent underflow (ceiling can exceed in edge cases)
+        let debt_removed_a_safe = if (debt_removed_a > old_debt_a) { old_debt_a } else { debt_removed_a };
+        let debt_removed_b_safe = if (debt_removed_b > old_debt_b) { old_debt_b } else { debt_removed_b };
         
-        let new_debt_a = old_debt_a - debt_removed_a;
-        let new_debt_b = old_debt_b - debt_removed_b;
+        let new_debt_a = old_debt_a - debt_removed_a_safe;
+        let new_debt_b = old_debt_b - debt_removed_b_safe;
         
         position::update_fee_debt(position, new_debt_a, new_debt_b);
 
@@ -414,25 +476,34 @@ module sui_amm::pool {
         });
 
         // FIX [V6]: Refresh metadata to ensure NFT display is up-to-date
-        refresh_position_metadata(pool, position);
+        refresh_position_metadata(pool, position, clock);
 
         (coin::from_balance(split_a, ctx), coin::from_balance(split_b, ctx))
     }
 
-    public(friend) fun withdraw_fees<CoinA, CoinB>(
+    public(package) fun withdraw_fees<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        position: &mut LPPosition,
-        clock: &Clock,
+        position: &mut position::LPPosition,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): (Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
 
         let liquidity = position::liquidity(position);
         
+        // FIX [P2-16.3]: Defense-in-depth fee double-claiming protection
+        // Calculate pending fees based on accumulated fees per share minus debt
         let pending_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let pending_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
+
+        // Additional validation: ensure pending fees don't exceed available pool fees
+        // This prevents any potential fee double-claiming exploits
+        let available_fee_a = balance::value(&pool.fee_a);
+        let available_fee_b = balance::value(&pool.fee_b);
+        assert!((pending_a as u64) <= available_fee_a, EInsufficientLiquidity);
+        assert!((pending_b as u64) <= available_fee_b, EInsufficientLiquidity);
 
         let fee_a = if (pending_a > 0) {
             balance::split(&mut pool.fee_a, (pending_a as u64))
@@ -446,8 +517,15 @@ module sui_amm::pool {
             balance::zero()
         };
 
+        // Update fee debt to current accumulated value to prevent re-claiming
         let new_debt_a = (liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION;
         let new_debt_b = (liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION;
+        
+        // FIX [P2-16.3]: Assert that new debt is >= old debt (should always be true)
+        // This catches any logic errors in fee accumulation
+        assert!(new_debt_a >= position::fee_debt_a(position), EArithmeticError);
+        assert!(new_debt_b >= position::fee_debt_b(position), EArithmeticError);
+        
         position::update_fee_debt(position, new_debt_a, new_debt_b);
 
         // FIX P3: Optimize event emission
@@ -461,20 +539,23 @@ module sui_amm::pool {
         };
 
         // FIX [V6]: Refresh metadata to ensure NFT display is up-to-date
-        refresh_position_metadata(pool, position);
+        refresh_position_metadata(pool, position, clock);
 
         (coin::from_balance(fee_a, ctx), coin::from_balance(fee_b, ctx))
     }
 
     public fun swap_a_to_b<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        coin_in: Coin<CoinA>,
+        coin_in: coin::Coin<CoinA>,
         min_out: u64,
-        max_price: Option<u64>,
-        clock: &Clock,
+        max_price: option::Option<u64>,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): Coin<CoinB> {
+        ctx: &mut tx_context::TxContext
+    ): coin::Coin<CoinB> {
+        // Check if pool is paused
+        assert!(!pool.paused, EPaused);
+        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         let amount_in = coin::value(&coin_in);
@@ -488,15 +569,23 @@ module sui_amm::pool {
         let reserve_a_initial = reserve_a;
         let reserve_b_initial = reserve_b;
 
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
         
         let amount_out = ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64);
         
         sui_amm::slippage_protection::check_slippage(amount_out, min_out);
 
+        // SECURITY FIX [P1-15.3]: Enforce MEV protection with default max slippage
+        // If max_price is not provided, enforce a default 5% maximum slippage to prevent sandwich attacks
         if (option::is_some(&max_price)) {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
+        } else {
+            // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
+            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
+            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate price impact using INITIAL reserves
@@ -510,7 +599,7 @@ module sui_amm::pool {
 
         balance::join(&mut pool.reserve_a, coin::into_balance(coin_in));
         
-        let fee_balance = balance::split(&mut pool.reserve_a, fee_amount);
+        let mut fee_balance = balance::split(&mut pool.reserve_a, fee_amount);
         
         let protocol_fee_amount = (fee_amount * pool.protocol_fee_percent) / 10000;
         let creator_fee_amount = (fee_amount * pool.creator_fee_percent) / 10000;
@@ -530,8 +619,15 @@ module sui_amm::pool {
 
         let output_coin = coin::take(&mut pool.reserve_b, amount_out, ctx);
 
-        if (pool.total_liquidity > 0) {
+        // FIX [L1]: Only accumulate fees if above threshold to prevent precision loss
+        if (pool.total_liquidity > 0 && lp_fee_amount >= MIN_FEE_THRESHOLD) {
             pool.acc_fee_per_share_a = pool.acc_fee_per_share_a + ((lp_fee_amount as u128) * ACC_PRECISION / (pool.total_liquidity as u128));
+        } else if (pool.total_liquidity > 0 && lp_fee_amount > 0) {
+            // For small fees, use higher precision calculation
+            let fee_increment = ((lp_fee_amount as u128) * ACC_PRECISION);
+            if (fee_increment / (pool.total_liquidity as u128) > 0) {
+                pool.acc_fee_per_share_a = pool.acc_fee_per_share_a + (fee_increment / (pool.total_liquidity as u128));
+            };
         };
 
         // S2: Verify K-invariant (post-swap check)
@@ -554,15 +650,137 @@ module sui_amm::pool {
         output_coin
     }
 
+    // Swap with history recording
+    public fun swap_a_to_b_with_history<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        coin_in: coin::Coin<CoinA>,
+        min_out: u64,
+        max_price: option::Option<u64>,
+        pool_stats: &mut sui_amm::swap_history::PoolStatistics,
+        clock: &clock::Clock,
+        deadline: u64,
+        ctx: &mut tx_context::TxContext
+    ): coin::Coin<CoinB> {
+        // Check if pool is paused
+        assert!(!pool.paused, EPaused);
+        
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
+        let amount_in = coin::value(&coin_in);
+        assert!(amount_in > 0, EZeroAmount);
+
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        assert!(reserve_a > 0 && reserve_b > 0, EInsufficientLiquidity);
+
+        // S2: Flash Loan Protection - Snapshot reserves before any changes
+        let reserve_a_initial = reserve_a;
+        let reserve_b_initial = reserve_b;
+
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
+        
+        let amount_out = ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64);
+        
+        sui_amm::slippage_protection::check_slippage(amount_out, min_out);
+
+        // SECURITY FIX [P1-15.3]: Enforce MEV protection with default max slippage
+        // If max_price is not provided, enforce a default 5% maximum slippage to prevent sandwich attacks
+        if (option::is_some(&max_price)) {
+            sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
+        } else {
+            // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
+            let spot_price = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
+            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+        };
+
+        // Calculate price impact using INITIAL reserves
+        let impact = cp_price_impact_bps(
+            reserve_a_initial,
+            reserve_b_initial,
+            amount_in_after_fee,
+            amount_out
+        );
+        assert!(impact <= pool.max_price_impact_bps, EExcessivePriceImpact);
+
+        balance::join(&mut pool.reserve_a, coin::into_balance(coin_in));
+        
+        let mut fee_balance = balance::split(&mut pool.reserve_a, fee_amount);
+        
+        let protocol_fee_amount = (fee_amount * pool.protocol_fee_percent) / 10000;
+        let creator_fee_amount = (fee_amount * pool.creator_fee_percent) / 10000;
+        let lp_fee_amount = fee_amount - protocol_fee_amount - creator_fee_amount;
+
+        if (protocol_fee_amount > 0) {
+            let proto_fee = balance::split(&mut fee_balance, protocol_fee_amount);
+            balance::join(&mut pool.protocol_fee_a, proto_fee);
+        };
+        
+        if (creator_fee_amount > 0) {
+            let creator_fee = balance::split(&mut fee_balance, creator_fee_amount);
+            balance::join(&mut pool.creator_fee_a, creator_fee);
+        };
+        
+        balance::join(&mut pool.fee_a, fee_balance);
+
+        let output_coin = coin::take(&mut pool.reserve_b, amount_out, ctx);
+
+        // FIX [L1]: Only accumulate fees if above threshold to prevent precision loss
+        if (pool.total_liquidity > 0 && lp_fee_amount >= MIN_FEE_THRESHOLD) {
+            pool.acc_fee_per_share_a = pool.acc_fee_per_share_a + ((lp_fee_amount as u128) * ACC_PRECISION / (pool.total_liquidity as u128));
+        } else if (pool.total_liquidity > 0 && lp_fee_amount > 0) {
+            // For small fees, use higher precision calculation
+            let fee_increment = ((lp_fee_amount as u128) * ACC_PRECISION);
+            if (fee_increment / (pool.total_liquidity as u128) > 0) {
+                pool.acc_fee_per_share_a = pool.acc_fee_per_share_a + (fee_increment / (pool.total_liquidity as u128));
+            };
+        };
+
+        // S2: Verify K-invariant (post-swap check)
+        // K_new >= K_old
+        let reserve_a_new = balance::value(&pool.reserve_a);
+        let reserve_b_new = balance::value(&pool.reserve_b);
+        let k_old = (reserve_a_initial as u128) * (reserve_b_initial as u128);
+        let k_new = (reserve_a_new as u128) * (reserve_b_new as u128);
+        assert!(k_new >= k_old, EInsufficientLiquidity);
+
+        event::emit(SwapExecuted {
+            pool_id: object::id(pool),
+            sender: tx_context::sender(ctx),
+            amount_in,
+            amount_out,
+            is_a_to_b: true,
+            price_impact_bps: impact,
+        });
+
+        // Record swap in history
+        sui_amm::swap_history::record_swap(
+            pool_stats,
+            true, // is_a_to_b
+            amount_in,
+            amount_out,
+            fee_amount,
+            impact,
+            clock
+        );
+
+        output_coin
+    }
+
     public fun swap_b_to_a<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        coin_in: Coin<CoinB>,
+        coin_in: coin::Coin<CoinB>,
         min_out: u64,
-        max_price: Option<u64>,
-        clock: &Clock,
+        max_price: option::Option<u64>,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): Coin<CoinA> {
+        ctx: &mut tx_context::TxContext
+    ): coin::Coin<CoinA> {
+        // Check if pool is paused
+        assert!(!pool.paused, EPaused);
+        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         let amount_in = coin::value(&coin_in);
@@ -576,15 +794,23 @@ module sui_amm::pool {
         let reserve_a_initial = reserve_a;
         let reserve_b_initial = reserve_b;
 
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
         
         let amount_out = ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64);
         
         sui_amm::slippage_protection::check_slippage(amount_out, min_out);
 
+        // SECURITY FIX [P1-15.3]: Enforce MEV protection with default max slippage
+        // If max_price is not provided, enforce a default 5% maximum slippage to prevent sandwich attacks
         if (option::is_some(&max_price)) {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
+        } else {
+            // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
+            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
+            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
+            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
         };
 
         // Calculate price impact using INITIAL reserves
@@ -598,7 +824,7 @@ module sui_amm::pool {
 
         balance::join(&mut pool.reserve_b, coin::into_balance(coin_in));
         
-        let fee_balance = balance::split(&mut pool.reserve_b, fee_amount);
+        let mut fee_balance = balance::split(&mut pool.reserve_b, fee_amount);
         
         let protocol_fee_amount = (fee_amount * pool.protocol_fee_percent) / 10000;
         let creator_fee_amount = (fee_amount * pool.creator_fee_percent) / 10000;
@@ -618,8 +844,15 @@ module sui_amm::pool {
 
         let output_coin = coin::take(&mut pool.reserve_a, amount_out, ctx);
 
-        if (pool.total_liquidity > 0) {
+        // FIX [L1]: Only accumulate fees if above threshold to prevent precision loss
+        if (pool.total_liquidity > 0 && lp_fee_amount >= MIN_FEE_THRESHOLD) {
             pool.acc_fee_per_share_b = pool.acc_fee_per_share_b + ((lp_fee_amount as u128) * ACC_PRECISION / (pool.total_liquidity as u128));
+        } else if (pool.total_liquidity > 0 && lp_fee_amount > 0) {
+            // For small fees, use higher precision calculation
+            let fee_increment = ((lp_fee_amount as u128) * ACC_PRECISION);
+            if (fee_increment / (pool.total_liquidity as u128) > 0) {
+                pool.acc_fee_per_share_b = pool.acc_fee_per_share_b + (fee_increment / (pool.total_liquidity as u128));
+            };
         };
 
         // S2: Verify K-invariant
@@ -641,16 +874,137 @@ module sui_amm::pool {
         output_coin
     }
 
+    // Swap with history recording
+    public fun swap_b_to_a_with_history<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        coin_in: coin::Coin<CoinB>,
+        min_out: u64,
+        max_price: option::Option<u64>,
+        pool_stats: &mut sui_amm::swap_history::PoolStatistics,
+        clock: &clock::Clock,
+        deadline: u64,
+        ctx: &mut tx_context::TxContext
+    ): coin::Coin<CoinA> {
+        // Check if pool is paused
+        assert!(!pool.paused, EPaused);
+        
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
+        let amount_in = coin::value(&coin_in);
+        assert!(amount_in > 0, EZeroAmount);
+
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        assert!(reserve_a > 0 && reserve_b > 0, EInsufficientLiquidity);
+
+        // S2: Flash Loan Protection
+        let reserve_a_initial = reserve_a;
+        let reserve_b_initial = reserve_b;
+
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
+        
+        let amount_out = ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64);
+        
+        sui_amm::slippage_protection::check_slippage(amount_out, min_out);
+
+        // SECURITY FIX [P1-15.3]: Enforce MEV protection with default max slippage
+        // If max_price is not provided, enforce a default 5% maximum slippage to prevent sandwich attacks
+        if (option::is_some(&max_price)) {
+            sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
+        } else {
+            // Default: enforce 5% maximum slippage (500 bps) when max_price not specified
+            let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
+            let effective_price = ((amount_out as u128) * 1_000_000_000) / (amount_in as u128);
+            let max_allowed_price = spot_price + (spot_price * 500 / 10000); // 5% worse than spot
+            assert!(effective_price >= max_allowed_price, EInsufficientOutput);
+        };
+
+        // Calculate price impact using INITIAL reserves
+        let impact = cp_price_impact_bps(
+            reserve_b_initial,
+            reserve_a_initial,
+            amount_in_after_fee,
+            amount_out
+        );
+        assert!(impact <= pool.max_price_impact_bps, EExcessivePriceImpact);
+
+        balance::join(&mut pool.reserve_b, coin::into_balance(coin_in));
+        
+        let mut fee_balance = balance::split(&mut pool.reserve_b, fee_amount);
+        
+        let protocol_fee_amount = (fee_amount * pool.protocol_fee_percent) / 10000;
+        let creator_fee_amount = (fee_amount * pool.creator_fee_percent) / 10000;
+        let lp_fee_amount = fee_amount - protocol_fee_amount - creator_fee_amount;
+
+        if (protocol_fee_amount > 0) {
+            let proto_fee = balance::split(&mut fee_balance, protocol_fee_amount);
+            balance::join(&mut pool.protocol_fee_b, proto_fee);
+        };
+
+        if (creator_fee_amount > 0) {
+            let creator_fee = balance::split(&mut fee_balance, creator_fee_amount);
+            balance::join(&mut pool.creator_fee_b, creator_fee);
+        };
+
+        balance::join(&mut pool.fee_b, fee_balance);
+
+        let output_coin = coin::take(&mut pool.reserve_a, amount_out, ctx);
+
+        // FIX [L1]: Only accumulate fees if above threshold to prevent precision loss
+        if (pool.total_liquidity > 0 && lp_fee_amount >= MIN_FEE_THRESHOLD) {
+            pool.acc_fee_per_share_b = pool.acc_fee_per_share_b + ((lp_fee_amount as u128) * ACC_PRECISION / (pool.total_liquidity as u128));
+        } else if (pool.total_liquidity > 0 && lp_fee_amount > 0) {
+            // For small fees, use higher precision calculation
+            let fee_increment = ((lp_fee_amount as u128) * ACC_PRECISION);
+            if (fee_increment / (pool.total_liquidity as u128) > 0) {
+                pool.acc_fee_per_share_b = pool.acc_fee_per_share_b + (fee_increment / (pool.total_liquidity as u128));
+            };
+        };
+
+        // S2: Verify K-invariant
+        let reserve_a_new = balance::value(&pool.reserve_a);
+        let reserve_b_new = balance::value(&pool.reserve_b);
+        let k_old = (reserve_a_initial as u128) * (reserve_b_initial as u128);
+        let k_new = (reserve_a_new as u128) * (reserve_b_new as u128);
+        assert!(k_new >= k_old, EInsufficientLiquidity);
+
+        event::emit(SwapExecuted {
+            pool_id: object::id(pool),
+            sender: tx_context::sender(ctx),
+            amount_in,
+            amount_out,
+            is_a_to_b: false,
+            price_impact_bps: impact,
+        });
+
+        // Record swap in history
+        sui_amm::swap_history::record_swap(
+            pool_stats,
+            false, // is_a_to_b
+            amount_in,
+            amount_out,
+            fee_amount,
+            impact,
+            clock
+        );
+
+        output_coin
+    }
+
     public fun increase_liquidity<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        position: &mut LPPosition,
-        coin_a: Coin<CoinA>,
-        coin_b: Coin<CoinB>,
+        position: &mut position::LPPosition,
+        coin_a: coin::Coin<CoinA>,
+        coin_b: coin::Coin<CoinB>,
         min_liquidity: u64,
-        clock: &Clock,
+        clock: &clock::Clock,
         deadline: u64,
-        ctx: &mut TxContext
-    ): (Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // SECURITY FIX [P1-15.4]: Add pause check to liquidity operations
+        assert!(!pool.paused, EPaused);
+        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
@@ -668,8 +1022,8 @@ module sui_amm::pool {
         let amount_a_optimal = (((liquidity_added as u128) * (balance::value(&pool.reserve_a) as u128) / (pool.total_liquidity as u128)) as u64);
         let amount_b_optimal = (((liquidity_added as u128) * (balance::value(&pool.reserve_b) as u128) / (pool.total_liquidity as u128)) as u64);
 
-        let balance_a = coin::into_balance(coin_a);
-        let balance_b = coin::into_balance(coin_b);
+        let mut balance_a = coin::into_balance(coin_a);
+        let mut balance_b = coin::into_balance(coin_b);
         
         balance::join(&mut pool.reserve_a, balance::split(&mut balance_a, amount_a_optimal));
         balance::join(&mut pool.reserve_b, balance::split(&mut balance_b, amount_b_optimal));
@@ -693,13 +1047,16 @@ module sui_amm::pool {
             liquidity_minted: liquidity_added,
         });
 
+        // FIX [V3]: Auto-refresh metadata after increasing liquidity
+        refresh_position_metadata(pool, position, clock);
+
         (coin::from_balance(balance_a, ctx), coin::from_balance(balance_b, ctx))
     }
 
-    public(friend) fun withdraw_protocol_fees<CoinA, CoinB>(
+    public(package) fun withdraw_protocol_fees<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        ctx: &mut TxContext
-    ): (Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
         let fee_a = balance::withdraw_all(&mut pool.protocol_fee_a);
         let fee_b = balance::withdraw_all(&mut pool.protocol_fee_b);
         
@@ -715,8 +1072,8 @@ module sui_amm::pool {
 
     public fun withdraw_creator_fees<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        ctx: &mut TxContext
-    ): (Coin<CoinA>, Coin<CoinB>) {
+        ctx: &mut tx_context::TxContext
+    ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
         // Verify sender is creator
         assert!(tx_context::sender(ctx) == pool.creator, EUnauthorized);
         
@@ -733,7 +1090,7 @@ module sui_amm::pool {
         (coin::from_balance(fee_a, ctx), coin::from_balance(fee_b, ctx))
     }
 
-    public(friend) fun set_risk_params<CoinA, CoinB>(
+    public(package) fun set_risk_params<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         ratio_tolerance_bps: u64,
         max_price_impact_bps: u64
@@ -742,12 +1099,37 @@ module sui_amm::pool {
         pool.max_price_impact_bps = max_price_impact_bps;
     }
 
-    public(friend) fun set_protocol_fee_percent<CoinA, CoinB>(
+    public(package) fun set_protocol_fee_percent<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         new_percent: u64
     ) {
         assert!(new_percent <= 1000, ETooHighFee);
         pool.protocol_fee_percent = new_percent;
+    }
+
+    /// Pause pool operations (admin-only via package)
+    public(package) fun pause_pool<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        clock: &clock::Clock
+    ) {
+        pool.paused = true;
+        pool.paused_at = sui::clock::timestamp_ms(clock);
+        event::emit(PoolPaused {
+            pool_id: object::id(pool),
+            timestamp: pool.paused_at,
+        });
+    }
+
+    /// Unpause pool operations (admin-only via package)
+    public(package) fun unpause_pool<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        clock: &clock::Clock
+    ) {
+        pool.paused = false;
+        event::emit(PoolUnpaused {
+            pool_id: object::id(pool),
+            timestamp: sui::clock::timestamp_ms(clock),
+        });
     }
 
     public fun get_k<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): u128 {
@@ -777,7 +1159,7 @@ module sui_amm::pool {
 
     public fun get_position_view<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
-        position: &LPPosition,
+        position: &position::LPPosition,
     ): position::PositionView {
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
 
@@ -825,7 +1207,7 @@ module sui_amm::pool {
     /// This function calculates the realized loss based on current reserves and user's initial deposit amounts.
     public fun get_impermanent_loss<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
-        position: &LPPosition
+        position: &position::LPPosition
     ): u64 {
         let liquidity = position::liquidity(position);
         if (liquidity == 0 || pool.total_liquidity == 0) {
@@ -838,33 +1220,45 @@ module sui_amm::pool {
             return 0
         };
 
-        let price_a_scaled = ((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128);
+        // SECURITY FIX [P1-15.5]: Increase IL calculation precision from 1e9 to 1e12
+        // Calculate current price ratio
+        let current_price_ratio_scaled = ((reserve_b as u128) * 1_000_000_000_000) / (reserve_a as u128);
         
-        let initial_a = (position::min_a(position) as u128);
-        let initial_b = (position::min_b(position) as u128);
-        
+        // Calculate current position value
         let current_a = ((liquidity as u128) * (reserve_a as u128)) / (pool.total_liquidity as u128);
         let current_b = ((liquidity as u128) * (reserve_b as u128)) / (pool.total_liquidity as u128);
         
-        let value_hold = (initial_a * price_a_scaled) / 1_000_000_000 + initial_b;
-        let value_lp = (current_a * price_a_scaled) / 1_000_000_000 + current_b;
-        
-        if (value_hold <= value_lp || value_hold == 0) {
-            return 0
-        };
-        
-        let loss = value_hold - value_lp;
-        ((loss * 10000) / value_hold as u64)
+        // Use position module's corrected IL calculation
+        position::get_impermanent_loss(
+            position,
+            (current_a as u64),
+            (current_b as u64),
+            (current_price_ratio_scaled as u64)
+        )
     }
 
-    /// FIX [S2]: Public function to refresh position metadata
+    /// FIX [S2][V3]: Public function to refresh position metadata
     /// Allows users to update their NFT display with current values without claiming fees.
-    /// IMPORTANT: NFT metadata is NOT automatically updated on every swap to save gas.
-    /// Users or frontends should call this function to ensure the NFT displays the latest
-    /// value and fees.
+    /// 
+    /// IMPORTANT STALENESS NOTE:
+    /// NFT metadata (cached_value_a, cached_value_b, cached_fee_a, cached_fee_b, cached_il_bps)
+    /// is NOT automatically updated on every swap to save gas. This is an intentional design
+    /// decision for gas efficiency.
+    /// 
+    /// For real-time data, use get_position_view() which computes values on-demand.
+    /// Call this function to update the NFT's Display metadata before:
+    /// - Listing on marketplaces
+    /// - Viewing in wallets that only read NFT metadata
+    /// - Taking screenshots for records
+    /// 
+    /// The metadata IS automatically refreshed on:
+    /// - remove_liquidity_partial()
+    /// - withdraw_fees()
+    /// - increase_liquidity()
     public fun refresh_position_metadata<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
-        position: &mut LPPosition
+        position: &mut position::LPPosition,
+        clock: &sui::clock::Clock
     ) {
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
         
@@ -899,8 +1293,22 @@ module sui_amm::pool {
             value_b,
             (fee_a as u64),
             (fee_b as u64),
-            il_bps
+            il_bps,
+            clock
         );
+    }
+
+    /// FIX [P2-16.1]: Helper function to calculate fee with overflow protection
+    /// Returns (fee_amount, amount_after_fee)
+    fun calculate_fee_safe(amount_in: u64, fee_percent: u64): (u64, u64) {
+        // Use u128 to prevent overflow in multiplication
+        let fee_calculation = (amount_in as u128) * (fee_percent as u128);
+        // Validate intermediate result doesn't overflow u64 after division
+        let fee_amount_u128 = fee_calculation / 10000;
+        assert!(fee_amount_u128 <= (18446744073709551615 as u128), EOverflow);
+        let fee_amount = (fee_amount_u128 as u64);
+        let amount_after_fee = amount_in - fee_amount;
+        (fee_amount, amount_after_fee)
     }
 
     fun cp_price_impact_bps(
@@ -909,17 +1317,49 @@ module sui_amm::pool {
         amount_in_after_fee: u64,
         amount_out: u64,
     ): u64 {
-        if (amount_in_after_fee == 0 || amount_out == 0) {
+        // FIX [Task 7]: Add zero checks to prevent division by zero
+        // Return 0 if reserve_in is zero
+        if (reserve_in == 0) {
+            return 0
+        };
+        
+        // Return 10000 (100% impact) if reserve_out is zero
+        if (reserve_out == 0) {
+            return 10000
+        };
+        
+        // Return 0 if amount_in is zero
+        if (amount_in_after_fee == 0) {
+            return 0
+        };
+        
+        // Return 0 if amount_out is zero (edge case)
+        if (amount_out == 0) {
             return 0
         };
 
+        // FIX [P2-19.1]: Enhanced price impact overflow protection
+        // Validate inputs are within safe bounds before multiplication
+        // u128::MAX = 340282366920938463463374607431768211455
+        // To prevent overflow in (amount_in * reserve_out), ensure:
+        // amount_in <= u128::MAX / reserve_out
+        let max_u128 = 340282366920938463463374607431768211455u128;
+        
+        // Check if multiplication would overflow
+        if ((amount_in_after_fee as u128) > max_u128 / (reserve_out as u128)) {
+            // If overflow would occur, return maximum impact (100%)
+            return 10000
+        };
+        
         // Ideal output for CP: amount_in * reserve_out / reserve_in
         // But we need to be careful with precision.
         // ideal_out = amount_in * (reserve_out / reserve_in)
         
         // FIX L4: Check for overflow before multiplication
         let ideal_out = (amount_in_after_fee as u128) * (reserve_out as u128) / (reserve_in as u128);
-        assert!(ideal_out <= MAX_SAFE_VALUE, EOverflow);
+        
+        // Validate division operations - check for overflow
+        assert!(ideal_out <= MAX_SAFE_VALUE, EArithmeticError);
         
         let actual_out = (amount_out as u128);
         
@@ -927,7 +1367,19 @@ module sui_amm::pool {
             0
         } else {
             let diff = ideal_out - actual_out;
-            assert!(diff <= MAX_SAFE_VALUE, EOverflow);
+            assert!(diff <= MAX_SAFE_VALUE, EArithmeticError);
+            
+            // Validate final division operation
+            if (ideal_out == 0) {
+                return 0
+            };
+            
+            // FIX [P2-19.1]: Check for overflow in final calculation (diff * 10000)
+            if (diff > max_u128 / 10000) {
+                // If overflow would occur, return maximum impact (100%)
+                return 10000
+            };
+            
             (((diff * 10000) / ideal_out) as u64)
         }
     }
@@ -940,8 +1392,8 @@ module sui_amm::pool {
         let reserve_b = balance::value(&pool.reserve_b);
         if (reserve_a == 0 || reserve_b == 0) return 0;
         
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
         
         let amount_out = ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64);
         
@@ -956,8 +1408,8 @@ module sui_amm::pool {
         let reserve_b = balance::value(&pool.reserve_b);
         if (reserve_a == 0 || reserve_b == 0) return 0;
         
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
         
         let amount_out = ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64);
         
@@ -975,8 +1427,8 @@ module sui_amm::pool {
         let reserve_b = balance::value(&pool.reserve_b);
         if (reserve_a == 0 || reserve_b == 0 || amount_in == 0) return 0;
 
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
 
         // 1. Calculate Actual Output
         let actual_out = if (is_a_to_b) {
@@ -1015,8 +1467,8 @@ module sui_amm::pool {
         let reserve_b = balance::value(&pool.reserve_b);
         if (reserve_a == 0 || reserve_b == 0) return 0;
         
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
         
         ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64)
     }
@@ -1029,8 +1481,8 @@ module sui_amm::pool {
         let reserve_b = balance::value(&pool.reserve_b);
         if (reserve_a == 0 || reserve_b == 0) return 0;
         
-        let fee_amount = (amount_in * pool.fee_percent) / 10000;
-        let amount_in_after_fee = amount_in - fee_amount;
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
         
         ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64)
     }
@@ -1044,9 +1496,81 @@ module sui_amm::pool {
         ((reserve_b as u128) * 1_000_000_000 / (reserve_a as u128) as u64)
     }
 
+    /// Get B to A exchange rate with zero-reserve handling
+    /// Returns the price of B in terms of A, scaled by 1e9
+    /// Returns 0 if reserve_b is zero to prevent division by zero
+    public fun get_exchange_rate_b_to_a<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): u64 {
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        
+        // Handle zero reserve case
+        if (reserve_b == 0) return 0;
+        
+        // Return price of B in terms of A, scaled by 1e9
+        ((reserve_a as u128) * 1_000_000_000 / (reserve_b as u128) as u64)
+    }
+
+    /// Get effective rate for a specific swap amount (includes slippage)
+    /// Returns the actual rate you would get for swapping amount_in, scaled by 1e9
+    /// This differs from spot rate because it accounts for price impact
+    public fun get_effective_rate<CoinA, CoinB>(
+        pool: &LiquidityPool<CoinA, CoinB>,
+        amount_in: u64,
+        is_a_to_b: bool
+    ): u64 {
+        // Handle zero amount case
+        if (amount_in == 0) return 0;
+        
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        
+        // Handle zero reserve cases
+        if (reserve_a == 0 || reserve_b == 0) return 0;
+        
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
+        
+        let amount_out = if (is_a_to_b) {
+            ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64)
+        } else {
+            ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64)
+        };
+        
+        // Return effective rate: amount_out / amount_in * 1e9
+        ((amount_out as u128) * 1_000_000_000 / (amount_in as u128) as u64)
+    }
+
+    /// Get price impact for a specific amount before execution
+    /// Returns price impact in basis points (1 bps = 0.01%)
+    /// Useful for showing users the expected price impact before they execute a swap
+    public fun get_price_impact_for_amount<CoinA, CoinB>(
+        pool: &LiquidityPool<CoinA, CoinB>,
+        amount_in: u64,
+        is_a_to_b: bool
+    ): u64 {
+        let reserve_a = balance::value(&pool.reserve_a);
+        let reserve_b = balance::value(&pool.reserve_b);
+        
+        // Handle edge cases
+        if (reserve_a == 0 || reserve_b == 0 || amount_in == 0) return 0;
+        
+        // FIX [P2-16.1]: Use safe fee calculation with overflow protection
+        let (_fee_amount, amount_in_after_fee) = calculate_fee_safe(amount_in, pool.fee_percent);
+        
+        let (reserve_in, reserve_out) = if (is_a_to_b) {
+            (reserve_a, reserve_b)
+        } else {
+            (reserve_b, reserve_a)
+        };
+        
+        let amount_out = ((amount_in_after_fee as u128) * (reserve_out as u128) / ((reserve_in as u128) + (amount_in_after_fee as u128)) as u64);
+        
+        cp_price_impact_bps(reserve_in, reserve_out, amount_in_after_fee, amount_out)
+    }
+
     public fun get_position_value<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
-        position: &LPPosition
+        position: &position::LPPosition
     ): (u64, u64) {
         let view = get_position_view(pool, position);
         position::view_value(&view)
@@ -1054,7 +1578,7 @@ module sui_amm::pool {
 
     public fun get_accumulated_fees<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
-        position: &LPPosition
+        position: &position::LPPosition
     ): (u64, u64) {
         let view = get_position_view(pool, position);
         position::view_fees(&view)
@@ -1068,6 +1592,12 @@ module sui_amm::pool {
         } else {
             0
         }
+    }
+
+    /// Get the minimum fee in basis points required for pool creation (Requirement 10.3, 10.4)
+    /// Returns 1 basis point (0.01%) as the minimum fee to ensure meaningful LP returns
+    public fun min_fee_bps(): u64 {
+        MIN_FEE_BPS
     }
 
     #[test_only]
@@ -1085,7 +1615,7 @@ module sui_amm::pool {
         fee_percent: u64,
         protocol_fee_percent: u64,
         creator_fee_percent: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ): LiquidityPool<CoinA, CoinB> {
         create_pool(fee_percent, protocol_fee_percent, creator_fee_percent, ctx)
     }

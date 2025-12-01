@@ -1,5 +1,5 @@
 module sui_amm::slippage_protection {
-    use sui::clock::{Self, Clock};
+    use sui::clock;
 
     /// Error codes
     const EDeadlinePassed: u64 = 0;
@@ -7,7 +7,7 @@ module sui_amm::slippage_protection {
     const EInsufficientOutput: u64 = 2;
 
     /// Check if the transaction deadline has passed.
-    public fun check_deadline(clock: &Clock, deadline: u64) {
+    public fun check_deadline(clock: &clock::Clock, deadline: u64) {
         assert!(clock::timestamp_ms(clock) <= deadline, EDeadlinePassed);
     }
 

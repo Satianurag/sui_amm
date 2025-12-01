@@ -11,24 +11,24 @@
 ///   - Make pool discovery impractical
 /// The fee is burned (sent to @0x0), providing economic deterrence without extracting value.
 module sui_amm::factory {
-    use sui::object::{Self, UID, ID};
-    use sui::table::{Self, Table};
-    use sui::tx_context::{Self, TxContext};  // FIX: Need to import tx_context module
-    use sui::transfer;
-    use std::type_name::{Self, TypeName};
-    use std::option::{Self, Option};
-    use std::vector;
+    use sui::object;
+    use sui::table;
+    use sui::tx_context;
+    use std::type_name;
+    use std::option;
     use sui::event;
-    use sui::vec_map::{Self, VecMap};
-    use sui::vec_set::{Self, VecSet};
+    use sui::vec_map;
+    use sui::vec_set;
+    use sui::clock;
     
     use sui_amm::pool;
     use sui_amm::stable_pool;
     use sui_amm::position;
+    use sui_amm::swap_history;
 
-    use sui_amm::admin::{AdminCap};
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
+    use sui_amm::admin;
+    use sui::sui;
+    use sui::coin;
 
     // Error codes
     const EPoolAlreadyExists: u64 = 0;
@@ -37,6 +37,7 @@ module sui_amm::factory {
     const ETooManyPools: u64 = 3; // FIX [P1]: For unbounded iteration protection
     const ETooManyPoolsPerToken: u64 = 4; // FIX [V4]: DoS protection for reverse lookup
     const EFeeTierTooHigh: u64 = 5; // FIX [V5]: Extensible fee tier validation
+    const EGlobalPoolLimitReached: u64 = 6; // FIX [P2-17.2]: Global pool count limit
 
     // Constants
     // FIX [V1]: Default pool creation fee (governance-adjustable)
@@ -48,6 +49,11 @@ module sui_amm::factory {
     
     // FIX [V4]: DoS protection - max pools per token
     const MAX_POOLS_PER_TOKEN: u64 = 500;
+    
+    // FIX [P2-17.2]: Global pool count limit to prevent registry bloat and DoS
+    // This prevents unbounded growth that could degrade indexer performance
+    // Set to 50,000 pools (reasonable for production AMM with multiple fee tiers)
+    const DEFAULT_MAX_GLOBAL_POOLS: u64 = 50000;
     
     // FIX [V5]: Extensible fee tier validation (governance-adjustable)
     const DEFAULT_MAX_FEE_TIER_BPS: u64 = 10000; // 100% default, but can be increased
@@ -61,53 +67,59 @@ module sui_amm::factory {
     const DEFAULT_PROTOCOL_FEE_BPS: u64 = 100; // 1%
     const DEFAULT_STABLE_PROTOCOL_FEE_BPS: u64 = 100; // 1%
 
-    struct PoolKey has copy, drop, store {
-        type_a: TypeName,
-        type_b: TypeName,
+    public struct PoolKey has copy, drop, store {
+        type_a: type_name::TypeName,
+        type_b: type_name::TypeName,
         fee_percent: u64,
         is_stable: bool,
     }
 
     // FIX [M1]: Enhanced event schema with creator and timestamp for indexers
-    struct PoolCreated has copy, drop {
-        pool_id: ID,
+    public struct PoolCreated has copy, drop {
+        pool_id: object::ID,
         creator: address,  // NEW: For creator tracking
-        type_a: TypeName,
-        type_b: TypeName,
+        type_a: type_name::TypeName,
+        type_b: type_name::TypeName,
         fee_percent: u64,
         is_stable: bool,
         creation_fee_paid: u64,  // NEW: Transparency for fee tracking
         initial_liquidity_a: u64, // FIX [M1]: For indexer efficiency
         initial_liquidity_b: u64, // FIX [M1]: For indexer efficiency
+        statistics_initialized: bool, // NEW: Confirm statistics initialization
     }
 
-    struct PoolRegistry has key {
-        id: UID,
-        pools: Table<PoolKey, ID>,
-        pool_to_key: Table<ID, PoolKey>, // Reverse lookup
-        pool_index: Table<u64, ID>, // Scalable registry of pool IDs
+    public struct PoolRegistry has key {
+        id: object::UID,
+        pools: table::Table<PoolKey, object::ID>,
+        pool_to_key: table::Table<object::ID, PoolKey>, // Reverse lookup
+        pool_index: table::Table<u64, object::ID>, // Scalable registry of pool IDs
         pool_count: u64,
-        pools_by_fee: VecMap<u64, vector<ID>>, // Fee tier -> pool IDs
+        // FIX [P2-17.1]: VecMap is optimal for small fee tier counts (typically 3-10 tiers)
+        // VecMap has O(n) lookup but with n < 20, this is faster than Table's storage overhead
+        // Migration path: If fee tiers exceed 20, convert to Table<u64, vector<ID>>
+        pools_by_fee: vec_map::VecMap<u64, vector<object::ID>>, // Fee tier -> pool IDs
         // FIX V3: Dynamic fee tiers
-        allowed_fee_tiers: VecSet<u64>,
+        allowed_fee_tiers: vec_set::VecSet<u64>,
         // FIX M4: Reverse lookup for efficient indexing
-        token_to_pools: Table<TypeName, vector<ID>>,
+        token_to_pools: table::Table<type_name::TypeName, vector<object::ID>>,
         // FIX [V1]: Governable pool creation fee
         pool_creation_fee: u64,
         // FIX [V5]: Governable max fee tier
         max_fee_tier_bps: u64,
+        // FIX [P2-17.2]: Global pool count limit (governance-adjustable)
+        max_global_pools: u64,
     }
 
-    struct FeeTierAdded has copy, drop {
+    public struct FeeTierAdded has copy, drop {
         fee_tier: u64,
     }
 
-    struct FeeTierRemoved has copy, drop {
+    public struct FeeTierRemoved has copy, drop {
         fee_tier: u64,
     }
 
-    fun init(ctx: &mut TxContext) {
-        let allowed_fee_tiers = vec_set::empty();
+    fun init(ctx: &mut tx_context::TxContext) {
+        let mut allowed_fee_tiers = vec_set::empty();
         vec_set::insert(&mut allowed_fee_tiers, FEE_TIER_LOW);
         vec_set::insert(&mut allowed_fee_tiers, FEE_TIER_MEDIUM);
         vec_set::insert(&mut allowed_fee_tiers, FEE_TIER_HIGH);
@@ -123,11 +135,12 @@ module sui_amm::factory {
             token_to_pools: table::new(ctx),
             pool_creation_fee: DEFAULT_POOL_CREATION_FEE,  // FIX [V1]
             max_fee_tier_bps: DEFAULT_MAX_FEE_TIER_BPS,    // FIX [V5]
+            max_global_pools: DEFAULT_MAX_GLOBAL_POOLS,    // FIX [P2-17.2]
         });
     }
 
     #[test_only]
-    public fun test_init(ctx: &mut TxContext) {
+    public fun test_init(ctx: &mut tx_context::TxContext) {
         init(ctx);
     }
 
@@ -139,7 +152,7 @@ module sui_amm::factory {
     /// Admin function to add a new fee tier
     /// FIX [V5]: Now uses governance-adjustable max instead of hard-coded 10000
     public fun add_fee_tier(
-        _admin: &AdminCap,
+        _admin: &admin::AdminCap,
         registry: &mut PoolRegistry,
         fee_tier: u64
     ) {
@@ -154,7 +167,7 @@ module sui_amm::factory {
 
     /// Admin function to remove a fee tier
     public fun remove_fee_tier(
-        _admin: &AdminCap,
+        _admin: &admin::AdminCap,
         registry: &mut PoolRegistry,
         fee_tier: u64
     ) {
@@ -172,15 +185,23 @@ module sui_amm::factory {
     /// Returns (position, refund_a, refund_b) for composability in PTBs
     public fun create_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,
+        statistics_registry: &mut swap_history::StatisticsRegistry,
         fee_percent: u64,
         creator_fee_percent: u64,
-        coin_a: Coin<CoinA>,
-        coin_b: Coin<CoinB>,
-        creation_fee: Coin<SUI>, // FIX [V1]: Uses dynamic fee from registry
-        clock: &sui::clock::Clock,
-        ctx: &mut TxContext
-    ): (position::LPPosition, Coin<CoinA>, Coin<CoinB>) {
+        coin_a: coin::Coin<CoinA>,
+        coin_b: coin::Coin<CoinB>,
+        creation_fee: coin::Coin<sui::SUI>, // FIX [V1]: Uses dynamic fee from registry
+        clock: &clock::Clock,
+        ctx: &mut tx_context::TxContext
+    ): (position::LPPosition, coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // FIX [P2-16.6]: Enforce minimum fee validation to prevent zero-fee pools
+        // Zero-fee pools would provide no incentive for LPs and could be exploited
+        // Minimum fee of 1 basis point (0.01%) ensures meaningful LP returns
+        assert!(fee_percent >= pool::min_fee_bps(), EInvalidFeeTier);
         assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
+        
+        // FIX [P2-17.2]: Enforce global pool count limit to prevent registry bloat
+        assert!(registry.pool_count < registry.max_global_pools, EGlobalPoolLimitReached);
         
         // FIX [V1]: Use dynamic creation fee instead of constant
         let creation_fee_amount = registry.pool_creation_fee;
@@ -202,7 +223,7 @@ module sui_amm::factory {
         assert!(!table::contains(&registry.pools, key), EPoolAlreadyExists);
 
         // Configure protocol fee via immutable defaults to prevent griefing attacks
-        let pool = pool::create_pool<CoinA, CoinB>(
+        let mut pool = pool::create_pool<CoinA, CoinB>(
             fee_percent,
             DEFAULT_PROTOCOL_FEE_BPS,
             creator_fee_percent,
@@ -238,6 +259,9 @@ module sui_amm::factory {
         assert!(vector::length(token_b_pools) < MAX_POOLS_PER_TOKEN, ETooManyPoolsPerToken);
         vector::push_back(token_b_pools, pool_id);
 
+        // Initialize pool statistics
+        swap_history::init_pool_statistics(statistics_registry, pool_id, ctx);
+
         // FIX [M1]: Enhanced event with creator and creation fee paid
         event::emit(PoolCreated {
             pool_id,
@@ -249,6 +273,7 @@ module sui_amm::factory {
             creation_fee_paid: creation_fee_amount,
             initial_liquidity_a: coin::value(&coin_a),
             initial_liquidity_b: coin::value(&coin_b),
+            statistics_initialized: true,
         });
 
 
@@ -278,16 +303,24 @@ module sui_amm::factory {
     /// Returns (position, refund_a, refund_b) for composability in PTBs
     public fun create_stable_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,
+        statistics_registry: &mut swap_history::StatisticsRegistry,
         fee_percent: u64,
         creator_fee_percent: u64,
         amp: u64,
-        coin_a: Coin<CoinA>,
-        coin_b: Coin<CoinB>,
-        creation_fee: Coin<SUI>, // FIX [V1]: Uses dynamic fee from registry
-        clock: &sui::clock::Clock,
-        ctx: &mut TxContext
-    ): (position::LPPosition, Coin<CoinA>, Coin<CoinB>) {
+        coin_a: coin::Coin<CoinA>,
+        coin_b: coin::Coin<CoinB>,
+        creation_fee: coin::Coin<sui::SUI>, // FIX [V1]: Uses dynamic fee from registry
+        clock: &clock::Clock,
+        ctx: &mut tx_context::TxContext
+    ): (position::LPPosition, coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // FIX [P2-16.6]: Enforce minimum fee validation to prevent zero-fee pools
+        // Zero-fee pools would provide no incentive for LPs and could be exploited
+        // Minimum fee of 1 basis point (0.01%) ensures meaningful LP returns
+        assert!(fee_percent >= stable_pool::min_fee_bps(), EInvalidFeeTier);
         assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
+        
+        // FIX [P2-17.2]: Enforce global pool count limit to prevent registry bloat
+        assert!(registry.pool_count < registry.max_global_pools, EGlobalPoolLimitReached);
         
         // FIX [V1]: Use dynamic creation fee
         let creation_fee_amount = registry.pool_creation_fee;
@@ -308,7 +341,7 @@ module sui_amm::factory {
 
         assert!(!table::contains(&registry.pools, key), EPoolAlreadyExists);
 
-        let pool = stable_pool::create_pool<CoinA, CoinB>(
+        let mut pool = stable_pool::create_pool<CoinA, CoinB>(
             fee_percent,
             DEFAULT_STABLE_PROTOCOL_FEE_BPS,
             creator_fee_percent,
@@ -344,6 +377,9 @@ module sui_amm::factory {
         assert!(vector::length(token_b_pools) < MAX_POOLS_PER_TOKEN, ETooManyPoolsPerToken);
         vector::push_back(token_b_pools, pool_id);
 
+        // Initialize pool statistics
+        swap_history::init_pool_statistics(statistics_registry, pool_id, ctx);
+
         // FIX [M1]: Enhanced event
         event::emit(PoolCreated {
             pool_id,
@@ -355,6 +391,7 @@ module sui_amm::factory {
             creation_fee_paid: creation_fee_amount,
             initial_liquidity_a: coin::value(&coin_a),
             initial_liquidity_b: coin::value(&coin_b),
+            statistics_initialized: true,
         });
 
         // Add initial liquidity
@@ -380,7 +417,7 @@ module sui_amm::factory {
         registry: &PoolRegistry,
         fee_percent: u64,
         is_stable: bool
-    ): Option<ID> {
+    ): option::Option<ID> {
         let key = PoolKey {
             type_a: type_name::with_original_ids<CoinA>(),
             type_b: type_name::with_original_ids<CoinB>(),
@@ -406,8 +443,8 @@ module sui_amm::factory {
     public fun get_all_pools(registry: &PoolRegistry): vector<ID> {
         assert!(registry.pool_count <= MAX_POOLS_UNBOUNDED, ETooManyPools);
         
-        let result = vector::empty<ID>();
-        let i = 0;
+        let mut result = vector::empty<ID>();
+        let mut i = 0;
         while (i < registry.pool_count) {
             let id_ref = table::borrow(&registry.pool_index, i);
             vector::push_back(&mut result, *id_ref);
@@ -416,30 +453,39 @@ module sui_amm::factory {
         result
     }
 
-    /// FIX P1: Pagination for pool registry
+    /// FIX [P2-17.1]: Efficient pagination for pool registry
+    /// This prevents gas exhaustion when querying large registries
+    /// Recommended limit: 50-100 pools per query for optimal gas usage
     public fun get_all_pools_paginated(
         registry: &PoolRegistry, 
         start_index: u64, 
         limit: u64
     ): vector<ID> {
-        let result = vector::empty<ID>();
+        let mut result = vector::empty<ID>();
         let count = registry.pool_count;
         if (start_index >= count) {
             return result
         };
         
-        let end_index = start_index + limit;
+        let mut end_index = start_index + limit;
         if (end_index > count) {
             end_index = count;
         };
         
-        let i = start_index;
+        let mut i = start_index;
         while (i < end_index) {
             let id_ref = table::borrow(&registry.pool_index, i);
             vector::push_back(&mut result, *id_ref);
             i = i + 1;
         };
         result
+    }
+
+    /// FIX [P2-17.1]: Check if VecMap migration to Table is recommended
+    /// Returns true if the number of fee tiers exceeds the optimal threshold
+    /// VecMap is O(n) but efficient for n < 20; Table is better for larger collections
+    public fun should_migrate_pools_by_fee(registry: &PoolRegistry): bool {
+        vec_set::length(&registry.allowed_fee_tiers) > 20
     }
 
     /// Get pools for a specific fee tier
@@ -452,7 +498,7 @@ module sui_amm::factory {
     }
 
     /// Reverse lookup: Get pool key from pool ID
-    public fun get_pool_key(registry: &PoolRegistry, pool_id: ID): Option<PoolKey> {
+    public fun get_pool_key(registry: &PoolRegistry, pool_id: object::ID): option::Option<PoolKey> {
         if (table::contains(&registry.pool_to_key, pool_id)) {
             option::some(*table::borrow(&registry.pool_to_key, pool_id))
         } else {
@@ -462,12 +508,12 @@ module sui_amm::factory {
 
     /// Get all pools for a specific token pair (checking all allowed fee tiers + stable)
     public fun get_pools_for_pair<CoinA, CoinB>(registry: &PoolRegistry): vector<ID> {
-        let pools = vector::empty<ID>();
+        let mut pools = vector::empty<ID>();
         
         // Iterate through all allowed fee tiers
         let keys = vec_set::keys(&registry.allowed_fee_tiers);
-        let i = 0;
-        let len = vector::length(keys);
+        let mut i = 0;
+        let mut len = vector::length(keys);
         
         while (i < len) {
             let fee = *vector::borrow(keys, i);
@@ -519,7 +565,7 @@ module sui_amm::factory {
     /// Admin function to set pool creation fee
     /// NOTE: Changed from friend to public for testability, but still protected by AdminCap
     public fun set_pool_creation_fee(
-        _admin: &AdminCap,
+        _admin: &admin::AdminCap,
         registry: &mut PoolRegistry,
         new_fee: u64
     ) {
@@ -536,7 +582,7 @@ module sui_amm::factory {
     /// Admin function to set max fee tier
     /// NOTE: Changed from friend to public for testability, but still protected by AdminCap
     public fun set_max_fee_tier_bps(
-        _admin: &AdminCap,
+        _admin: &admin::AdminCap,
         registry: &mut PoolRegistry,
         new_max_bps: u64
     ) {
@@ -549,15 +595,38 @@ module sui_amm::factory {
         registry.max_fee_tier_bps  // FIX: Removed semicolon to return the value
     }
 
+    // FIX [P2-17.2]: Governance functions for global pool limit
+    /// Admin function to set maximum global pool count
+    /// This prevents unbounded registry growth and protects against DoS
+    public fun set_max_global_pools(
+        _admin: &admin::AdminCap,
+        registry: &mut PoolRegistry,
+        new_max: u64
+    ) {
+        // Must be at least current pool count to avoid breaking existing pools
+        assert!(new_max >= registry.pool_count, ETooManyPools);
+        registry.max_global_pools = new_max;
+    }
+
+    /// Get current maximum global pool count
+    public fun get_max_global_pools(registry: &PoolRegistry): u64 {
+        registry.max_global_pools
+    }
+
+    /// Get remaining pool capacity before hitting global limit
+    public fun get_remaining_pool_capacity(registry: &PoolRegistry): u64 {
+        registry.max_global_pools - registry.pool_count
+    }
+
     #[test_only]
     public fun add_pool_for_testing(
         registry: &mut PoolRegistry,
         fee_percent: u64,
         is_stable: bool,
-        type_a: TypeName,
-        type_b: TypeName,
+        type_a: type_name::TypeName,
+        type_b: type_name::TypeName,
         limit: u64,
-        ctx: &mut TxContext
+        ctx: &mut tx_context::TxContext
     ) {
         let key = PoolKey {
             type_a,

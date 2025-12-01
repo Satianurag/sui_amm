@@ -1,14 +1,14 @@
 module sui_amm::governance {
-    use sui::object::{Self, UID, ID};
-    use sui::tx_context::{Self, TxContext};
+    use sui::object;
+    use sui::tx_context;
     use sui::transfer;
-    use sui::table::{Self, Table};
-    use sui::clock::{Self, Clock};
+    use sui::table;
+    use sui::clock;
     use sui::event;
     
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::stable_pool::{Self, StableSwapPool};
-    use sui_amm::admin::{AdminCap};
+    use sui_amm::admin::AdminCap;
     
     // Error codes
     const EProposalNotReady: u64 = 0;
@@ -22,17 +22,20 @@ module sui_amm::governance {
 
     // Constants
     const TIMELOCK_DURATION_MS: u64 = 172_800_000; // 48 hours (as per audit fix)
-    const PROPOSAL_EXPIRY_MS: u64 = 604_800_000; // 7 days
+    // SECURITY FIX [P2-18.2]: Reduced proposal expiry from 30 days to 7 days
+    // This reduces the window for stale proposals to be executed, improving governance security
+    const PROPOSAL_EXPIRY_MS: u64 = 604_800_000; // 7 days (reduced from 30 days)
     const MAX_PROTOCOL_FEE_BPS: u64 = 1000; // 10% hard cap
 
     // Proposal Types
     const TYPE_FEE_CHANGE: u8 = 1;
     const TYPE_PARAMETER_CHANGE: u8 = 2;
+    const TYPE_PAUSE: u8 = 3;  // SECURITY FIX [P2-18.1]: New proposal type for pause operations
 
-    struct Proposal has store, drop {
-        id: ID,
+    public struct Proposal has store, drop {
+        id: object::ID,
         proposal_type: u8, 
-        target_pool: ID,
+        target_pool: object::ID,
         // For Fee Change: new_fee_bps
         // For Param Change: max_price_impact_bps (we use u64 for generic value)
         new_value: u64, 
@@ -45,32 +48,32 @@ module sui_amm::governance {
         cancelled: bool,
     }
 
-    struct GovernanceConfig has key {
-        id: UID,
+    public struct GovernanceConfig has key {
+        id: object::UID,
         timelock_duration_ms: u64,
-        proposals: Table<ID, Proposal>,
+        proposals: table::Table<ID, Proposal>,
         proposal_count: u64,
     }
 
-    struct ProposalCreated has copy, drop {
-        proposal_id: ID,
+    public struct ProposalCreated has copy, drop {
+        proposal_id: object::ID,
         proposal_type: u8,
-        target_pool: ID,
+        target_pool: object::ID,
         new_value: u64,
         executable_at: u64,
     }
 
-    struct ProposalExecuted has copy, drop {
-        proposal_id: ID,
+    public struct ProposalExecuted has copy, drop {
+        proposal_id: object::ID,
         executed_at: u64,
     }
 
-    struct ProposalCancelled has copy, drop {
-        proposal_id: ID,
+    public struct ProposalCancelled has copy, drop {
+        proposal_id: object::ID,
         cancelled_by: address,
     }
 
-    fun init(ctx: &mut TxContext) {
+    fun init(ctx: &mut tx_context::TxContext) {
         transfer::share_object(GovernanceConfig {
             id: object::new(ctx),
             timelock_duration_ms: TIMELOCK_DURATION_MS,
@@ -80,7 +83,7 @@ module sui_amm::governance {
     }
 
     #[test_only]
-    public fun test_init(ctx: &mut TxContext) {
+    public fun test_init(ctx: &mut tx_context::TxContext) {
         init(ctx);
     }
 
@@ -90,10 +93,10 @@ module sui_amm::governance {
     public fun propose_fee_change(
         _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        pool_id: ID,
+        pool_id: object::ID,
         new_fee_percent: u64,
-        clock: &Clock,
-        ctx: &mut TxContext
+        clock: &clock::Clock,
+        ctx: &mut tx_context::TxContext
     ): ID {
         assert!(new_fee_percent <= MAX_PROTOCOL_FEE_BPS, EInvalidFee);
         
@@ -112,11 +115,11 @@ module sui_amm::governance {
     public fun propose_parameter_change(
         _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        pool_id: ID,
+        pool_id: object::ID,
         ratio_tolerance_bps: u64, // 0 for stable pools
         max_price_impact_bps: u64,
-        clock: &Clock,
-        ctx: &mut TxContext
+        clock: &clock::Clock,
+        ctx: &mut tx_context::TxContext
     ): ID {
         create_proposal(
             config,
@@ -129,14 +132,35 @@ module sui_amm::governance {
         )
     }
 
+    /// SECURITY FIX [P2-18.1]: Propose pool pause with timelock
+    /// Adds a delay before pause takes effect to prevent instant pause abuse
+    /// while maintaining emergency response capability through governance
+    public fun propose_pause(
+        _admin: &AdminCap,
+        config: &mut GovernanceConfig,
+        pool_id: object::ID,
+        clock: &clock::Clock,
+        ctx: &mut tx_context::TxContext
+    ): ID {
+        create_proposal(
+            config,
+            TYPE_PAUSE,
+            pool_id,
+            0, // No value needed for pause
+            0, // No aux value needed
+            clock,
+            ctx
+        )
+    }
+
     fun create_proposal(
         config: &mut GovernanceConfig,
         proposal_type: u8,
-        target_pool: ID,
+        target_pool: object::ID,
         new_value: u64,
         aux_value: u64,
-        clock: &Clock,
-        ctx: &mut TxContext
+        clock: &clock::Clock,
+        ctx: &mut tx_context::TxContext
     ): ID {
         let now = clock::timestamp_ms(clock);
         let proposal_id = object::new(ctx);
@@ -173,12 +197,15 @@ module sui_amm::governance {
     // --- Execute Functions ---
 
     /// Execute fee change for regular pool
+    /// SECURITY FIX [P1-15.2]: Added AdminCap requirement for execution
+    /// This prevents unauthorized execution of governance proposals
     public fun execute_fee_change_regular<CoinA, CoinB>(
+        _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        proposal_id: ID,
+        proposal_id: object::ID,
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        clock: &Clock,
-        _ctx: &mut TxContext
+        clock: &clock::Clock,
+        _ctx: &mut tx_context::TxContext
     ) {
         let proposal = validate_proposal_execution(config, proposal_id, TYPE_FEE_CHANGE, object::id(pool), clock);
         
@@ -195,12 +222,15 @@ module sui_amm::governance {
     }
 
     /// Execute fee change for stable pool
+    /// SECURITY FIX [P1-15.2]: Added AdminCap requirement for execution
+    /// This prevents unauthorized execution of governance proposals
     public fun execute_fee_change_stable<CoinA, CoinB>(
+        _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        proposal_id: ID,
+        proposal_id: object::ID,
         pool: &mut StableSwapPool<CoinA, CoinB>,
-        clock: &Clock,
-        _ctx: &mut TxContext
+        clock: &clock::Clock,
+        _ctx: &mut tx_context::TxContext
     ) {
         let proposal = validate_proposal_execution(config, proposal_id, TYPE_FEE_CHANGE, object::id(pool), clock);
         
@@ -216,12 +246,15 @@ module sui_amm::governance {
     }
 
     /// Execute parameter change for regular pool
+    /// SECURITY FIX [P1-15.2]: Added AdminCap requirement for execution
+    /// This prevents unauthorized execution of governance proposals
     public fun execute_parameter_change_regular<CoinA, CoinB>(
+        _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        proposal_id: ID,
+        proposal_id: object::ID,
         pool: &mut LiquidityPool<CoinA, CoinB>,
-        clock: &Clock,
-        _ctx: &mut TxContext
+        clock: &clock::Clock,
+        _ctx: &mut tx_context::TxContext
     ) {
         let proposal = validate_proposal_execution(config, proposal_id, TYPE_PARAMETER_CHANGE, object::id(pool), clock);
         
@@ -238,12 +271,15 @@ module sui_amm::governance {
     }
 
     /// Execute parameter change for stable pool
+    /// SECURITY FIX [P1-15.2]: Added AdminCap requirement for execution
+    /// This prevents unauthorized execution of governance proposals
     public fun execute_parameter_change_stable<CoinA, CoinB>(
+        _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        proposal_id: ID,
+        proposal_id: object::ID,
         pool: &mut StableSwapPool<CoinA, CoinB>,
-        clock: &Clock,
-        _ctx: &mut TxContext
+        clock: &clock::Clock,
+        _ctx: &mut tx_context::TxContext
     ) {
         let proposal = validate_proposal_execution(config, proposal_id, TYPE_PARAMETER_CHANGE, object::id(pool), clock);
         
@@ -262,10 +298,10 @@ module sui_amm::governance {
     // Helper to validate execution conditions
     fun validate_proposal_execution(
         config: &GovernanceConfig, 
-        proposal_id: ID, 
+        proposal_id: object::ID, 
         expected_type: u8,
-        target_pool: ID,
-        clock: &Clock
+        target_pool: object::ID,
+        clock: &clock::Clock
     ): &Proposal {
         assert!(table::contains(&config.proposals, proposal_id), EProposalNotFound);
         let proposal = table::borrow(&config.proposals, proposal_id);
@@ -282,12 +318,58 @@ module sui_amm::governance {
         proposal
     }
 
+    /// SECURITY FIX [P2-18.1]: Execute pause proposal for regular pool
+    /// Pauses pool operations after timelock delay
+    public fun execute_pause_regular<CoinA, CoinB>(
+        _admin: &AdminCap,
+        config: &mut GovernanceConfig,
+        proposal_id: object::ID,
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        clock: &clock::Clock,
+        _ctx: &mut tx_context::TxContext
+    ) {
+        let _proposal = validate_proposal_execution(config, proposal_id, TYPE_PAUSE, object::id(pool), clock);
+        
+        pool::pause_pool(pool, clock);
+        
+        let proposal_mut = table::borrow_mut(&mut config.proposals, proposal_id);
+        proposal_mut.executed = true;
+
+        event::emit(ProposalExecuted {
+            proposal_id,
+            executed_at: clock::timestamp_ms(clock),
+        });
+    }
+
+    /// SECURITY FIX [P2-18.1]: Execute pause proposal for stable pool
+    /// Pauses pool operations after timelock delay
+    public fun execute_pause_stable<CoinA, CoinB>(
+        _admin: &AdminCap,
+        config: &mut GovernanceConfig,
+        proposal_id: object::ID,
+        pool: &mut StableSwapPool<CoinA, CoinB>,
+        clock: &clock::Clock,
+        _ctx: &mut tx_context::TxContext
+    ) {
+        let _proposal = validate_proposal_execution(config, proposal_id, TYPE_PAUSE, object::id(pool), clock);
+        
+        stable_pool::pause_pool(pool, clock);
+        
+        let proposal_mut = table::borrow_mut(&mut config.proposals, proposal_id);
+        proposal_mut.executed = true;
+
+        event::emit(ProposalExecuted {
+            proposal_id,
+            executed_at: clock::timestamp_ms(clock),
+        });
+    }
+
     /// Cancel a proposal (Admin only)
     public fun cancel_proposal(
         _admin: &AdminCap,
         config: &mut GovernanceConfig,
-        proposal_id: ID,
-        ctx: &mut TxContext
+        proposal_id: object::ID,
+        ctx: &mut tx_context::TxContext
     ) {
         assert!(table::contains(&config.proposals, proposal_id), EProposalNotFound);
         let proposal = table::borrow_mut(&mut config.proposals, proposal_id);
@@ -299,5 +381,81 @@ module sui_amm::governance {
             proposal_id,
             cancelled_by: tx_context::sender(ctx),
         });
+    }
+
+    // Query Functions
+
+    /// Get proposal status
+    /// Returns: (proposal_type, executed, cancelled, executable_at, created_at)
+    public fun get_proposal_status(
+        config: &GovernanceConfig,
+        proposal_id: object::ID
+    ): (u8, bool, bool, u64, u64) {
+        assert!(table::contains(&config.proposals, proposal_id), EProposalNotFound);
+        let proposal = table::borrow(&config.proposals, proposal_id);
+        (
+            proposal.proposal_type,
+            proposal.executed,
+            proposal.cancelled,
+            proposal.executable_at,
+            proposal.created_at
+        )
+    }
+
+    /// Get proposal details
+    /// Returns: (proposal_type, target_pool, new_value, aux_value, proposer, executed, cancelled)
+    public fun get_proposal_details(
+        config: &GovernanceConfig,
+        proposal_id: object::ID
+    ): (u8, ID, u64, u64, address, bool, bool) {
+        assert!(table::contains(&config.proposals, proposal_id), EProposalNotFound);
+        let proposal = table::borrow(&config.proposals, proposal_id);
+        (
+            proposal.proposal_type,
+            proposal.target_pool,
+            proposal.new_value,
+            proposal.aux_value,
+            proposal.proposer,
+            proposal.executed,
+            proposal.cancelled
+        )
+    }
+
+    /// Check if proposal is ready to execute
+    /// Returns true if proposal exists, is not executed/cancelled, and timelock has passed
+    public fun is_proposal_ready(
+        config: &GovernanceConfig,
+        proposal_id: object::ID,
+        clock: &clock::Clock
+    ): bool {
+        if (!table::contains(&config.proposals, proposal_id)) {
+            return false
+        };
+        
+        let proposal = table::borrow(&config.proposals, proposal_id);
+        
+        if (proposal.executed || proposal.cancelled) {
+            return false
+        };
+        
+        let now = clock::timestamp_ms(clock);
+        
+        // Check if timelock has passed and not expired
+        now >= proposal.executable_at && now < proposal.executable_at + PROPOSAL_EXPIRY_MS
+    }
+
+    /// Get total proposal count
+    public fun get_proposal_count(config: &GovernanceConfig): u64 {
+        config.proposal_count
+    }
+
+    /// Get timelock duration in milliseconds
+    public fun get_timelock_duration(config: &GovernanceConfig): u64 {
+        config.timelock_duration_ms
+    }
+
+    /// Check if proposal exists
+    public fun proposal_exists(config: &GovernanceConfig, proposal_id: ID): bool {
+        table::contains(&config.proposals, proposal_id)
     }
 }

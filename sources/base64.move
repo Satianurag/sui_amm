@@ -10,15 +10,15 @@ module sui_amm::base64 {
 
     /// Encode bytes to base64 string
     public fun encode_bytes(input: &vector<u8>): String {
-        let len = vector::length(input);
+        let mut len = vector::length(input);
         if (len == 0) {
             return string::utf8(b"")
         };
 
-        let output = vector::empty<u8>();
+        let mut output = vector::empty<u8>();
         let base64_table = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         
-        let i = 0;
+        let mut i = 0;
         while (i + 2 < len) {
             let b1 = *vector::borrow(input, i);
             let b2 = *vector::borrow(input, i + 1);
@@ -71,15 +71,15 @@ module sui_amm::base64 {
     /// Returns: "data:image/svg+xml;base64,{encoded}"
     public fun create_svg_data_uri(svg: String): String {
         let encoded = encode(&svg);
-        let result = string::utf8(b"data:image/svg+xml;base64,");
+        let mut result = string::utf8(b"data:image/svg+xml;base64,");
         string::append(&mut result, encoded);
         result
     }
 
     /// Create a data URI from any string with custom MIME type
-    public fun create_data_uri(content: String, mime_type: String): String {
+    public fun create_data_uri(content: string::String, mime_type: String): String {
         let encoded = encode(&content);
-        let result = string::utf8(b"data:");
+        let mut result = string::utf8(b"data:");
         string::append(&mut result, mime_type);
         string::append(&mut result, string::utf8(b";base64,"));
         string::append(&mut result, encoded);
@@ -90,7 +90,7 @@ module sui_amm::base64 {
     fun test_encode_simple() {
         // "Man" in base64 should be "TWFu"
         let input = string::utf8(b"Man");
-        let result = encode(&input);
+        let mut result = encode(&input);
         assert!(result == string::utf8(b"TWFu"), 0);
     }
 
@@ -98,7 +98,7 @@ module sui_amm::base64 {
     fun test_encode_with_padding() {
         // "Ma" should be "TWE="
         let input = string::utf8(b"Ma");
-        let result = encode(&input);
+        let mut result = encode(&input);
         assert!(result == string::utf8(b"TWE="), 0);
 
         // "M" should be "TQ=="
@@ -111,14 +111,14 @@ module sui_amm::base64 {
     fun test_encode_longer() {
         // "Hello World" 
         let input = string::utf8(b"Hello World");
-        let result = encode(&input);
+        let mut result = encode(&input);
         // Expected: "SGVsbG8gV29ybGQ="
         assert!(result == string::utf8(b"SGVsbG8gV29ybGQ="), 0);
     }
 
     #[test]
     fun test_create_svg_data_uri() {
-        let svg = string::utf8(b"<svg></svg>");
+        let mut svg = string::utf8(b"<svg></svg>");
         let uri = create_svg_data_uri(svg);
         
         // Should start with data:image/svg+xml;base64,
@@ -126,7 +126,7 @@ module sui_amm::base64 {
         let prefix = b"data:image/svg+xml;base64,";
         let prefix_len = vector::length(&prefix);
         
-        let i = 0;
+        let mut i = 0;
         while (i < prefix_len) {
             assert!(*vector::borrow(bytes, i) == *vector::borrow(&prefix, i), (i as u64));
             i = i + 1;
@@ -136,7 +136,7 @@ module sui_amm::base64 {
     #[test]
     fun test_empty_string() {
         let input = string::utf8(b"");
-        let result = encode(&input);
+        let mut result = encode(&input);
         assert!(result == string::utf8(b""), 0);
     }
 }
