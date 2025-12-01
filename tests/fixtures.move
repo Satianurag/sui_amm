@@ -110,31 +110,31 @@ module sui_amm::fixtures {
     public fun admin(): address { @0x1 }
     
     /// Whale address - Large liquidity provider
-    public fun whale(): address { @0xWHALE }
+    public fun whale(): address { @0x100 }
     
     /// Retail address - Regular user/trader
-    public fun retail(): address { @0xRETAIL }
+    public fun retail(): address { @0x101 }
     
     /// Arbitrageur address - MEV searcher/arbitrage bot
-    public fun arbitrageur(): address { @0xARB }
+    public fun arbitrageur(): address { @0x102 }
     
     /// LP address - Dedicated liquidity provider
-    public fun lp(): address { @0xLP }
+    public fun lp(): address { @0x103 }
     
     /// MEV searcher address - Front-running bot
-    public fun mev_searcher(): address { @0xMEV }
+    public fun mev_searcher(): address { @0x104 }
     
     /// User1 - Generic test user 1
-    public fun user1(): address { @0xUSER1 }
+    public fun user1(): address { @0x105 }
     
     /// User2 - Generic test user 2
-    public fun user2(): address { @0xUSER2 }
+    public fun user2(): address { @0x106 }
     
     /// User3 - Generic test user 3
-    public fun user3(): address { @0xUSER3 }
+    public fun user3(): address { @0x107 }
     
     /// Creator - Pool creator for creator fee tests
-    public fun creator(): address { @0xCREATOR }
+    public fun creator(): address { @0x108 }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // TIME CONSTANTS
@@ -268,7 +268,7 @@ module sui_amm::fixtures {
     public fun bps_denominator(): u64 { 10_000 }
     
     /// Minimum liquidity burned on first deposit
-    public fun minimum_liquidity(): u64 { 1_000 }
+    public fun minimum_liquidity_amount(): u64 { 1_000 }
     
     /// Minimum compound amount threshold
     public fun min_compound_amount(): u64 { 1_000 }

@@ -1,12 +1,12 @@
 #[test_only]
 module sui_amm::test_stable_pool {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self as ts};
+    use sui::clock::{Self};
     use sui::coin;
-    use sui_amm::stable_pool::{Self, StableSwapPool};
-    use sui_amm::stable_math;
-    use sui_amm::position::{Self, LPPosition};
-    use sui_amm::test_utils::{Self, USDC, USDT, StablePoolSnapshot};
+    use sui_amm::stable_pool::{Self};
+    
+    use sui_amm::position::{Self};
+    use sui_amm::test_utils::{Self, USDC, USDT};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
@@ -130,7 +130,7 @@ module sui_amm::test_stable_pool {
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
         
-        let (position, refund_a, refund_b) = stable_pool::add_liquidity(
+        let (mut position, refund_a, refund_b) = stable_pool::add_liquidity(
             &mut pool,
             coin_a,
             coin_b,
@@ -304,14 +304,13 @@ module sui_amm::test_stable_pool {
         coin::burn_for_testing(refund_b);
         
         // Start amp ramp from 10 to 100 over 1 day
-        let start_time = clock::timestamp_ms(&clock);
+        let _start_time = clock::timestamp_ms(&clock);
         let ramp_duration = fixtures::day();
-        stable_pool::start_amp_ramp(
+        stable_pool::ramp_amp(
             &mut pool,
             100, // target_amp
             ramp_duration,
-            &clock,
-            ts::ctx(&mut scenario)
+            &clock
         );
         
         // Check amp at start (should be 10)

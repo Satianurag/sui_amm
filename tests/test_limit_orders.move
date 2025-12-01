@@ -1,10 +1,10 @@
 #[test_only]
 module sui_amm::test_limit_orders {
-    use sui::test_scenario::{Self, Scenario};
-    use sui::coin::{Self, Coin};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self};
+    use sui::coin::{Self};
+    use sui::clock::{Self};
     use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::position::{Self, LPPosition};
+    use sui_amm::position::{Self};
     use sui_amm::limit_orders::{Self, OrderRegistry, LimitOrder};
     use sui_amm::test_utils::{Self, USDC, BTC};
     use sui_amm::fixtures;

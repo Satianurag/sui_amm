@@ -138,11 +138,12 @@ module sui_amm::test_math {
         let (reserve_a, reserve_b) = fixtures::whale_liquidity();
         let swap_amount = fixtures::medium_swap();
         
+        let (fee_bps, _, _) = fixtures::standard_fee_config();
         let output = math::calculate_constant_product_output(
             swap_amount,
             reserve_a,
             reserve_b,
-            fixtures::standard_fee_config().0
+            fee_bps
         );
         
         // Verify output is reasonable (should be close to input for balanced pool)
@@ -179,13 +180,13 @@ module sui_amm::test_math {
         // 10000 input * 5 / 10000 = 5
         let input = 10_000;
         let fee_bps = 5;
-        let input_after_fee = input - ((input as u128) * (fee_bps as u128) / 10000) as u64;
+        let input_after_fee = input - (((input as u128) * (fee_bps as u128) / 10000) as u64);
         let expected_fee = input - input_after_fee;
         assert!(expected_fee == 5, 0);
         
         // Test with larger amount
         let large_input = 1_000_000;
-        let large_input_after_fee = large_input - ((large_input as u128) * (fee_bps as u128) / 10000) as u64;
+        let large_input_after_fee = large_input - (((large_input as u128) * (fee_bps as u128) / 10000) as u64);
         let large_expected_fee = large_input - large_input_after_fee;
         assert!(large_expected_fee == 500, 1);
     }
@@ -196,13 +197,13 @@ module sui_amm::test_math {
         // 10000 input * 30 / 10000 = 30
         let input = 10_000;
         let fee_bps = 30;
-        let input_after_fee = input - ((input as u128) * (fee_bps as u128) / 10000) as u64;
+        let input_after_fee = input - (((input as u128) * (fee_bps as u128) / 10000) as u64);
         let expected_fee = input - input_after_fee;
         assert!(expected_fee == 30, 0);
         
         // Test with larger amount
         let large_input = 1_000_000;
-        let large_input_after_fee = large_input - ((large_input as u128) * (fee_bps as u128) / 10000) as u64;
+        let large_input_after_fee = large_input - (((large_input as u128) * (fee_bps as u128) / 10000) as u64);
         let large_expected_fee = large_input - large_input_after_fee;
         assert!(large_expected_fee == 3000, 1);
     }
@@ -213,13 +214,13 @@ module sui_amm::test_math {
         // 10000 input * 100 / 10000 = 100
         let input = 10_000;
         let fee_bps = 100;
-        let input_after_fee = input - ((input as u128) * (fee_bps as u128) / 10000) as u64;
+        let input_after_fee = input - (((input as u128) * (fee_bps as u128) / 10000) as u64);
         let expected_fee = input - input_after_fee;
         assert!(expected_fee == 100, 0);
         
         // Test with larger amount
         let large_input = 1_000_000;
-        let large_input_after_fee = large_input - ((large_input as u128) * (fee_bps as u128) / 10000) as u64;
+        let large_input_after_fee = large_input - (((large_input as u128) * (fee_bps as u128) / 10000) as u64);
         let large_expected_fee = large_input - large_input_after_fee;
         assert!(large_expected_fee == 10000, 1);
     }
@@ -233,7 +234,7 @@ module sui_amm::test_math {
         let mut i = 0;
         while (i < vector::length(&amounts)) {
             let amount = *vector::borrow(&amounts, i);
-            let input_after_fee = amount - ((amount as u128) * (fee_bps as u128) / 10000) as u64;
+            let input_after_fee = amount - (((amount as u128) * (fee_bps as u128) / 10000) as u64);
             let fee = amount - input_after_fee;
             
             // Verify fee is proportional: fee / amount ≈ 30 / 10000
@@ -304,21 +305,21 @@ module sui_amm::test_math {
     // ═══════════════════════════════════════════════════════════════════════════
     
     #[test]
-    #[expected_failure(abort_code = 0)] // EZeroAmount
+    #[expected_failure(abort_code = math::EZeroAmount)] // EZeroAmount
     fun test_underflow_protection_zero_input() {
         // Should abort with EZeroAmount
         math::calculate_constant_product_output(0, 1000, 1000, 30);
     }
     
     #[test]
-    #[expected_failure(abort_code = 0)] // EZeroAmount
+    #[expected_failure(abort_code = math::EZeroAmount)] // EZeroAmount
     fun test_underflow_protection_zero_reserve_in() {
         // Should abort with EZeroAmount
         math::calculate_constant_product_output(100, 0, 1000, 30);
     }
     
     #[test]
-    #[expected_failure(abort_code = 0)] // EZeroAmount
+    #[expected_failure(abort_code = math::EZeroAmount)] // EZeroAmount
     fun test_underflow_protection_zero_reserve_out() {
         // Should abort with EZeroAmount
         math::calculate_constant_product_output(100, 1000, 0, 30);
@@ -392,8 +393,7 @@ module sui_amm::test_math {
     fun test_quote_precision() {
         // Test quote precision with large values
         let amount_a = 1_000_000_000;
-        let reserve_a = fixtures::whale_liquidity().0;
-        let reserve_b = fixtures::whale_liquidity().1;
+        let (reserve_a, reserve_b) = fixtures::whale_liquidity();
         
         let amount_b = math::quote(amount_a, reserve_a, reserve_b);
         
@@ -402,14 +402,14 @@ module sui_amm::test_math {
     }
     
     #[test]
-    #[expected_failure(abort_code = 0)] // EZeroAmount
+    #[expected_failure(abort_code = math::EZeroAmount)] // EZeroAmount
     fun test_quote_zero_amount() {
         // Should abort with EZeroAmount
         math::quote(0, 1000, 1000);
     }
     
     #[test]
-    #[expected_failure(abort_code = 0)] // EZeroAmount
+    #[expected_failure(abort_code = math::EZeroAmount)] // EZeroAmount
     fun test_quote_zero_reserve() {
         // Should abort with EZeroAmount
         math::quote(1000, 0, 1000);

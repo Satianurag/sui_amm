@@ -21,7 +21,7 @@ module sui_amm::test_fee_conservation {
         // Create pool with standard liquidity
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
-        let (_pool_id, position1) = test_utils::create_initialized_pool<USDC, BTC>(
+        let (_pool_id, _position1) = test_utils::create_initialized_pool<USDC, BTC>(
             &mut scenario,
             fee_bps,
             protocol_fee_bps,
@@ -38,7 +38,7 @@ module sui_amm::test_fee_conservation {
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let mut clock = clock::create_for_testing(ctx);
         
-        let position2 = test_utils::add_liquidity_helper(
+        let _position2 = test_utils::add_liquidity_helper(
             &mut pool,
             retail_a / 2,
             retail_b / 2,
@@ -58,7 +58,7 @@ module sui_amm::test_fee_conservation {
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let mut clock = clock::create_for_testing(ctx);
         
-        let position3 = test_utils::add_liquidity_helper(
+        let _position3 = test_utils::add_liquidity_helper(
             &mut pool,
             retail_a / 4,
             retail_b / 4,
@@ -105,7 +105,7 @@ module sui_amm::test_fee_conservation {
                 let (reserve_a, reserve_b) = pool::get_reserves(&pool);
                 let is_a_to_b = (test_utils::lcg_random(seed, i * 2) % 2) == 0;
                 
-                let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
+                let _snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                 
                 if (is_a_to_b) {
                     let amount_in = test_utils::random_safe_swap_amount(seed, i, reserve_a);
@@ -145,7 +145,7 @@ module sui_amm::test_fee_conservation {
                     total_fees_accumulated_b = total_fees_accumulated_b + (lp_fee as u128);
                 };
                 
-                let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
+                let _snapshot_after = test_utils::snapshot_pool(&pool, &clock);
             } else if (operation == 1) {
                 // Position 1 claims fees
                 let (fee_a, fee_b) = fee_distributor::claim_fees(
@@ -305,11 +305,12 @@ module sui_amm::test_fee_conservation {
                 &mut pool,
                 &mut position,
                 &clock,
+                fixtures::far_future_deadline(),
                 ctx
             );
             
-            let claimed_a_1 = coin::value(&fee_a_1);
-            let claimed_b_1 = coin::value(&fee_b_1);
+            let _claimed_a_1 = coin::value(&fee_a_1);
+            let _claimed_b_1 = coin::value(&fee_b_1);
             
             coin::burn_for_testing(fee_a_1);
             coin::burn_for_testing(fee_b_1);
@@ -319,6 +320,7 @@ module sui_amm::test_fee_conservation {
                 &mut pool,
                 &mut position,
                 &clock,
+                fixtures::far_future_deadline(),
                 ctx
             );
             
@@ -377,12 +379,10 @@ module sui_amm::test_fee_conservation {
         
         let mut i = 0;
         while (i < 5) {
-            let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+            let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
             let (add_a, add_b) = test_utils::random_liquidity_amounts(
                 seed,
                 i,
-                reserve_a,
-                reserve_b,
                 reserve_a / 5
             );
             
@@ -466,6 +466,7 @@ module sui_amm::test_fee_conservation {
                 &mut pool,
                 &mut pos,
                 &clock,
+                fixtures::far_future_deadline(),
                 ctx
             );
             

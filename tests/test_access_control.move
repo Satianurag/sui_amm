@@ -4,8 +4,7 @@ module sui_amm::test_access_control {
     use sui::clock;
     use sui::coin;
     use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::stable_pool::StableSwapPool;
-    use sui_amm::position::{Self, LPPosition};
+    use sui_amm::position::{LPPosition};
     use sui_amm::admin::{Self, AdminCap};
     use sui_amm::governance::{Self, GovernanceConfig};
     use sui_amm::factory::{Self, PoolRegistry};
@@ -64,7 +63,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(coin_out);
             
             transfer::public_transfer(position, admin);
-            transfer::public_transfer(pool, admin);
+            pool::share(pool);
             clock::destroy_for_testing(clock);
         };
         
@@ -72,7 +71,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             
@@ -88,7 +87,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(fee_a);
             coin::burn_for_testing(fee_b);
             ts::return_to_sender(&scenario, admin_cap);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -129,7 +128,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(refund_b);
             
             transfer::public_transfer(position, admin);
-            transfer::public_transfer(pool, admin);
+            pool::share(pool);
             clock::destroy_for_testing(clock);
         };
         
@@ -137,7 +136,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             let clock = clock::create_for_testing(ctx);
@@ -148,7 +147,7 @@ module sui_amm::test_access_control {
             
             clock::destroy_for_testing(clock);
             ts::return_to_sender(&scenario, admin_cap);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -176,16 +175,16 @@ module sui_amm::test_access_control {
         {
             let ctx = ts::ctx(&mut scenario);
             let pool = pool::create_pool<USDC, BTC>(30, 100, 0, ctx);
-            transfer::public_transfer(pool, admin);
+            pool::share(pool);
         };
         
         // Admin creates proposal (should succeed)
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let gov_config_val = ts::take_shared<GovernanceConfig>(&scenario);
+            let mut gov_config_val = ts::take_shared<GovernanceConfig>(&scenario);
             let gov_config = &mut gov_config_val;
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &pool_val;
             let pool_id = object::id(pool);
             let ctx = ts::ctx(&mut scenario);
@@ -206,7 +205,7 @@ module sui_amm::test_access_control {
             clock::destroy_for_testing(clock);
             ts::return_to_sender(&scenario, admin_cap);
             ts::return_shared(gov_config_val);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -230,14 +229,14 @@ module sui_amm::test_access_control {
         {
             let ctx = ts::ctx(&mut scenario);
             let pool = pool::create_pool<USDC, BTC>(30, 100, 0, ctx);
-            transfer::public_transfer(pool, admin);
+            pool::share(pool);
         };
         
         // Admin creates proposal
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let gov_config_val = ts::take_shared<GovernanceConfig>(&scenario);
+            let mut gov_config_val = ts::take_shared<GovernanceConfig>(&scenario);
             let gov_config = &mut gov_config_val;
             let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &pool_val;
@@ -260,7 +259,7 @@ module sui_amm::test_access_control {
             clock::destroy_for_testing(clock);
             ts::return_to_sender(&scenario, admin_cap);
             ts::return_shared(gov_config_val);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -298,7 +297,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(refund_b);
             
             transfer::public_transfer(position, owner);
-            transfer::public_transfer(pool, owner);
+            pool::share(pool);
             clock::destroy_for_testing(clock);
         };
         
@@ -306,7 +305,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, owner);
         {
             let position = ts::take_from_sender<LPPosition>(&scenario);
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let mut pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             let clock = clock::create_for_testing(ctx);
@@ -328,7 +327,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(coin_a);
             coin::burn_for_testing(coin_b);
             clock::destroy_for_testing(clock);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -375,16 +374,16 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(coin_out);
             
             transfer::public_transfer(position, owner);
-            transfer::public_transfer(pool, owner);
+            pool::share(pool);
             clock::destroy_for_testing(clock);
         };
         
         // Owner claims fees (should succeed)
         ts::next_tx(&mut scenario, owner);
         {
-            let position_val = ts::take_from_sender<LPPosition>(&scenario);
+            let mut position_val = ts::take_from_sender<LPPosition>(&scenario);
             let position = &mut position_val;
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let mut pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             let clock = clock::create_for_testing(ctx);
@@ -398,7 +397,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(fee_b);
             clock::destroy_for_testing(clock);
             ts::return_to_sender(&scenario, position_val);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -447,23 +446,18 @@ module sui_amm::test_access_control {
             
             // Transfer position to new owner
             transfer::public_transfer(position, new_owner);
-            transfer::public_transfer(pool, original_owner);
+            pool::share(pool);
             clock::destroy_for_testing(clock);
         };
         
-        // Transfer pool to new owner so they can claim fees
-        ts::next_tx(&mut scenario, original_owner);
-        {
-            let pool = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
-            transfer::public_transfer(pool, new_owner);
-        };
+        // Pool is already shared, no need to transfer
         
         // New owner claims fees (should succeed)
         ts::next_tx(&mut scenario, new_owner);
         {
-            let position_val = ts::take_from_sender<LPPosition>(&scenario);
+            let mut position_val = ts::take_from_sender<LPPosition>(&scenario);
             let position = &mut position_val;
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let mut pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &mut pool_val;
             let ctx = ts::ctx(&mut scenario);
             let clock = clock::create_for_testing(ctx);
@@ -477,7 +471,7 @@ module sui_amm::test_access_control {
             coin::burn_for_testing(fee_b);
             clock::destroy_for_testing(clock);
             ts::return_to_sender(&scenario, position_val);
-            ts::return_to_sender(&scenario, pool_val);
+            ts::return_shared(pool_val);
         };
         
         ts::end(scenario);
@@ -504,7 +498,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let registry_val = ts::take_shared<PoolRegistry>(&scenario);
+            let mut registry_val = ts::take_shared<PoolRegistry>(&scenario);
             let registry = &mut registry_val;
             
             factory::add_fee_tier(&admin_cap, registry, 50); // Add 0.5% fee tier
@@ -536,7 +530,7 @@ module sui_amm::test_access_control {
         ts::next_tx(&mut scenario, admin);
         {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
-            let registry_val = ts::take_shared<PoolRegistry>(&scenario);
+            let mut registry_val = ts::take_shared<PoolRegistry>(&scenario);
             let registry = &mut registry_val;
             
             factory::set_pool_creation_fee(&admin_cap, registry, 2_000_000_000); // 2 SUI

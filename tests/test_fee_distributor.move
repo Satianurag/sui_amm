@@ -3,7 +3,7 @@ module sui_amm::test_fee_distributor {
     use sui::test_scenario;
     use sui::coin;
     use sui::clock;
-    use std::option;
+
     use sui_amm::test_utils::{Self, USDC, USDT};
     use sui_amm::assertions;
     use sui_amm::pool;
@@ -16,7 +16,7 @@ module sui_amm::test_fee_distributor {
     const USER3: address = @0xD;
 
     // Helper function to execute swap A to B
-    fun swap_a_to_b<A, B>(
+    fun swap_a_to_b<A: drop, B: drop>(
         pool: &mut pool::LiquidityPool<A, B>,
         amount: u64,
         clock: &clock::Clock,
@@ -35,7 +35,7 @@ module sui_amm::test_fee_distributor {
     }
 
     // Helper function to execute swap B to A
-    fun swap_b_to_a<A, B>(
+    fun swap_b_to_a<A: drop, B: drop>(
         pool: &mut pool::LiquidityPool<A, B>,
         amount: u64,
         clock: &clock::Clock,
@@ -190,9 +190,9 @@ module sui_amm::test_fee_distributor {
         assertions::assert_lp_share_proportional(liq_user2, total_liq, share_user2_bps, 10);
         
         // Get pending fees for each LP
-        let (fee_admin_a, fee_admin_b) = pool::get_accumulated_fees(&pool, &position_admin);
-        let (fee_user1_a, fee_user1_b) = pool::get_accumulated_fees(&pool, &position_user1);
-        let (fee_user2_a, fee_user2_b) = pool::get_accumulated_fees(&pool, &position_user2);
+        let (fee_admin_a, _fee_admin_b) = pool::get_accumulated_fees(&pool, &position_admin);
+        let (fee_user1_a, _fee_user1_b) = pool::get_accumulated_fees(&pool, &position_user1);
+        let (fee_user2_a, _fee_user2_b) = pool::get_accumulated_fees(&pool, &position_user2);
         
         // Verify fees are proportional to shares (within tolerance)
         let total_fees = fee_admin_a + fee_user1_a + fee_user2_a;
@@ -268,7 +268,7 @@ module sui_amm::test_fee_distributor {
         );
         
         let first_claim_a = coin::value(&fee_a_1);
-        let first_claim_b = coin::value(&fee_b_1);
+        let _first_claim_b = coin::value(&fee_b_1);
         
         // First claim should have fees
         assert!(first_claim_a > 0, 5);
@@ -329,18 +329,18 @@ module sui_amm::test_fee_distributor {
         test_scenario::next_tx(&mut scenario, ADMIN);
         let mut pool = test_scenario::take_shared_by_id<pool::LiquidityPool<USDC, USDT>>(&scenario, pool_id);
         
-        let (protocol_before_a, protocol_before_b) = pool::get_protocol_fees(&pool);
+        let (protocol_before_a, _protocol_before_b) = pool::get_protocol_fees(&pool);
         
         // Execute swap
         let swap_amount = 100_000_000; // 100M
         let coin_out = swap_a_to_b(&mut pool, swap_amount, &clock, test_scenario::ctx(&mut scenario));
         coin::burn_for_testing(coin_out);
         
-        let (protocol_after_a, protocol_after_b) = pool::get_protocol_fees(&pool);
+        let (protocol_after_a, _protocol_after_b) = pool::get_protocol_fees(&pool);
         
         // Calculate expected protocol fee
         let total_fee = (swap_amount * 30) / 10000; // 0.3%
-        let expected_protocol_fee = (total_fee * 200) / 10000; // 2% of fee
+        let _expected_protocol_fee = (total_fee * 200) / 10000; // 2% of fee
         
         let actual_protocol_fee = protocol_after_a - protocol_before_a;
         
@@ -491,8 +491,8 @@ module sui_amm::test_fee_distributor {
         assert!(liquidity_after > liquidity_before, 10);
         
         // Refunds may exist due to ratio mismatch
-        let refund_a_val = coin::value(&refund_a);
-        let refund_b_val = coin::value(&refund_b);
+        let _refund_a_val = coin::value(&refund_a);
+        let _refund_b_val = coin::value(&refund_b);
         
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
@@ -551,7 +551,7 @@ module sui_amm::test_fee_distributor {
         let liquidity_after = position::liquidity(&position);
         
         let refund_a_val = coin::value(&refund_a);
-        let refund_b_val = coin::value(&refund_b);
+        let _refund_b_val = coin::value(&refund_b);
         
         // If fees were below MIN_COMPOUND_AMOUNT (1000), they should be returned
         // and liquidity should not increase

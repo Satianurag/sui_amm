@@ -1,11 +1,11 @@
 #[test_only]
 module sui_amm::test_attack_vectors {
     use sui::test_scenario::{Self as ts};
-    use sui::clock::{Self, Clock};
+    use sui::clock::{Self};
     use sui::coin;
     use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::stable_pool::{Self, StableSwapPool};
-    use sui_amm::position::{Self, LPPosition};
+    use sui_amm::stable_pool::{Self};
+    use sui_amm::position::{Self};
     use sui_amm::admin::{Self, AdminCap};
     use sui_amm::test_utils::{Self, USDC, BTC, USDT};
     use sui_amm::fixtures;
@@ -163,7 +163,7 @@ module sui_amm::test_attack_vectors {
         coin::burn_for_testing(refund_b);
         
         // Try to drain pool with massive swap (90% of reserve)
-        let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+        let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
         let huge_swap = (reserve_a as u128) * 90 / 100;
         let coin_in = test_utils::mint_coin<USDC>((huge_swap as u64), ts::ctx(&mut scenario));
         
@@ -258,7 +258,7 @@ module sui_amm::test_attack_vectors {
         {
             let ctx = ts::ctx(&mut scenario);
             let admin_cap = admin::create_admin_cap_for_testing(ctx);
-            transfer::public_transfer(admin_cap, admin);
+            ts::return_to_sender(&scenario, admin_cap);
         };
         
         // Create pool
@@ -342,7 +342,7 @@ module sui_amm::test_attack_vectors {
         {
             let ctx = ts::ctx(&mut scenario);
             let admin_cap = admin::create_admin_cap_for_testing(ctx);
-            transfer::public_transfer(admin_cap, admin);
+            ts::return_to_sender(&scenario, admin_cap);
         };
         
         // Create pool
@@ -449,7 +449,7 @@ module sui_amm::test_attack_vectors {
         let victim_amount = 10_000_000u64;
         
         // Calculate expected output without front-running
-        let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+        let (_reserve_a, _reserve_b) = pool::get_reserves(&pool);
         let expected_output = pool::get_quote_a_to_b(&pool, victim_amount);
         
         // Attacker front-runs with large swap

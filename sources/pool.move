@@ -1149,6 +1149,14 @@ module sui_amm::pool {
         pool.total_liquidity
     }
 
+    public fun get_risk_params<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): (u64, u64) {
+        (pool.ratio_tolerance_bps, pool.max_price_impact_bps)
+    }
+
+    public fun is_paused<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): bool {
+        pool.paused
+    }
+
     public fun get_protocol_fees<CoinA, CoinB>(pool: &LiquidityPool<CoinA, CoinB>): (u64, u64) {
         (balance::value(&pool.protocol_fee_a), balance::value(&pool.protocol_fee_b))
     }

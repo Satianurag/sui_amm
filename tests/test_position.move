@@ -1,11 +1,11 @@
 #[test_only]
 module sui_amm::test_position {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self as ts};
+    use sui::clock::{Self};
     use sui::coin;
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
-    use sui_amm::test_utils::{Self, USDC, USDT, BTC, ETH};
+    use sui_amm::test_utils::{Self, USDC, USDT, BTC};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
@@ -47,7 +47,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -63,8 +62,8 @@ module sui_amm::test_position {
         // Verify liquidity is correct (sqrt(a * b) - MINIMUM_LIQUIDITY)
         let product = (initial_a as u128) * (initial_b as u128);
         let sqrt_product = sqrt_u128(product);
-        let expected_liquidity = if (sqrt_product > (fixtures::minimum_liquidity() as u128)) {
-            (sqrt_product - (fixtures::minimum_liquidity() as u128)) as u64
+        let expected_liquidity = if (sqrt_product > (fixtures::minimum_liquidity_amount() as u128)) {
+            (sqrt_product - (fixtures::minimum_liquidity_amount() as u128)) as u64
         } else {
             0
         };
@@ -94,7 +93,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, first_position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -127,7 +125,7 @@ module sui_amm::test_position {
         
         // Verify liquidity is proportional
         let total_liquidity = pool::get_total_liquidity(&pool);
-        let first_liquidity = position::liquidity(&first_position);
+        let _first_liquidity = position::liquidity(&first_position);
         let second_liquidity = position::liquidity(&second_position);
         
         // Second LP should have ~33% of total (added 50% of initial)
@@ -161,7 +159,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -227,7 +224,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -294,7 +290,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -323,7 +318,7 @@ module sui_amm::test_position {
         
         // Get pending fees from view
         let view = pool::get_position_view(&pool, &position);
-        let (pending_fee_a, pending_fee_b) = position::view_fees(&view);
+        let (pending_fee_a, _pending_fee_b) = position::view_fees(&view);
         
         // Pending fees should be > 0 after swap
         assert!(pending_fee_a > 0, 0);
@@ -335,7 +330,7 @@ module sui_amm::test_position {
         let fee_debt_b = position::fee_debt_b(&position);
         
         let expected_fee_a = ((liquidity as u128) * acc_a / fixtures::acc_precision()) - fee_debt_a;
-        let expected_fee_b = ((liquidity as u128) * acc_b / fixtures::acc_precision()) - fee_debt_b;
+        let _expected_fee_b = ((liquidity as u128) * acc_b / fixtures::acc_precision()) - fee_debt_b;
         
         // Allow small tolerance for rounding
         let tolerance = 10;
@@ -361,7 +356,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -377,7 +371,7 @@ module sui_amm::test_position {
         
         // Get initial pending fees (should be 0)
         let view_before = pool::get_position_view(&pool, &position);
-        let (fee_before_a, fee_before_b) = position::view_fees(&view_before);
+        let (fee_before_a, _fee_before_b) = position::view_fees(&view_before);
         assert!(fee_before_a == 0, 0);
         
         // Execute multiple swaps
@@ -399,7 +393,7 @@ module sui_amm::test_position {
         
         // Get pending fees after swaps
         let view_after = pool::get_position_view(&pool, &position);
-        let (fee_after_a, fee_after_b) = position::view_fees(&view_after);
+        let (fee_after_a, _fee_after_b) = position::view_fees(&view_after);
         
         // Fees should have accumulated
         assert!(fee_after_a > fee_before_a, 1);
@@ -425,7 +419,6 @@ module sui_amm::test_position {
         let initial_b = 1_000_000_000; // 1B (1:1 ratio)
         
         let (pool_id, position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -476,7 +469,6 @@ module sui_amm::test_position {
         let initial_b = 1_000_000_000;
         
         let (pool_id, position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -525,7 +517,6 @@ module sui_amm::test_position {
         let initial_b = 1_000_000_000;
         
         let (pool_id, position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -573,7 +564,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -611,7 +601,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -649,6 +638,7 @@ module sui_amm::test_position {
             &mut pool,
             &mut position,
             &clock,
+            fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
@@ -672,7 +662,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -729,7 +718,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -744,23 +732,18 @@ module sui_amm::test_position {
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
         // Remove all liquidity
-        let total_liquidity = position::liquidity(&position);
+        let _total_liquidity = position::liquidity(&position);
         let (coin_a, coin_b) = pool::remove_liquidity(
             &mut pool,
-            &mut position,
-            total_liquidity,
+            position,
             0,
             0,
-            fixtures::far_future_deadline(),
             &clock,
+            fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
-        // Verify position liquidity is now 0
-        assert!(position::liquidity(&position) == 0, 0);
-        
-        // NFT should be destroyable
-        position::destroy_for_testing(position);
+        // Position is destroyed by remove_liquidity, so we can't check it or destroy it again
         
         coin::burn_for_testing(coin_a);
         coin::burn_for_testing(coin_b);
@@ -783,7 +766,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -811,8 +793,8 @@ module sui_amm::test_position {
         coin::burn_for_testing(_coin_out);
         
         // Get fee_debt before removal
-        let fee_debt_before_a = position::fee_debt_a(&position);
-        let fee_debt_before_b = position::fee_debt_b(&position);
+        let _fee_debt_before_a = position::fee_debt_a(&position);
+        let _fee_debt_before_b = position::fee_debt_b(&position);
         
         // Remove partial liquidity
         let liquidity_before = position::liquidity(&position);
@@ -830,14 +812,14 @@ module sui_amm::test_position {
         
         // Get fee_debt after removal
         let fee_debt_after_a = position::fee_debt_a(&position);
-        let fee_debt_after_b = position::fee_debt_b(&position);
+        let _fee_debt_after_b = position::fee_debt_b(&position);
         
         // fee_debt should be updated (fees were claimed during removal)
         // After claiming fees, fee_debt should equal current acc_fee_per_share * remaining_liquidity
         let (acc_a, acc_b) = pool::get_acc_fee_per_share(&pool);
         let liquidity_after = position::liquidity(&position);
         let expected_debt_a = (liquidity_after as u128) * acc_a / fixtures::acc_precision();
-        let expected_debt_b = (liquidity_after as u128) * acc_b / fixtures::acc_precision();
+        let _expected_debt_b = (liquidity_after as u128) * acc_b / fixtures::acc_precision();
         
         // Allow small tolerance
         let tolerance = 1000u128;
@@ -865,7 +847,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -903,10 +884,10 @@ module sui_amm::test_position {
         
         // Verify min_a and min_b reduced proportionally (70% remaining)
         let min_a_after = position::min_a(&position);
-        let min_b_after = position::min_b(&position);
+        let _min_b_after = position::min_b(&position);
         
         let expected_min_a = (min_a_before as u128) * 7 / 10;
-        let expected_min_b = (min_b_before as u128) * 7 / 10;
+        let _expected_min_b = (min_b_before as u128) * 7 / 10;
         
         // Allow 1 unit tolerance for rounding
         let diff_a = if ((min_a_after as u128) > expected_min_a) {
@@ -938,7 +919,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -964,10 +944,9 @@ module sui_amm::test_position {
             &mut position,
             test_utils::mint_coin<USDC>(add_a, ts::ctx(&mut scenario)),
             test_utils::mint_coin<USDT>(add_b, ts::ctx(&mut scenario)),
-            add_a,
-            add_b,
-            fixtures::far_future_deadline(),
+            0, // min_liquidity
             &clock,
+            fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
@@ -1015,7 +994,6 @@ module sui_amm::test_position {
         let initial_b = 1_000_000_000; // 1:1 ratio
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -1054,10 +1032,9 @@ module sui_amm::test_position {
             &mut position,
             test_utils::mint_coin<BTC>(add_a, ts::ctx(&mut scenario)),
             test_utils::mint_coin<USDC>(add_b, ts::ctx(&mut scenario)),
-            add_a,
-            add_b,
-            fixtures::far_future_deadline(),
+            0, // min_liquidity
             &clock,
+            fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
@@ -1089,7 +1066,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -1105,14 +1081,14 @@ module sui_amm::test_position {
         
         // Remove all liquidity
         let total_liquidity = position::liquidity(&position);
-        let (coin_a, coin_b) = pool::remove_liquidity(
+        let (coin_a, coin_b) = pool::remove_liquidity_partial(
             &mut pool,
             &mut position,
             total_liquidity,
             0,
             0,
-            fixtures::far_future_deadline(),
             &clock,
+            fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
@@ -1146,7 +1122,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -1199,7 +1174,6 @@ module sui_amm::test_position {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, position1) = test_utils::create_initialized_pool<USDC, USDT>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,

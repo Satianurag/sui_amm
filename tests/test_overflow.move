@@ -1,11 +1,11 @@
 #[test_only]
 module sui_amm::test_overflow {
     use sui::test_scenario::{Self as ts};
-    use sui::clock::{Self, Clock};
+    use sui::clock::{Self};
     use sui::coin;
-    use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::stable_pool::{Self, StableSwapPool};
-    use sui_amm::position::{Self, LPPosition};
+    use sui_amm::pool::{Self};
+    use sui_amm::stable_pool::{Self};
+    use sui_amm::position::{Self};
     use sui_amm::test_utils::{Self, USDC, BTC, USDT};
     use sui_amm::fixtures;
     use sui_amm::assertions;
@@ -354,7 +354,7 @@ module sui_amm::test_overflow {
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
         
-        let (mut position, refund_a, refund_b) = pool::add_liquidity(
+        let (position, refund_a, refund_b) = pool::add_liquidity(
             &mut pool,
             coin_a,
             coin_b,

@@ -22,7 +22,6 @@ module sui_amm::test_k_invariant {
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, position) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -151,7 +150,7 @@ module sui_amm::test_k_invariant {
             let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
             
             // Execute random swap
-            let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+            let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
             let amount_in = test_utils::random_safe_swap_amount(seed, i * 3 + 2, reserve_a);
             
             let coin_out = test_utils::swap_a_to_b_helper(
@@ -298,27 +297,25 @@ module sui_amm::test_k_invariant {
     #[test]
     fun test_k_invariant_mixed_operations() {
         let mut scenario = test_scenario::begin(fixtures::admin());
-        let ctx = test_scenario::ctx(&mut scenario);
         
         // Create pool with standard liquidity
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, mut position) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
             retail_a,
             retail_b,
             fixtures::admin(),
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
         // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
         // Run mixed operations: swaps and liquidity changes
         let seed = fixtures::default_random_seed();
@@ -340,7 +337,7 @@ module sui_amm::test_k_invariant {
                     0,
                     test_utils::far_future(),
                     &clock,
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 coin::burn_for_testing(coin_out);
                 
@@ -356,12 +353,10 @@ module sui_amm::test_k_invariant {
                 // Add liquidity operation
                 let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                 
-                let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+                let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
                 let (add_a, add_b) = test_utils::random_liquidity_amounts(
                     seed,
                     i + 2,
-                    reserve_a,
-                    reserve_b,
                     reserve_a / 10 // Max 10% of current reserve
                 );
                 
@@ -374,7 +369,7 @@ module sui_amm::test_k_invariant {
                         0,
                         test_utils::far_future(),
                         &clock,
-                        ctx
+                        test_scenario::ctx(&mut scenario)
                     );
                     
                     let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
@@ -399,7 +394,7 @@ module sui_amm::test_k_invariant {
                         0,
                         test_utils::far_future(),
                         &clock,
-                        ctx
+                        test_scenario::ctx(&mut scenario)
                     );
                     coin::burn_for_testing(coin_a);
                     coin::burn_for_testing(coin_b);

@@ -1,11 +1,11 @@
 #[test_only]
 module sui_amm::test_multi_lp {
-    use sui::test_scenario::{Self, Scenario};
-    use sui::coin::{Self, Coin};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self};
+    use sui::coin::{Self};
+    use sui::clock::{Self};
     use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::position::{Self, LPPosition};
-    use sui_amm::test_utils::{Self, USDC, BTC, PoolSnapshot};
+    use sui_amm::position::{Self};
+    use sui_amm::test_utils::{Self, USDC, BTC};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
@@ -121,25 +121,31 @@ module sui_amm::test_multi_lp {
         
         // Claim fees for all LPs
         test_scenario::next_tx(&mut scenario, lp1);
-        let (lp1_fee_a, lp1_fee_b) = pool::claim_fees(
+        let (lp1_fee_a, lp1_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut lp1_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let lp1_total_fees = coin::value(&lp1_fee_a) + coin::value(&lp1_fee_b);
         
         test_scenario::next_tx(&mut scenario, lp2);
-        let (lp2_fee_a, lp2_fee_b) = pool::claim_fees(
+        let (lp2_fee_a, lp2_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut lp2_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let lp2_total_fees = coin::value(&lp2_fee_a) + coin::value(&lp2_fee_b);
         
         test_scenario::next_tx(&mut scenario, lp3);
-        let (lp3_fee_a, lp3_fee_b) = pool::claim_fees(
+        let (lp3_fee_a, lp3_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut lp3_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let lp3_total_fees = coin::value(&lp3_fee_a) + coin::value(&lp3_fee_b);
@@ -160,12 +166,12 @@ module sui_amm::test_multi_lp {
         };
         
         // Cleanup
-        coin::burn_for_testing(lp1_fee_a);
-        coin::burn_for_testing(lp1_fee_b);
-        coin::burn_for_testing(lp2_fee_a);
-        coin::burn_for_testing(lp2_fee_b);
-        coin::burn_for_testing(lp3_fee_a);
-        coin::burn_for_testing(lp3_fee_b);
+        coin::burn_for_testing<BTC>(lp1_fee_a);
+        coin::burn_for_testing<USDC>(lp1_fee_b);
+        coin::burn_for_testing<BTC>(lp2_fee_a);
+        coin::burn_for_testing<USDC>(lp2_fee_b);
+        coin::burn_for_testing<BTC>(lp3_fee_a);
+        coin::burn_for_testing<USDC>(lp3_fee_b);
         
         test_scenario::return_shared(pool);
         position::destroy_for_testing(admin_position);
@@ -275,17 +281,21 @@ module sui_amm::test_multi_lp {
         
         // Claim fees
         test_scenario::next_tx(&mut scenario, whale);
-        let (whale_fee_a, whale_fee_b) = pool::claim_fees(
+        let (whale_fee_a, whale_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut whale_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let whale_total_fees = coin::value(&whale_fee_a) + coin::value(&whale_fee_b);
         
         test_scenario::next_tx(&mut scenario, retail);
-        let (retail_fee_a, retail_fee_b) = pool::claim_fees(
+        let (retail_fee_a, retail_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut retail_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let retail_total_fees = coin::value(&retail_fee_a) + coin::value(&retail_fee_b);
@@ -298,10 +308,10 @@ module sui_amm::test_multi_lp {
         };
         
         // Cleanup
-        coin::burn_for_testing(whale_fee_a);
-        coin::burn_for_testing(whale_fee_b);
-        coin::burn_for_testing(retail_fee_a);
-        coin::burn_for_testing(retail_fee_b);
+        coin::burn_for_testing<BTC>(whale_fee_a);
+        coin::burn_for_testing<USDC>(whale_fee_b);
+        coin::burn_for_testing<BTC>(retail_fee_a);
+        coin::burn_for_testing<USDC>(retail_fee_b);
         
         test_scenario::return_shared(pool);
         position::destroy_for_testing(admin_position);
@@ -401,25 +411,31 @@ module sui_amm::test_multi_lp {
         
         // Claim fees in order: LP3, LP1, LP2 (not sequential)
         test_scenario::next_tx(&mut scenario, lp3);
-        let (lp3_fee_a, lp3_fee_b) = pool::claim_fees(
+        let (lp3_fee_a, lp3_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut lp3_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let lp3_total_fees = coin::value(&lp3_fee_a) + coin::value(&lp3_fee_b);
         
         test_scenario::next_tx(&mut scenario, lp1);
-        let (lp1_fee_a, lp1_fee_b) = pool::claim_fees(
+        let (lp1_fee_a, lp1_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut lp1_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let lp1_total_fees = coin::value(&lp1_fee_a) + coin::value(&lp1_fee_b);
         
         test_scenario::next_tx(&mut scenario, lp2);
-        let (lp2_fee_a, lp2_fee_b) = pool::claim_fees(
+        let (lp2_fee_a, lp2_fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut lp2_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         let lp2_total_fees = coin::value(&lp2_fee_a) + coin::value(&lp2_fee_b);
@@ -446,23 +462,25 @@ module sui_amm::test_multi_lp {
         
         // Verify second claim returns zero fees
         test_scenario::next_tx(&mut scenario, lp1);
-        let (lp1_fee_a2, lp1_fee_b2) = pool::claim_fees(
+        let (lp1_fee_a2, lp1_fee_b2) = pool::withdraw_fees(
             &mut pool,
             &mut lp1_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         assert!(coin::value(&lp1_fee_a2) == 0, 1);
         assert!(coin::value(&lp1_fee_b2) == 0, 2);
         
         // Cleanup
-        coin::burn_for_testing(lp1_fee_a);
-        coin::burn_for_testing(lp1_fee_b);
-        coin::burn_for_testing(lp2_fee_a);
-        coin::burn_for_testing(lp2_fee_b);
-        coin::burn_for_testing(lp3_fee_a);
-        coin::burn_for_testing(lp3_fee_b);
-        coin::burn_for_testing(lp1_fee_a2);
-        coin::burn_for_testing(lp1_fee_b2);
+        coin::burn_for_testing<BTC>(lp1_fee_a);
+        coin::burn_for_testing<USDC>(lp1_fee_b);
+        coin::burn_for_testing<BTC>(lp2_fee_a);
+        coin::burn_for_testing<USDC>(lp2_fee_b);
+        coin::burn_for_testing<BTC>(lp3_fee_a);
+        coin::burn_for_testing<USDC>(lp3_fee_b);
+        coin::burn_for_testing<BTC>(lp1_fee_a2);
+        coin::burn_for_testing<USDC>(lp1_fee_b2);
         
         test_scenario::return_shared(pool);
         position::destroy_for_testing(admin_position);

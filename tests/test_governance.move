@@ -1,12 +1,13 @@
 #[test_only]
 module sui_amm::test_governance {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self as ts};
+    use sui::clock::{Self};
     
     use sui_amm::governance::{Self, GovernanceConfig};
     use sui_amm::admin::{Self, AdminCap};
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::stable_pool::{Self, StableSwapPool};
+    use sui_amm::position::{LPPosition};
     use sui_amm::test_utils::{Self, USDC, USDT};
     use sui_amm::fixtures;
 
@@ -93,7 +94,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -163,7 +164,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -235,7 +236,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -314,7 +315,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -392,7 +393,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -468,7 +469,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -606,7 +607,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         
@@ -682,7 +683,7 @@ module sui_amm::test_governance {
             ts::ctx(&mut scenario)
         );
         
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer<LPPosition>(position, admin);
         
         ts::next_tx(&mut scenario, admin);
         

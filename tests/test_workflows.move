@@ -1,13 +1,13 @@
 #[test_only]
 module sui_amm::test_workflows {
-    use sui::test_scenario::{Self, Scenario};
-    use sui::coin::{Self, Coin};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self};
+    use sui::coin::{Self};
+    use sui::clock::{Self};
     use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::position::{Self, LPPosition};
-    use sui_amm::swap_history::{Self, UserSwapHistory, PoolStatistics, StatisticsRegistry};
-    use sui_amm::user_preferences::{Self, UserPreferences};
-    use sui_amm::test_utils::{Self, USDC, BTC, PoolSnapshot};
+    use sui_amm::position::{Self};
+    use sui_amm::swap_history::{Self, StatisticsRegistry};
+    use sui_amm::user_preferences::{Self};
+    use sui_amm::test_utils::{Self, USDC, BTC};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
@@ -33,7 +33,6 @@ module sui_amm::test_workflows {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, initial_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -97,19 +96,21 @@ module sui_amm::test_workflows {
         assert!(acc_after_a > acc_before_a, 2);
         
         // Step 4: Claim fees
-        let (fee_a, fee_b) = pool::claim_fees(
+        let (fee_a, fee_b) = pool::withdraw_fees(
             &mut pool,
             &mut user1_position,
+            &clock,
+            test_utils::far_future(),
             test_scenario::ctx(&mut scenario)
         );
         
         // Verify fees were claimed
-        let fee_a_amount = coin::value(&fee_a);
-        let fee_b_amount = coin::value(&fee_b);
+        let fee_a_amount = coin::value<BTC>(&fee_a);
+        let fee_b_amount = coin::value<USDC>(&fee_b);
         assert!(fee_a_amount > 0 || fee_b_amount > 0, 3);
         
-        coin::burn_for_testing(fee_a);
-        coin::burn_for_testing(fee_b);
+        coin::burn_for_testing<BTC>(fee_a);
+        coin::burn_for_testing<USDC>(fee_b);
         
         // Step 5: Remove partial liquidity
         let partial_liquidity = user1_liquidity / 2;
@@ -182,7 +183,6 @@ module sui_amm::test_workflows {
         let (initial_a, initial_b) = fixtures::balanced_large_liquidity();
         
         let (pool_id, initial_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -278,7 +278,6 @@ module sui_amm::test_workflows {
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         let (pool_id, initial_position) = test_utils::create_initialized_pool<BTC, USDC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -359,7 +358,7 @@ module sui_amm::test_workflows {
     
     #[test]
     fun test_user_preferences_application() {
-        let admin = fixtures::admin();
+        let _admin = fixtures::admin();
         let user1 = fixtures::user1();
         
         let mut scenario = test_scenario::begin(user1);

@@ -2,9 +2,9 @@
 module sui_amm::amm_tests {
     use sui::test_scenario::{Self};
     use sui::coin::{Self};
-    use sui::transfer;
+
     use sui::clock::{Self};
-    use std::option;
+
     
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::stable_pool::{Self, StableSwapPool};

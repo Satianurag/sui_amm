@@ -3,8 +3,7 @@ module sui_amm::test_utils {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
     use sui::test_scenario::{Self as ts, Scenario};
-    use sui::tx_context::{TxContext};
-    use sui::object;
+
     use sui_amm::stable_pool::{Self, StableSwapPool};
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
@@ -289,7 +288,6 @@ module sui_amm::test_utils {
     
     /// Create initialized pool with initial liquidity
     public fun create_initialized_pool<CoinA: drop, CoinB: drop>(
-        scenario: &mut Scenario,
         fee_bps: u64,
         protocol_fee_bps: u64,
         creator_fee_bps: u64,
@@ -361,6 +359,51 @@ module sui_amm::test_utils {
         coin::burn_for_testing(refund_b);
         
         position
+    }
+
+    /// Create initialized stable pool helper
+    public fun create_initialized_stable_pool<CoinA: drop, CoinB: drop>(
+        amp: u64,
+        fee_bps: u64,
+        protocol_fee_bps: u64,
+        creator_fee_bps: u64,
+        initial_a: u64,
+        initial_b: u64,
+        _owner: address,
+        ctx: &mut TxContext
+    ): (object::ID, LPPosition) {
+        let clock = clock::create_for_testing(ctx);
+        
+        let mut pool = sui_amm::stable_pool::create_pool<CoinA, CoinB>(
+            amp,
+            fee_bps,
+            protocol_fee_bps,
+            creator_fee_bps,
+            ctx
+        );
+        
+        let pool_id = object::id(&pool);
+        
+        let coin_a = mint_coin<CoinA>(initial_a, ctx);
+        let coin_b = mint_coin<CoinB>(initial_b, ctx);
+        
+        let (position, refund_a, refund_b) = sui_amm::stable_pool::add_liquidity(
+            &mut pool,
+            coin_a,
+            coin_b,
+            1,
+            &clock,
+            far_future(),
+            ctx
+        );
+        
+        coin::burn_for_testing(refund_a);
+        coin::burn_for_testing(refund_b);
+        clock::destroy_for_testing(clock);
+        
+        ts::return_shared(pool);
+        
+        (pool_id, position)
     }
     
     /// Remove liquidity helper (partial removal)

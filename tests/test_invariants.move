@@ -1,12 +1,12 @@
 #[test_only]
 module sui_amm::test_invariants {
     use sui::test_scenario::{Self as ts};
-    use sui::clock::{Self, Clock};
+    use sui::clock::{Self};
     use sui::coin;
-    use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::stable_pool::{Self, StableSwapPool};
-    use sui_amm::position::{Self, LPPosition};
-    use sui_amm::test_utils::{Self, USDC, BTC, DAI, USDT};
+    use sui_amm::pool::{Self};
+    use sui_amm::stable_pool::{Self};
+    use sui_amm::position::{Self};
+    use sui_amm::test_utils::{Self, USDC, BTC, USDT};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
@@ -550,8 +550,8 @@ module sui_amm::test_invariants {
         };
         
         // Get total accumulated fees
-        let (pool_fee_a, pool_fee_b) = pool::get_fees(&pool);
-        let (protocol_fee_a, protocol_fee_b) = pool::get_protocol_fees(&pool);
+        let (_pool_fee_a, _pool_fee_b) = pool::get_fees(&pool);
+        let (_protocol_fee_a, _protocol_fee_b) = pool::get_protocol_fees(&pool);
         
         // Verify total claimed is reasonable (should be less than total fees in pool)
         // Note: This is a sanity check - claimed fees come from the fee pool

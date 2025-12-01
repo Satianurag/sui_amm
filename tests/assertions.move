@@ -303,7 +303,7 @@ module sui_amm::assertions {
             return // Skip if invalid state
         };
         
-        let amount_in_after_fee = amount_in - ((amount_in as u128) * (fee_bps as u128) / 10000) as u64;
+        let amount_in_after_fee = amount_in - (((amount_in as u128) * (fee_bps as u128) / 10000) as u64);
         let expected_output = ((amount_in_after_fee as u128) * (reserve_out as u128) / 
             ((reserve_in as u128) + (amount_in_after_fee as u128))) as u64;
         let diff = if (actual_output > expected_output) {

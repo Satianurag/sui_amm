@@ -331,7 +331,7 @@ module sui_amm::test_stable_math {
     }
     
     #[test]
-    #[expected_failure(abort_code = 2)] // EInvalidInput
+    #[expected_failure(abort_code = sui_amm::stable_math::EInvalidInput)]
     fun test_get_y_invalid_configuration() {
         // Test get_y with configuration that causes denominator to be zero
         // This should abort with EInvalidInput

@@ -1,11 +1,11 @@
 #[test_only]
 module sui_amm::test_pool_core {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self as ts};
+    use sui::clock::{Self};
     use sui::coin;
     use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::position::{Self, LPPosition};
-    use sui_amm::test_utils::{Self, USDC, BTC, PoolSnapshot};
+    use sui_amm::position::{Self};
+    use sui_amm::test_utils::{Self, USDC, BTC};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 

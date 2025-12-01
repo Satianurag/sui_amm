@@ -1,12 +1,12 @@
 #[test_only]
 module sui_amm::test_slippage {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::clock::{Self, Clock};
+    use sui::test_scenario::{Self as ts};
+    use sui::clock::{Self};
     use sui::coin;
-    use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::stable_pool::{Self, StableSwapPool};
+    use sui_amm::pool::{Self};
+    use sui_amm::stable_pool::{Self};
     use sui_amm::slippage_protection;
-    use sui_amm::position::{Self, LPPosition};
+    use sui_amm::position::{Self};
     use sui_amm::test_utils::{Self, USDC, BTC, USDT};
     use sui_amm::fixtures;
 
@@ -390,7 +390,7 @@ module sui_amm::test_slippage {
         // Cleanup
         coin::burn_for_testing(coin_out);
         position::destroy(position);
-        pool::share(pool);
+        stable_pool::share(pool);
         clock::destroy_for_testing(clock);
         ts::end(scenario);
     }

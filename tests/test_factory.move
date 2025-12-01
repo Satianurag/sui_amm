@@ -1,14 +1,14 @@
 #[test_only]
 module sui_amm::test_factory {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::coin::{Self, Coin};
+    use sui::test_scenario::{Self as ts};
+    use sui::coin::{Self};
     use sui::clock;
     use std::type_name;
     
     use sui_amm::factory::{Self, PoolRegistry};
     use sui_amm::swap_history::{Self, StatisticsRegistry};
     use sui_amm::admin::{Self, AdminCap};
-    use sui_amm::test_utils::{Self, USDC, USDT, DAI, BTC, ETH};
+    use sui_amm::test_utils::{Self, USDC, USDT, DAI, BTC};
     use sui_amm::fixtures;
     use sui_amm::position::LPPosition;
 

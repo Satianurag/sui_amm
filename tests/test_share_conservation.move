@@ -21,7 +21,6 @@ module sui_amm::test_share_conservation {
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, position1) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -49,12 +48,10 @@ module sui_amm::test_share_conservation {
             
             if (operation == 0) {
                 // Add liquidity operation
-                let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+                let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
                 let (add_a, add_b) = test_utils::random_liquidity_amounts(
                     seed,
                     i + 1,
-                    reserve_a,
-                    reserve_b,
                     reserve_a / 10 // Max 10% of current reserve
                 );
                 
@@ -159,7 +156,7 @@ module sui_amm::test_share_conservation {
         while (j < positions_len) {
             let pos = vector::pop_back(&mut positions);
             sum_of_shares = sum_of_shares + position::liquidity(&pos);
-            transfer::public_transfer(pos, fixtures::admin());
+            position::destroy_for_testing(pos);
             j = j + 1;
         };
         
@@ -187,7 +184,6 @@ module sui_amm::test_share_conservation {
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, position1) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -215,12 +211,10 @@ module sui_amm::test_share_conservation {
             let mut j = 0;
             
             while (j < num_adds) {
-                let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+                let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
                 let (add_a, add_b) = test_utils::random_liquidity_amounts(
                     seed,
                     i * 10 + j,
-                    reserve_a,
-                    reserve_b,
                     reserve_a / 20
                 );
                 
@@ -305,7 +299,7 @@ module sui_amm::test_share_conservation {
         // Cleanup remaining positions
         while (vector::length(&positions) > 0) {
             let pos = vector::pop_back(&mut positions);
-            transfer::public_transfer(pos, fixtures::admin());
+            position::destroy_for_testing(pos);
         };
         
         vector::destroy_empty(positions);
@@ -322,7 +316,6 @@ module sui_amm::test_share_conservation {
     #[test]
     fun test_share_conservation_varying_pool_sizes() {
         let mut scenario = test_scenario::begin(fixtures::admin());
-        let ctx = test_scenario::ctx(&mut scenario);
         
         let seed = fixtures::default_random_seed();
         let mut test_iteration = 0;
@@ -350,13 +343,13 @@ module sui_amm::test_share_conservation {
                 initial_a,
                 initial_b,
                 fixtures::admin(),
-                ctx
+                test_scenario::ctx(&mut scenario)
             );
             
             test_scenario::next_tx(&mut scenario, fixtures::admin());
             
             let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-            let mut clock = clock::create_for_testing(ctx);
+            let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
             
             let mut positions = vector::empty<position::LPPosition>();
             vector::push_back(&mut positions, position1);
@@ -368,12 +361,10 @@ module sui_amm::test_share_conservation {
                 
                 if (operation == 0) {
                     // Add liquidity
-                    let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+                    let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
                     let (add_a, add_b) = test_utils::random_liquidity_amounts(
                         seed,
                         test_iteration * 1000 + i + 1,
-                        reserve_a,
-                        reserve_b,
                         reserve_a / 10
                     );
                     
@@ -386,7 +377,7 @@ module sui_amm::test_share_conservation {
                             0,
                             test_utils::far_future(),
                             &clock,
-                            ctx
+                            test_scenario::ctx(&mut scenario)
                         );
                         vector::push_back(&mut positions, new_position);
                     };
@@ -406,7 +397,7 @@ module sui_amm::test_share_conservation {
                             0,
                             test_utils::far_future(),
                             &clock,
-                            ctx
+                            test_scenario::ctx(&mut scenario)
                         );
                         coin::burn_for_testing(coin_a);
                         coin::burn_for_testing(coin_b);
@@ -435,7 +426,7 @@ module sui_amm::test_share_conservation {
             // Cleanup
             while (vector::length(&positions) > 0) {
                 let pos = vector::pop_back(&mut positions);
-                transfer::public_transfer(pos, fixtures::admin());
+                position::destroy_for_testing(pos);
             };
             
             vector::destroy_empty(positions);
@@ -455,38 +446,34 @@ module sui_amm::test_share_conservation {
     #[test]
     fun test_share_conservation_increase_liquidity() {
         let mut scenario = test_scenario::begin(fixtures::admin());
-        let ctx = test_scenario::ctx(&mut scenario);
         
         // Create pool with initial liquidity
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, mut position1) = test_utils::create_initialized_pool<USDC, BTC>(
-            &mut scenario,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
             retail_a,
             retail_b,
             fixtures::admin(),
-            ctx
+            test_scenario::ctx(&mut scenario)
         );
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
-        let mut clock = clock::create_for_testing(ctx);
+        let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
         let seed = fixtures::default_random_seed();
         let mut i = 0;
         
         while (i < 100) {
             // Increase liquidity on existing position
-            let (reserve_a, reserve_b) = pool::get_reserves(&pool);
+            let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
             let (add_a, add_b) = test_utils::random_liquidity_amounts(
                 seed,
                 i,
-                reserve_a,
-                reserve_b,
                 reserve_a / 20
             );
             
@@ -495,8 +482,8 @@ module sui_amm::test_share_conservation {
                 let total_liquidity_before = pool::get_total_liquidity(&pool);
                 
                 // Increase liquidity
-                let coin_a = test_utils::mint_coin<USDC>(add_a, ctx);
-                let coin_b = test_utils::mint_coin<BTC>(add_b, ctx);
+                let coin_a = test_utils::mint_coin<USDC>(add_a, test_scenario::ctx(&mut scenario));
+                let coin_b = test_utils::mint_coin<BTC>(add_b, test_scenario::ctx(&mut scenario));
                 
                 let (refund_a, refund_b) = pool::increase_liquidity(
                     &mut pool,
@@ -506,7 +493,7 @@ module sui_amm::test_share_conservation {
                     0,
                     &clock,
                     test_utils::far_future(),
-                    ctx
+                    test_scenario::ctx(&mut scenario)
                 );
                 
                 coin::burn_for_testing(refund_a);
@@ -530,7 +517,7 @@ module sui_amm::test_share_conservation {
         };
         
         // Cleanup
-        transfer::public_transfer(position1, fixtures::admin());
+        position::destroy_for_testing(position1);
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);
         test_scenario::end(scenario);

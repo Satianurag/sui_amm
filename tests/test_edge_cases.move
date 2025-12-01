@@ -1,11 +1,11 @@
 #[test_only]
 module sui_amm::test_edge_cases {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::clock::{Self, Clock};
-    use sui::coin;
-    use sui_amm::pool::{Self, LiquidityPool};
-    use sui_amm::position::{Self, LPPosition};
-    use sui_amm::test_utils::{Self, USDC, BTC, PoolSnapshot};
+    use sui::test_scenario::{Self as ts};
+    use sui::clock::{Self};
+    use sui::coin::{Self};
+    use sui_amm::pool::{Self};
+    use sui_amm::position::{Self};
+    use sui_amm::test_utils::{Self, USDC, BTC};
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
@@ -939,7 +939,7 @@ module sui_amm::test_edge_cases {
         assertions::assert_k_invariant_maintained(&before, &after, 10);
         
         // Output might be 0 due to fees on such small amount, but that's acceptable
-        let output = coin::value(&coin_out);
+        let _output = coin::value(&coin_out);
         
         // Cleanup
         coin::burn_for_testing(coin_out);
@@ -981,8 +981,8 @@ module sui_amm::test_edge_cases {
         assert!(position_liquidity == 10_000 - 1000, 4);
         
         // Verify refunds were issued for imbalanced amounts
-        let refund_a_value = coin::value(&refund_a);
-        let refund_b_value = coin::value(&refund_b);
+        let _refund_a_value = coin::value(&refund_a);
+        let _refund_b_value = coin::value(&refund_b);
         
         // Cleanup
         coin::burn_for_testing(refund_a);
@@ -1088,8 +1088,8 @@ module sui_amm::test_edge_cases {
         assert!(remaining_liquidity == total_liquidity - 1, 5);
         
         // Verify some tokens were returned (might be 0 due to rounding, which is acceptable)
-        let out_a = coin::value(&coin_a_out);
-        let out_b = coin::value(&coin_b_out);
+        let _out_a = coin::value(&coin_a_out);
+        let _out_b = coin::value(&coin_b_out);
         
         // Cleanup
         coin::burn_for_testing(coin_a_out);
