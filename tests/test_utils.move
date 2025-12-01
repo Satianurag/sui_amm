@@ -4,6 +4,7 @@ module sui_amm::test_utils {
     use sui::coin::{Self, Coin};
     use sui::test_scenario::{Self as ts, Scenario};
     use sui::tx_context::{TxContext};
+    use sui::object;
     use sui_amm::stable_pool::{Self, StableSwapPool};
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
@@ -221,7 +222,6 @@ module sui_amm::test_utils {
     public fun get_position_snapshot_pending_fees(snapshot: &PositionSnapshot): (u64, u64) {
         (snapshot.pending_fee_a, snapshot.pending_fee_b)
     }
-}
 
     // ═══════════════════════════════════════════════════════════════════════════
     // RANDOM NUMBER GENERATION
@@ -363,8 +363,31 @@ module sui_amm::test_utils {
         position
     }
     
-    /// Remove liquidity helper
+    /// Remove liquidity helper (partial removal)
     public fun remove_liquidity_helper<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        position: &mut LPPosition,
+        amount: u64,
+        _min_a: u64,
+        _min_b: u64,
+        deadline: u64,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ): (Coin<CoinA>, Coin<CoinB>) {
+        pool::remove_liquidity_partial(
+            pool,
+            position,
+            amount,
+            1,
+            1,
+            clock,
+            deadline,
+            ctx
+        )
+    }
+    
+    /// Remove liquidity full helper
+    public fun remove_liquidity_full_helper<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         position: LPPosition,
         _min_a: u64,
@@ -431,3 +454,5 @@ module sui_amm::test_utils {
             ctx
         )
     }
+
+}
