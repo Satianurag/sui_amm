@@ -238,7 +238,7 @@ module sui_amm::test_access_control {
             let admin_cap = ts::take_from_sender<AdminCap>(&scenario);
             let mut gov_config_val = ts::take_shared<GovernanceConfig>(&scenario);
             let gov_config = &mut gov_config_val;
-            let pool_val = ts::take_from_sender<LiquidityPool<USDC, BTC>>(&scenario);
+            let pool_val = ts::take_shared<LiquidityPool<USDC, BTC>>(&scenario);
             let pool = &pool_val;
             let pool_id = object::id(pool);
             let ctx = ts::ctx(&mut scenario);
