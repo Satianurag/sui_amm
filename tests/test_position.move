@@ -730,7 +730,7 @@ module sui_amm::test_position {
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
-        let (pool_id, mut position) = test_utils::create_initialized_pool<USDC, USDT>(
+        let (pool_id,  position) = test_utils::create_initialized_pool<USDC, USDT>(
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
@@ -1151,7 +1151,7 @@ module sui_amm::test_position {
         );
         
         ts::next_tx(&mut scenario, fixtures::admin());
-        let mut pool = ts::take_shared_by_id<LiquidityPool<USDC, USDT>>(&scenario, pool_id);
+        let  pool = ts::take_shared_by_id<LiquidityPool<USDC, USDT>>(&scenario, pool_id);
         let mut clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
         // Set initial time

@@ -2,7 +2,6 @@
 module sui_amm::test_utils {
     use sui::clock::{Self, Clock};
     use sui::coin::{Self, Coin};
-    use sui::test_scenario::{Self as ts};
 
     use sui_amm::stable_pool::{Self, StableSwapPool};
     use sui_amm::pool::{Self, LiquidityPool};
