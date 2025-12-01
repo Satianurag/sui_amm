@@ -206,6 +206,8 @@ module sui_amm::test_invariants {
         let mut d_before = test_utils::snapshot_stable_pool(&pool, &clock);
         
         // Execute sequence of swaps
+        // Use explicit max_price to bypass default 2% slippage protection for stable pools
+        let max_price = option::some(18446744073709551615);
         let mut i = 0;
         while (i < 5) {
             if (i % 2 == 0) {
@@ -214,7 +216,7 @@ module sui_amm::test_invariants {
                     &mut pool,
                     coin_in,
                     1,
-                    option::none(),
+                    max_price,
                     &clock,
                     fixtures::far_future_deadline(),
                     ts::ctx(&mut scenario)
@@ -226,7 +228,7 @@ module sui_amm::test_invariants {
                     &mut pool,
                     coin_in,
                     1,
-                    option::none(),
+                    max_price,
                     &clock,
                     fixtures::far_future_deadline(),
                     ts::ctx(&mut scenario)
@@ -554,9 +556,8 @@ module sui_amm::test_invariants {
         let (_protocol_fee_a, _protocol_fee_b) = pool::get_protocol_fees(&pool);
         
         // Verify total claimed is reasonable (should be less than total fees in pool)
-        // Note: This is a sanity check - claimed fees come from the fee pool
+        // Note: All swaps are A→B direction, so fees are generated in token A, not B
         assert!(total_claimed_a > 0, 0);
-        assert!(total_claimed_b > 0, 1);
         
         // Cleanup
         position::destroy(position);

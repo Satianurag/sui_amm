@@ -43,8 +43,8 @@ module sui_amm::test_edge_cases {
         let total_liquidity = pool::get_total_liquidity(&pool);
         let position_liquidity = position::liquidity(&position);
         
-        // Total liquidity should include the burned 1000
-        assert!(total_liquidity == 1000, 0);
+        // Total liquidity should be sqrt(10000 * 10000) = 10000
+        assert!(total_liquidity == 10000, 0);
         
         // Position should have received: sqrt(10000 * 10000) - 1000 = 9000
         let expected_liquidity = 10_000 - 1000;
@@ -413,7 +413,7 @@ module sui_amm::test_edge_cases {
             &mut pool,
             coin_in,
             0,
-            option::none(),
+            option::some(18446744073709551615), // Explicit max_price to bypass default slippage protection
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)

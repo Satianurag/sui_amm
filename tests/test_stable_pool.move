@@ -15,7 +15,7 @@ module sui_amm::test_stable_pool {
     // ═══════════════════════════════════════════════════════════════════════════
 
     #[test]
-    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
+
     fun test_d_invariant_maintained_after_swap() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
@@ -179,7 +179,7 @@ module sui_amm::test_stable_pool {
     // ═══════════════════════════════════════════════════════════════════════════
 
     #[test]
-    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
+
     fun test_minimal_slippage_balanced_swap() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
@@ -231,7 +231,7 @@ module sui_amm::test_stable_pool {
     }
 
     #[test]
-    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
+
     fun test_stable_pair_simulation_low_slippage() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
@@ -342,7 +342,7 @@ module sui_amm::test_stable_pool {
     }
 
     #[test]
-    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
+
     fun test_amp_effect_on_slippage() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
@@ -530,7 +530,7 @@ module sui_amm::test_stable_pool {
     }
 
     #[test]
-    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
+
     fun test_min_amp_behavior() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
@@ -577,7 +577,7 @@ module sui_amm::test_stable_pool {
     }
 
     #[test]
-    #[expected_failure(abort_code = sui_amm::stable_pool::EInsufficientLiquidity)]
+
     fun test_max_amp_behavior() {
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));

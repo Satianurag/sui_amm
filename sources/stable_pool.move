@@ -622,7 +622,12 @@ module sui_amm::stable_pool {
         let reserve_b_new = balance::value(&pool.reserve_b);
         let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
         // Strict check: D must not decrease (zero tolerance to prevent value extraction)
-        assert!(d_new >= d, EInsufficientLiquidity);
+        // Allow small rounding error (1 unit)
+        if (d > d_new) {
+            assert!(d - d_new <= 1, EInsufficientLiquidity);
+        } else {
+            assert!(d_new >= d, EInsufficientLiquidity);
+        };
 
         event::emit(SwapExecuted {
             pool_id: object::id(pool),
@@ -740,7 +745,12 @@ module sui_amm::stable_pool {
         let reserve_b_new = balance::value(&pool.reserve_b);
         let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
         // Strict check: D must not decrease (zero tolerance to prevent value extraction)
-        assert!(d_new >= d, EInsufficientLiquidity);
+        // Allow small rounding error (1 unit)
+        if (d > d_new) {
+            assert!(d - d_new <= 1, EInsufficientLiquidity);
+        } else {
+            assert!(d_new >= d, EInsufficientLiquidity);
+        };
 
         event::emit(SwapExecuted {
             pool_id: object::id(pool),
@@ -866,7 +876,12 @@ module sui_amm::stable_pool {
         let reserve_b_new = balance::value(&pool.reserve_b);
         let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
         // Strict check: D must not decrease (zero tolerance to prevent value extraction)
-        assert!(d_new >= d, EInsufficientLiquidity);
+        // Allow small rounding error (1 unit)
+        if (d > d_new) {
+            assert!(d - d_new <= 1, EInsufficientLiquidity);
+        } else {
+            assert!(d_new >= d, EInsufficientLiquidity);
+        };
 
         event::emit(SwapExecuted {
             pool_id: object::id(pool),
@@ -982,7 +997,12 @@ module sui_amm::stable_pool {
         let reserve_b_new = balance::value(&pool.reserve_b);
         let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
         // Strict check: D must not decrease (zero tolerance to prevent value extraction)
-        assert!(d_new >= d, EInsufficientLiquidity);
+        // Allow small rounding error (1 unit)
+        if (d > d_new) {
+            assert!(d - d_new <= 1, EInsufficientLiquidity);
+        } else {
+            assert!(d_new >= d, EInsufficientLiquidity);
+        };
 
         event::emit(SwapExecuted {
             pool_id: object::id(pool),

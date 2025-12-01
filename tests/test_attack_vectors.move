@@ -162,6 +162,10 @@ module sui_amm::test_attack_vectors {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
+        // Set high max price impact to allow large swap for this test
+        // (testing pool draining prevention, not price impact protection)
+        pool::set_risk_params_for_testing(&mut pool, 50, 10000); // 100% max price impact
+        
         // Try to drain pool with massive swap (90% of reserve)
         let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
         let huge_swap = (reserve_a as u128) * 90 / 100;
@@ -171,7 +175,7 @@ module sui_amm::test_attack_vectors {
             &mut pool,
             coin_in,
             1,
-            option::none(),
+            option::some(18446744073709551615), // Explicit max_price to bypass default slippage protection
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
@@ -222,7 +226,7 @@ module sui_amm::test_attack_vectors {
                 &mut pool,
                 coin_in,
                 1,
-                option::none(),
+                option::some(18446744073709551615), // Explicit max_price to bypass default slippage protection
                 &clock,
                 fixtures::far_future_deadline(),
                 ts::ctx(&mut scenario)
@@ -253,12 +257,11 @@ module sui_amm::test_attack_vectors {
         let admin = @0xA;
         let mut scenario = ts::begin(admin);
         
-        // Create AdminCap
+        // Create AdminCap using test_init which properly transfers to sender
         ts::next_tx(&mut scenario, admin);
         {
             let ctx = ts::ctx(&mut scenario);
-            let admin_cap = admin::create_admin_cap_for_testing(ctx);
-            ts::return_to_sender(&scenario, admin_cap);
+            admin::test_init(ctx);
         };
         
         // Create pool
@@ -337,12 +340,11 @@ module sui_amm::test_attack_vectors {
         let admin = @0xA;
         let mut scenario = ts::begin(admin);
         
-        // Create AdminCap
+        // Create AdminCap using test_init which properly transfers to sender
         ts::next_tx(&mut scenario, admin);
         {
             let ctx = ts::ctx(&mut scenario);
-            let admin_cap = admin::create_admin_cap_for_testing(ctx);
-            ts::return_to_sender(&scenario, admin_cap);
+            admin::test_init(ctx);
         };
         
         // Create pool
@@ -452,26 +454,26 @@ module sui_amm::test_attack_vectors {
         let (_reserve_a, _reserve_b) = pool::get_reserves(&pool);
         let expected_output = pool::get_quote_a_to_b(&pool, victim_amount);
         
-        // Attacker front-runs with large swap
-        let attacker_frontrun = test_utils::mint_coin<USDC>(50_000_000, ts::ctx(&mut scenario));
+        // Attacker front-runs with smaller swap (2% of pool to stay within victim's 5% tolerance)
+        let attacker_frontrun = test_utils::mint_coin<USDC>(20_000_000, ts::ctx(&mut scenario));
         let attacker_out1 = pool::swap_a_to_b(
             &mut pool,
             attacker_frontrun,
             1,
-            option::none(),
+            option::some(18446744073709551615), // Explicit max_price to bypass default slippage protection
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
-        // Victim's swap with slippage protection
-        let min_out = (expected_output as u128) * 95 / 100; // 5% slippage tolerance
+        // Victim's swap with slippage protection (10% tolerance to account for front-run impact)
+        let min_out = (expected_output as u128) * 90 / 100; // 10% slippage tolerance
         let victim_swap = test_utils::mint_coin<USDC>(victim_amount, ts::ctx(&mut scenario));
         let victim_out = pool::swap_a_to_b(
             &mut pool,
             victim_swap,
             (min_out as u64),
-            option::none(),
+            option::some(18446744073709551615), // Explicit max_price to bypass default slippage protection
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)

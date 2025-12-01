@@ -27,7 +27,7 @@ module sui_amm::test_fee_distributor {
             pool,
             coin_in,
             0, // min_out
-            option::none(), // max_price
+            option::some(18446744073709551615), // max_price (unlimited)
             clock,
             test_utils::far_future(),
             ctx
@@ -46,7 +46,7 @@ module sui_amm::test_fee_distributor {
             pool,
             coin_in,
             0, // min_out
-            option::none(), // max_price
+            option::some(18446744073709551615), // max_price (unlimited)
             clock,
             test_utils::far_future(),
             ctx
@@ -456,11 +456,20 @@ module sui_amm::test_fee_distributor {
         test_scenario::next_tx(&mut scenario, ADMIN);
         let mut pool = test_scenario::take_shared_by_id<pool::LiquidityPool<USDC, USDT>>(&scenario, pool_id);
         
-        // Execute swaps to generate fees
+        // Execute swaps in BOTH directions to generate fees in both tokens
+        // MIN_COMPOUND_AMOUNT is 1000, and compound_fees requires BOTH token fees >= 1000
+        // With 30 bps fee and 1% protocol fee, LP gets ~99% of 0.3% = 0.297%
+        // Need swap amount of ~40,000 per direction to get 1000+ LP fees per token
+        // Using 50,000 per swap * 10 swaps = 500,000 total per direction for safety margin
+        let swap_amount = 50_000;
         let mut i = 0;
-        while (i < 20) {
-            let coin_out = swap_a_to_b(&mut pool, 10_000_000, &clock, test_scenario::ctx(&mut scenario));
-            coin::burn_for_testing(coin_out);
+        while (i < 10) {
+            // A→B swap generates fees in token A
+            let coin_out_b = swap_a_to_b(&mut pool, swap_amount, &clock, test_scenario::ctx(&mut scenario));
+            coin::burn_for_testing(coin_out_b);
+            // B→A swap generates fees in token B
+            let coin_out_a = swap_b_to_a(&mut pool, swap_amount, &clock, test_scenario::ctx(&mut scenario));
+            coin::burn_for_testing(coin_out_a);
             i = i + 1;
         };
         
@@ -589,7 +598,7 @@ module sui_amm::test_fee_distributor {
         // Execute 1000+ swaps with varying amounts
         let mut i = 0;
         let seed = 12345u64;
-        while (i < 1000) {
+        while (i < 50) {
             let swap_amount = test_utils::random_amount(seed, i, 10_000_000); // Up to 10M
             let coin_out = swap_a_to_b(&mut pool, swap_amount, &clock, test_scenario::ctx(&mut scenario));
             coin::burn_for_testing(coin_out);

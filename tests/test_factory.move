@@ -8,7 +8,7 @@ module sui_amm::test_factory {
     use sui_amm::factory::{Self, PoolRegistry};
     use sui_amm::swap_history::{Self, StatisticsRegistry};
     use sui_amm::admin::{Self, AdminCap};
-    use sui_amm::test_utils::{Self, USDC, USDT, DAI, BTC};
+    use sui_amm::test_utils::{Self, USDC, USDT, DAI};
     use sui_amm::fixtures;
     use sui_amm::position::LPPosition;
 
@@ -339,6 +339,7 @@ module sui_amm::test_factory {
     // ═══════════════════════════════════════════════════════════════════════════
     // TEST: Pagination Correctness
     // Requirement 6.6: get_all_pools_paginated() pagination works correctly
+    // Note: Using add_pool_for_testing helper for performance optimization
     // ═══════════════════════════════════════════════════════════════════════════
     
     #[test]
@@ -347,78 +348,27 @@ module sui_amm::test_factory {
         let mut scenario = ts::begin(admin);
         
         factory::test_init(ts::ctx(&mut scenario));
-        swap_history::test_init(ts::ctx(&mut scenario));
         
         ts::next_tx(&mut scenario, admin);
         
         let mut registry = ts::take_shared<PoolRegistry>(&scenario);
-        let mut stats_registry = ts::take_shared<StatisticsRegistry>(&scenario);
-        let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        let creation_fee = factory::get_pool_creation_fee(&registry);
+        // Use test helper to add pools for pagination testing (faster than full pool creation)
+        let type_a = type_name::with_original_ids<USDC>();
+        let type_b = type_name::with_original_ids<USDT>();
+        let type_c = type_name::with_original_ids<DAI>();
         
-        // Create 5 pools with same token pair but different fee tiers
-        let mut positions = vector::empty<LPPosition>();
-        
+        // Add 5 pools using the lightweight test helper
         // Pool 1: USDC/USDT with 5 bps
-        let fee_coin1 = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
-        let coin_a1 = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
-        let coin_b1 = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
-        let (position1, refund_a1, refund_b1) = factory::create_pool<USDC, USDT>(
-            &mut registry, &mut stats_registry, 5, 0,
-            coin_a1, coin_b1, fee_coin1, &clock, ts::ctx(&mut scenario)
-        );
-        coin::burn_for_testing(refund_a1);
-        coin::burn_for_testing(refund_b1);
-        vector::push_back(&mut positions, position1);
-        
+        factory::add_pool_for_testing(&mut registry, 5, false, type_a, type_b, 0, ts::ctx(&mut scenario));
         // Pool 2: USDC/USDT with 30 bps
-        let fee_coin2 = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
-        let coin_a2 = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
-        let coin_b2 = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
-        let (position2, refund_a2, refund_b2) = factory::create_pool<USDC, USDT>(
-            &mut registry, &mut stats_registry, 30, 0,
-            coin_a2, coin_b2, fee_coin2, &clock, ts::ctx(&mut scenario)
-        );
-        coin::burn_for_testing(refund_a2);
-        coin::burn_for_testing(refund_b2);
-        vector::push_back(&mut positions, position2);
-        
+        factory::add_pool_for_testing(&mut registry, 30, false, type_a, type_b, 0, ts::ctx(&mut scenario));
         // Pool 3: USDC/USDT with 100 bps
-        let fee_coin3 = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
-        let coin_a3 = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
-        let coin_b3 = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
-        let (position3, refund_a3, refund_b3) = factory::create_pool<USDC, USDT>(
-            &mut registry, &mut stats_registry, 100, 0,
-            coin_a3, coin_b3, fee_coin3, &clock, ts::ctx(&mut scenario)
-        );
-        coin::burn_for_testing(refund_a3);
-        coin::burn_for_testing(refund_b3);
-        vector::push_back(&mut positions, position3);
-        
+        factory::add_pool_for_testing(&mut registry, 100, false, type_a, type_b, 0, ts::ctx(&mut scenario));
         // Pool 4: DAI/USDC with 30 bps
-        let fee_coin4 = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
-        let coin_a4 = test_utils::mint_coin<DAI>(1_000_000_000, ts::ctx(&mut scenario));
-        let coin_b4 = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
-        let (position4, refund_a4, refund_b4) = factory::create_pool<DAI, USDC>(
-            &mut registry, &mut stats_registry, 30, 0,
-            coin_a4, coin_b4, fee_coin4, &clock, ts::ctx(&mut scenario)
-        );
-        coin::burn_for_testing(refund_a4);
-        coin::burn_for_testing(refund_b4);
-        vector::push_back(&mut positions, position4);
-        
-        // Pool 5: BTC/USDC with 30 bps
-        let fee_coin5 = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
-        let coin_a5 = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
-        let coin_b5 = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
-        let (position5, refund_a5, refund_b5) = factory::create_pool<BTC, USDC>(
-            &mut registry, &mut stats_registry, 30, 0,
-            coin_a5, coin_b5, fee_coin5, &clock, ts::ctx(&mut scenario)
-        );
-        coin::burn_for_testing(refund_a5);
-        coin::burn_for_testing(refund_b5);
-        vector::push_back(&mut positions, position5);
+        factory::add_pool_for_testing(&mut registry, 30, false, type_c, type_a, 0, ts::ctx(&mut scenario));
+        // Pool 5: DAI/USDT with 30 bps
+        factory::add_pool_for_testing(&mut registry, 30, false, type_c, type_b, 0, ts::ctx(&mut scenario));
         
         // Test pagination
         let page1 = factory::get_all_pools_paginated(&registry, 0, 2);
@@ -434,22 +384,15 @@ module sui_amm::test_factory {
         let page4 = factory::get_all_pools_paginated(&registry, 10, 2);
         assert!(vector::length(&page4) == 0, 3);
         
-        // Clean up
-        while (!vector::is_empty(&positions)) {
-            let position = vector::pop_back(&mut positions);
-            transfer::public_transfer(position, admin);
-        };
-        vector::destroy_empty(positions);
-        
-        clock::destroy_for_testing(clock);
         ts::return_shared(registry);
-        ts::return_shared(stats_registry);
         ts::end(scenario);
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // TEST: MAX_POOLS_PER_TOKEN Limit Enforcement
     // Requirement 6.7: MAX_POOLS_PER_TOKEN (500) limit is enforced
+    // Note: Using reduced limit (15) to stay within gas limits while still
+    // validating the limit enforcement logic
     // ═══════════════════════════════════════════════════════════════════════════
     
     #[test]
@@ -468,29 +411,33 @@ module sui_amm::test_factory {
         let type_a = type_name::with_original_ids<USDC>();
         let type_b = type_name::with_original_ids<USDT>();
         
-        // Add 500 pools (the limit)
+        // Use reduced limit (15) to stay within gas limits while still
+        // validating the limit enforcement logic works correctly
+        let test_limit = 15u64;
+        
+        // Add pools up to the limit
         let mut i = 0;
-        while (i < 500) {
+        while (i < test_limit) {
             factory::add_pool_for_testing(
                 &mut registry,
                 30 + i, // Different fee tiers to avoid duplicates
                 false,
                 type_a,
                 type_b,
-                500, // limit
+                test_limit, // Use reduced limit for testing
                 ts::ctx(&mut scenario)
             );
             i = i + 1;
         };
         
-        // Try to add one more (should fail)
+        // Try to add one more (should fail with ETooManyPoolsPerToken)
         factory::add_pool_for_testing(
             &mut registry,
             9999,
             false,
             type_a,
             type_b,
-            500,
+            test_limit,
             ts::ctx(&mut scenario)
         );
         

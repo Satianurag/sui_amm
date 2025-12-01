@@ -375,10 +375,10 @@ module sui_amm::test_utils {
         let clock = clock::create_for_testing(ctx);
         
         let mut pool = sui_amm::stable_pool::create_pool<CoinA, CoinB>(
-            amp,
             fee_bps,
             protocol_fee_bps,
             creator_fee_bps,
+            amp,
             ctx
         );
         
@@ -401,7 +401,7 @@ module sui_amm::test_utils {
         coin::burn_for_testing(refund_b);
         clock::destroy_for_testing(clock);
         
-        ts::return_shared(pool);
+        stable_pool::share(pool);
         
         (pool_id, position)
     }
