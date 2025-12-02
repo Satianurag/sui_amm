@@ -2,7 +2,6 @@
 
 **Project:** SUI AMM - Decentralized Exchange  
 **Test Suite Version:** 1.0  
-**Test Run Date:** 2025-12-02  
 **Total Tests:** 262  
 **Pass Rate:** 100% ✅
 
