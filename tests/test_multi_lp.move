@@ -9,11 +9,14 @@ module sui_amm::test_multi_lp {
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // TEST: Fee Distribution Proportionality Across 3+ LPs
-    // Requirements: 9.2 - Test fee distribution proportionality across 3+ LPs
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that fees are distributed proportionally among multiple LPs based on their share.
+    ///
+    /// This test creates three LP positions with different liquidity amounts (60%, 30%, and 10%
+    /// of added liquidity), executes swaps to generate fees, then verifies that each LP receives
+    /// fees proportional to their share of the pool. LP1 should receive ~2x the fees of LP2,
+    /// and LP2 should receive ~3x the fees of LP3.
+    ///
+    /// Requirements: 9.2 - Test fee distribution proportionality across 3+ LPs
     #[test]
     fun test_fee_distribution_proportional_three_lps() {
         let admin = fixtures::admin();
@@ -41,7 +44,6 @@ module sui_amm::test_multi_lp {
         test_scenario::next_tx(&mut scenario, lp1);
         let mut pool = test_scenario::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         
-        // LP1 adds 60% of initial liquidity (600M each)
         let mut lp1_position = test_utils::add_liquidity_helper(
             &mut pool,
             600_000_000,
@@ -56,7 +58,6 @@ module sui_amm::test_multi_lp {
         
         test_scenario::next_tx(&mut scenario, lp2);
         
-        // LP2 adds 30% of initial liquidity (300M each)
         let mut lp2_position = test_utils::add_liquidity_helper(
             &mut pool,
             300_000_000,
@@ -71,7 +72,6 @@ module sui_amm::test_multi_lp {
         
         test_scenario::next_tx(&mut scenario, lp3);
         
-        // LP3 adds 10% of initial liquidity (100M each)
         let mut lp3_position = test_utils::add_liquidity_helper(
             &mut pool,
             100_000_000,
@@ -84,24 +84,19 @@ module sui_amm::test_multi_lp {
         );
         let lp3_liquidity = position::liquidity(&lp3_position);
         
-        // Get total liquidity
         let total_liquidity = pool::get_total_liquidity(&pool);
         
-        // Verify LP shares are proportional
-        // LP1 should have ~30% (600M / 2000M)
-        // LP2 should have ~15% (300M / 2000M)
-        // LP3 should have ~5% (100M / 2000M)
+        // Verify each LP's share matches their contribution ratio
         
         let lp1_share_bps = ((lp1_liquidity as u128) * 10000 / (total_liquidity as u128)) as u64;
         let lp2_share_bps = ((lp2_liquidity as u128) * 10000 / (total_liquidity as u128)) as u64;
         let lp3_share_bps = ((lp3_liquidity as u128) * 10000 / (total_liquidity as u128)) as u64;
         
-        // Allow 100 bps tolerance (1%)
-        assert!(lp1_share_bps >= 2900 && lp1_share_bps <= 3100, 0); // ~30%
-        assert!(lp2_share_bps >= 1400 && lp2_share_bps <= 1600, 1); // ~15%
-        assert!(lp3_share_bps >= 400 && lp3_share_bps <= 600, 2); // ~5%
+        assert!(lp1_share_bps >= 2900 && lp1_share_bps <= 3100, 0);
+        assert!(lp2_share_bps >= 1400 && lp2_share_bps <= 1600, 1);
+        assert!(lp3_share_bps >= 400 && lp3_share_bps <= 600, 2);
         
-        // Execute swaps to generate fees
+
         let swap_amount = 50_000_000u64; // 50M
         let mut i = 0;
         while (i < 10) {
@@ -149,22 +144,16 @@ module sui_amm::test_multi_lp {
         );
         let lp3_total_fees = coin::value(&lp3_fee_a) + coin::value(&lp3_fee_b);
         
-        // Verify fee distribution is proportional to shares
-        // LP1 should get ~2x fees of LP2 (60% vs 30%)
-        // LP2 should get ~3x fees of LP3 (30% vs 10%)
-        
+        // Verify fee ratios match liquidity ratios
         if (lp1_total_fees > 0 && lp2_total_fees > 0 && lp3_total_fees > 0) {
             let ratio_lp1_lp2 = (lp1_total_fees * 100) / lp2_total_fees;
             let ratio_lp2_lp3 = (lp2_total_fees * 100) / lp3_total_fees;
             
-            // LP1/LP2 should be ~200 (2x), allow 180-220
             assert!(ratio_lp1_lp2 >= 180 && ratio_lp1_lp2 <= 220, 3);
-            
-            // LP2/LP3 should be ~300 (3x), allow 270-330
             assert!(ratio_lp2_lp3 >= 270 && ratio_lp2_lp3 <= 330, 4);
         };
         
-        // Cleanup
+
         coin::burn_for_testing<BTC>(lp1_fee_a);
         coin::burn_for_testing<USDC>(lp1_fee_b);
         coin::burn_for_testing<BTC>(lp2_fee_a);
@@ -181,11 +170,14 @@ module sui_amm::test_multi_lp {
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // TEST: Varying LP Share Scenarios
-    // Requirements: 9.2 - Test varying LP share scenarios
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that fee distribution works correctly with extreme share imbalances.
+    ///
+    /// This test creates a scenario with a "whale" LP providing 90% of liquidity and a
+    /// "retail" LP providing 10%. It verifies that both the share calculation and fee
+    /// distribution correctly handle this imbalance, with the whale receiving ~9x the
+    /// fees of the retail LP.
+    ///
+    /// Requirements: 9.2 - Test varying LP share scenarios
     #[test]
     fun test_varying_lp_shares() {
         let admin = fixtures::admin();
@@ -212,7 +204,6 @@ module sui_amm::test_multi_lp {
         test_scenario::next_tx(&mut scenario, whale);
         let mut pool = test_scenario::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         
-        // Whale adds massive liquidity (90% of pool)
         let (whale_a, whale_b) = (900_000_000u64, 900_000_000u64);
         let mut whale_position = test_utils::add_liquidity_helper(
             &mut pool,
@@ -228,7 +219,6 @@ module sui_amm::test_multi_lp {
         
         test_scenario::next_tx(&mut scenario, retail);
         
-        // Retail adds small liquidity (10% of pool)
         let (retail_a, retail_b) = (100_000_000u64, 100_000_000u64);
         let mut retail_position = test_utils::add_liquidity_helper(
             &mut pool,
@@ -244,23 +234,21 @@ module sui_amm::test_multi_lp {
         
         let total_liquidity = pool::get_total_liquidity(&pool);
         
-        // Verify whale has ~90% share
         assertions::assert_lp_share_proportional(
             whale_liquidity,
             total_liquidity,
-            9000, // 90%
-            200 // 2% tolerance
+            9000,
+            200
         );
         
-        // Verify retail has ~10% share
         assertions::assert_lp_share_proportional(
             retail_liquidity,
             total_liquidity,
-            1000, // 10%
-            200 // 2% tolerance
+            1000,
+            200
         );
         
-        // Execute swaps
+
         let swap_amount = 10_000_000u64;
         let mut i = 0;
         while (i < 5) {
@@ -298,14 +286,13 @@ module sui_amm::test_multi_lp {
         );
         let retail_total_fees = coin::value(&retail_fee_a) + coin::value(&retail_fee_b);
         
-        // Verify whale gets ~9x fees of retail
+        // Verify fee ratio matches the 9:1 liquidity ratio
         if (whale_total_fees > 0 && retail_total_fees > 0) {
             let ratio = (whale_total_fees * 100) / retail_total_fees;
-            // Should be ~900 (9x), allow 800-1000
             assert!(ratio >= 800 && ratio <= 1000, 0);
         };
         
-        // Cleanup
+
         coin::burn_for_testing<BTC>(whale_fee_a);
         coin::burn_for_testing<USDC>(whale_fee_b);
         coin::burn_for_testing<BTC>(retail_fee_a);
@@ -319,11 +306,14 @@ module sui_amm::test_multi_lp {
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // TEST: Fee Claiming Order Independence
-    // Requirements: 9.2 - Test fee claiming order independence
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that the order in which LPs claim fees doesn't affect the amounts received.
+    ///
+    /// This test creates three LPs with equal liquidity, generates fees through swaps, then
+    /// has the LPs claim fees in a non-sequential order (LP3, LP1, LP2). It verifies that
+    /// all three LPs receive approximately equal fees regardless of claim order, ensuring
+    /// the fee distribution mechanism is fair and order-independent.
+    ///
+    /// Requirements: 9.2 - Test fee claiming order independence
     #[test]
     fun test_fee_claiming_order_independence() {
         let admin = fixtures::admin();
@@ -351,7 +341,6 @@ module sui_amm::test_multi_lp {
         test_scenario::next_tx(&mut scenario, lp1);
         let mut pool = test_scenario::take_shared_by_id<LiquidityPool<BTC, USDC>>(&scenario, pool_id);
         
-        // All LPs add equal liquidity
         let add_amount = 100_000_000u64;
         
         let mut lp1_position = test_utils::add_liquidity_helper(
@@ -389,7 +378,7 @@ module sui_amm::test_multi_lp {
             test_scenario::ctx(&mut scenario)
         );
         
-        // Execute swaps to generate fees
+
         let swap_amount = 10_000_000u64;
         let mut i = 0;
         while (i < 10) {
@@ -406,7 +395,7 @@ module sui_amm::test_multi_lp {
             i = i + 1;
         };
         
-        // Claim fees in order: LP3, LP1, LP2 (not sequential)
+        // Claim in non-sequential order to test order independence
         test_scenario::next_tx(&mut scenario, lp3);
         let (lp3_fee_a, lp3_fee_b) = pool::withdraw_fees(
             &mut pool,
@@ -437,7 +426,7 @@ module sui_amm::test_multi_lp {
         );
         let lp2_total_fees = coin::value(&lp2_fee_a) + coin::value(&lp2_fee_b);
         
-        // Verify all LPs received approximately equal fees (within 5% tolerance)
+        // Verify all LPs received equal fees despite non-sequential claiming
         if (lp1_total_fees > 0 && lp2_total_fees > 0 && lp3_total_fees > 0) {
             let max_fees = if (lp1_total_fees > lp2_total_fees) {
                 if (lp1_total_fees > lp3_total_fees) { lp1_total_fees } else { lp3_total_fees }
@@ -451,13 +440,12 @@ module sui_amm::test_multi_lp {
                 if (lp2_total_fees < lp3_total_fees) { lp2_total_fees } else { lp3_total_fees }
             };
             
-            // Difference should be less than 5% of max
             let diff = max_fees - min_fees;
-            let tolerance = max_fees / 20; // 5%
+            let tolerance = max_fees / 20;
             assert!(diff <= tolerance, 0);
         };
         
-        // Verify second claim returns zero fees
+        // Verify that claiming again returns zero (no double-claiming)
         test_scenario::next_tx(&mut scenario, lp1);
         let (lp1_fee_a2, lp1_fee_b2) = pool::withdraw_fees(
             &mut pool,
@@ -469,7 +457,7 @@ module sui_amm::test_multi_lp {
         assert!(coin::value(&lp1_fee_a2) == 0, 1);
         assert!(coin::value(&lp1_fee_b2) == 0, 2);
         
-        // Cleanup
+
         coin::burn_for_testing<BTC>(lp1_fee_a);
         coin::burn_for_testing<USDC>(lp1_fee_b);
         coin::burn_for_testing<BTC>(lp2_fee_a);

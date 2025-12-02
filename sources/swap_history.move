@@ -1,20 +1,27 @@
-/// Module: swap_history
-/// Description: On-chain swap history tracking for users.
-/// This satisfies PRD requirement: "View swap history and statistics"
+/// On-chain swap history tracking and statistics
+///
+/// This module provides comprehensive swap tracking at both the user and pool level.
+/// Users can maintain their own swap history (last 100 swaps) while pools track
+/// aggregate statistics including total volume, fees collected, and 24-hour metrics.
+///
+/// The design uses owned objects for user history (privacy) and shared objects for
+/// pool statistics (public visibility).
 module sui_amm::swap_history {
     use sui::table;
     use sui::clock;
 
-    // Friend declarations for pool modules to call record functions
-
     // Error codes
     const EUnauthorized: u64 = 1;
 
-    // Constants
-    const MAX_HISTORY_PER_USER: u64 = 100; // Keep last 100 swaps per user
-    const MAX_POOL_RECENT_SWAPS: u64 = 50; // Keep last 50 swaps per pool for statistics
+    // History size limits to prevent unbounded growth
+    const MAX_HISTORY_PER_USER: u64 = 100;
+    const MAX_POOL_RECENT_SWAPS: u64 = 50;
 
-    /// Individual swap record
+    /// Individual swap record capturing all relevant swap details
+    ///
+    /// Stores immutable data about a single swap transaction including amounts,
+    /// fees, price impact, and timestamp. The copy+drop abilities allow efficient
+    /// storage and retrieval.
     public struct SwapRecord has store, copy, drop {
         pool_id: object::ID,
         is_a_to_b: bool,
@@ -25,7 +32,11 @@ module sui_amm::swap_history {
         timestamp_ms: u64,
     }
 
-    /// User's swap history - owned by user
+    /// User's personal swap history
+    ///
+    /// Owned object that tracks a user's recent swaps (up to MAX_HISTORY_PER_USER)
+    /// along with cumulative statistics. Older swaps are automatically removed when
+    /// the limit is reached, but cumulative stats are preserved.
     public struct UserSwapHistory has key, store {
         id: object::UID,
         owner: address,
@@ -35,7 +46,11 @@ module sui_amm::swap_history {
         total_fees_paid: u128,  // Cumulative fees paid
     }
 
-    /// Pool statistics - shared object per pool
+    /// Pool-level swap statistics
+    ///
+    /// Shared object tracking aggregate statistics for a specific pool including
+    /// total volume, fees collected, and rolling 24-hour metrics. Recent swaps
+    /// are kept for analysis but older ones are removed to prevent unbounded growth.
     public struct PoolStatistics has key {
         id: object::UID,
         pool_id: object::ID,
@@ -45,14 +60,18 @@ module sui_amm::swap_history {
         total_volume_b: u128,
         total_fees_a: u128,
         total_fees_b: u128,
-        // 24h rolling stats (updated on each swap)
+        // Rolling 24-hour statistics (simplified: reset if gap > 24h)
         volume_24h_a: u64,
         volume_24h_b: u64,
         swaps_24h: u64,
         last_swap_timestamp: u64,
     }
 
-    /// Global registry for pool statistics
+    /// Global registry mapping pools to their statistics objects
+    ///
+    /// Shared object that maintains a lookup table from pool IDs to their
+    /// corresponding PoolStatistics object IDs. This allows finding a pool's
+    /// statistics without knowing the object ID in advance.
     public struct StatisticsRegistry has key {
         id: object::UID,
         pool_stats: table::Table<ID, ID>, // pool_id -> PoolStatistics object ID
@@ -70,7 +89,13 @@ module sui_amm::swap_history {
         init(ctx);
     }
 
-    /// Create user swap history object
+    /// Create a new user swap history object
+    ///
+    /// Initializes an empty history with zero cumulative statistics.
+    /// The created object is owned by the transaction sender.
+    ///
+    /// # Returns
+    /// New UserSwapHistory object ready to track swaps
     public fun create_user_history(ctx: &mut tx_context::TxContext): UserSwapHistory {
         UserSwapHistory {
             id: object::new(ctx),
@@ -82,13 +107,24 @@ module sui_amm::swap_history {
         }
     }
 
-    /// Create and transfer user history to recipient
+    /// Create user history and transfer to a specific recipient
+    ///
+    /// Convenience function for creating history objects for other users.
     public fun create_and_transfer_history(recipient: address, ctx: &mut tx_context::TxContext) {
         let history = create_user_history(ctx);
         transfer::transfer(history, recipient);
     }
 
-    /// Initialize pool statistics (called when pool is created)
+    /// Initialize statistics tracking for a new pool
+    ///
+    /// Creates a PoolStatistics object and registers it in the global registry.
+    /// Should be called once when a pool is created. Idempotent - does nothing
+    /// if statistics already exist for the pool.
+    ///
+    /// # Parameters
+    /// - `registry`: The global statistics registry
+    /// - `pool_id`: ID of the pool to initialize statistics for
+    /// - `ctx`: Transaction context
     public fun init_pool_statistics(
         registry: &mut StatisticsRegistry,
         pool_id: object::ID,
@@ -118,7 +154,21 @@ module sui_amm::swap_history {
         transfer::share_object(stats);
     }
 
-    /// Record a swap in user history
+    /// Record a swap in the user's personal history
+    ///
+    /// Adds a new swap record to the user's history, automatically removing the
+    /// oldest record if the maximum capacity is reached. Updates cumulative
+    /// statistics regardless of history size.
+    ///
+    /// # Parameters
+    /// - `history`: The user's swap history object
+    /// - `pool_id`: ID of the pool where the swap occurred
+    /// - `is_a_to_b`: Direction of swap (true = A→B, false = B→A)
+    /// - `amount_in`: Input amount
+    /// - `amount_out`: Output amount received
+    /// - `fee_paid`: Fee amount paid
+    /// - `price_impact_bps`: Price impact in basis points
+    /// - `clock`: Clock for timestamp
     public fun record_user_swap(
         history: &mut UserSwapHistory,
         pool_id: object::ID,
@@ -139,20 +189,25 @@ module sui_amm::swap_history {
             timestamp_ms: clock::timestamp_ms(clock),
         };
 
-        // Remove oldest if at capacity
+        // Maintain fixed-size history by removing oldest entry when at capacity
         if (vector::length(&history.swaps) >= MAX_HISTORY_PER_USER) {
             vector::remove(&mut history.swaps, 0);
         };
 
         vector::push_back(&mut history.swaps, record);
+        
+        // Update cumulative statistics (never reset)
         history.total_swaps = history.total_swaps + 1;
         history.total_volume_in = history.total_volume_in + (amount_in as u128);
         history.total_fees_paid = history.total_fees_paid + (fee_paid as u128);
     }
 
-    /// Record a swap in pool statistics (unified function for pool integration)
-    /// This is called automatically by pool swap functions
-    /// Note: PoolStatistics must be passed directly as it's a shared object
+    /// Record a swap in pool statistics (package-internal interface)
+    ///
+    /// Unified function for pool modules to record swaps. This is the preferred
+    /// interface for pool integration as it provides a stable API.
+    ///
+    /// Note: PoolStatistics must be passed directly as it's a shared object.
     public(package) fun record_swap(
         stats: &mut PoolStatistics,
         is_a_to_b: bool,
@@ -165,7 +220,20 @@ module sui_amm::swap_history {
         record_pool_swap(stats, is_a_to_b, amount_in, amount_out, fee_paid, price_impact_bps, clock);
     }
 
-    /// Record a swap in pool statistics
+    /// Record a swap in pool statistics with full details
+    ///
+    /// Updates both recent swap history and aggregate statistics. Maintains
+    /// a rolling 24-hour window for short-term metrics (simplified implementation
+    /// that resets if more than 24 hours pass between swaps).
+    ///
+    /// # Parameters
+    /// - `stats`: The pool's statistics object
+    /// - `is_a_to_b`: Direction of swap (true = A→B, false = B→A)
+    /// - `amount_in`: Input amount
+    /// - `amount_out`: Output amount received
+    /// - `fee_paid`: Fee amount paid
+    /// - `price_impact_bps`: Price impact in basis points
+    /// - `clock`: Clock for timestamp
     public fun record_pool_swap(
         stats: &mut PoolStatistics,
         is_a_to_b: bool,
@@ -187,7 +255,7 @@ module sui_amm::swap_history {
             timestamp_ms: timestamp,
         };
 
-        // Remove oldest if at capacity
+        // Maintain fixed-size recent history
         if (vector::length(&stats.recent_swaps) >= MAX_POOL_RECENT_SWAPS) {
             vector::remove(&mut stats.recent_swaps, 0);
         };
@@ -195,7 +263,7 @@ module sui_amm::swap_history {
         vector::push_back(&mut stats.recent_swaps, record);
         stats.total_swaps = stats.total_swaps + 1;
 
-        // Update volume stats
+        // Update cumulative volume and fee statistics by direction
         if (is_a_to_b) {
             stats.total_volume_a = stats.total_volume_a + (amount_in as u128);
             stats.total_fees_a = stats.total_fees_a + (fee_paid as u128);
@@ -204,10 +272,11 @@ module sui_amm::swap_history {
             stats.total_fees_b = stats.total_fees_b + (fee_paid as u128);
         };
 
-        // Update 24h rolling stats (simplified - reset if gap > 24h)
+        // Update 24-hour rolling statistics
+        // Simplified approach: reset if more than 24 hours have passed since last swap
+        // A more sophisticated implementation would use a sliding window
         let day_ms = 86_400_000u64;
         if (timestamp > stats.last_swap_timestamp + day_ms) {
-            // Reset 24h stats
             stats.volume_24h_a = 0;
             stats.volume_24h_b = 0;
             stats.swaps_24h = 0;
@@ -223,8 +292,9 @@ module sui_amm::swap_history {
     }
 
     // ============ View Functions ============
+    // These functions provide read-only access to history and statistics
 
-    /// Get user's swap history
+    /// Get reference to user's complete swap history
     public fun get_user_swaps(history: &UserSwapHistory): &vector<SwapRecord> {
         &history.swaps
     }
@@ -282,7 +352,17 @@ module sui_amm::swap_history {
         )
     }
 
-    /// Get paginated user swaps
+    /// Get a paginated slice of user's swap history
+    ///
+    /// Useful for displaying history in chunks without loading all records.
+    ///
+    /// # Parameters
+    /// - `history`: The user's swap history
+    /// - `start`: Starting index (0-based)
+    /// - `limit`: Maximum number of records to return
+    ///
+    /// # Returns
+    /// Vector of swap records from [start, start+limit), or fewer if end is reached
     public fun get_user_swaps_paginated(
         history: &UserSwapHistory,
         start: u64,
@@ -309,14 +389,20 @@ module sui_amm::swap_history {
         result
     }
 
-    /// Clear user history (owner only)
+    /// Clear user's swap history while preserving cumulative statistics
+    ///
+    /// Removes all swap records but keeps total counts, volume, and fees.
+    /// Only the owner can clear their own history.
+    ///
+    /// # Aborts
+    /// - `EUnauthorized`: If caller is not the history owner
     public fun clear_user_history(
         history: &mut UserSwapHistory,
         ctx: &mut TxContext
     ) {
         assert!(history.owner == tx_context::sender(ctx), EUnauthorized);
         history.swaps = vector::empty();
-        // Keep cumulative stats
+        // Cumulative statistics (total_swaps, total_volume_in, total_fees_paid) are preserved
     }
 
     #[test_only]

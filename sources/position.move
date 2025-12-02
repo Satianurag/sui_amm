@@ -343,18 +343,19 @@ module sui_amm::position {
         description: string::String,
         ctx: &mut tx_context::TxContext
     ): LPPosition {
-        // SECURITY FIX [P1-15.5]: Increase IL calculation precision from 1e9 to 1e12
-        // Calculate entry price ratio: (min_b * 1e12) / min_a
-        // 
-        // ENTRY PRICE RATIO VALIDATION:
-        // Expected range: 0 to u64::MAX (18,446,744,073,709,551,615)
-        // - For balanced pools (1:1 ratio): ~1e12 (1,000,000,000,000)
-        // - For 10:1 ratio: ~10e12 (10,000,000,000,000)
-        // - For 1:10 ratio: ~0.1e12 (100,000,000,000)
-        // - Zero value indicates min_a was zero (edge case, should not occur in practice)
-        // 
-        // This ratio is used for accurate impermanent loss calculation and remains
-        // constant throughout the position's lifetime to track IL from initial entry.
+        // Calculate entry price ratio for impermanent loss tracking
+        // Formula: (min_b * 1e12) / min_a
+        //
+        // This ratio captures the price at position creation and remains constant
+        // throughout the position's lifetime to accurately track IL from initial entry.
+        //
+        // Expected ranges:
+        // - Balanced pools (1:1 ratio): ~1e12 (1,000,000,000,000)
+        // - 10:1 ratio: ~10e12 (10,000,000,000,000)
+        // - 1:10 ratio: ~0.1e12 (100,000,000,000)
+        // - Zero: indicates min_a was zero (edge case, should not occur in practice)
+        //
+        // Using 1e12 precision provides accurate IL calculation for typical pool ratios
         let entry_price_ratio_scaled = if (min_a == 0) {
             0
         } else {
@@ -411,25 +412,15 @@ module sui_amm::position {
         fee_tier_bps: u64,
         ctx: &mut tx_context::TxContext
     ): LPPosition {
-        // SECURITY FIX [P1-15.5]: Increase IL calculation precision from 1e9 to 1e12
-        // Calculate entry price ratio: (min_b * 1e12) / min_a
-        // 
-        // ENTRY PRICE RATIO VALIDATION:
-        // Expected range: 0 to u64::MAX (18,446,744,073,709,551,615)
-        // - For balanced pools (1:1 ratio): ~1e12 (1,000,000,000,000)
-        // - For 10:1 ratio: ~10e12 (10,000,000,000,000)
-        // - For 1:10 ratio: ~0.1e12 (100,000,000,000)
-        // - Zero value indicates min_a was zero (edge case, should not occur in practice)
-        // 
-        // This ratio is used for accurate impermanent loss calculation and remains
-        // constant throughout the position's lifetime to track IL from initial entry.
+        // Calculate entry price ratio for impermanent loss tracking
+        // Using 1e12 precision for accurate IL calculation across typical pool ratios
         let entry_price_ratio_scaled = if (min_a == 0) {
             0
         } else {
             ((min_b as u128) * 1_000_000_000_000 / (min_a as u128) as u64)
         };
         
-        // Generate initial SVG inline
+        // Generate initial SVG for NFT display
         let image_url = sui_amm::svg_nft::generate_lp_position_svg(
             pool_type,
             liquidity,
@@ -550,30 +541,28 @@ module sui_amm::position {
         pos.min_a = pos.min_a + amount_a;
         pos.min_b = pos.min_b + amount_b;
         
-        // FIX [IL Tracking]: Update original deposits to track total HODL value
-        // We must track the total amount deposited to correctly calculate IL
-        // (Held Value vs LP Value)
+        // Update original deposits to track total HODL value for IL calculation
+        // IL compares LP value vs what the total deposits would be worth if held separately
         pos.original_deposit_a = pos.original_deposit_a + amount_a;
         pos.original_deposit_b = pos.original_deposit_b + amount_b;
     }
 
-    /// Decrease liquidity (for partial removal)
-    /// FIX [P2-16.5]: Use u128 arithmetic to prevent precision loss in partial removals
-    /// 
-    /// This function uses u128 intermediate calculations to ensure maximum precision
-    /// when proportionally reducing min_a and min_b values during partial liquidity removal.
-    /// 
-    /// Precision Analysis:
-    /// - u64 max value: 18,446,744,073,709,551,615
-    /// - u128 max value: 340,282,366,920,938,463,463,374,607,431,768,211,455
-    /// - For typical pool values (< 10^18), u128 arithmetic prevents any precision loss
-    /// 
-    /// Example:
+    /// Decrease liquidity for partial removal
+    ///
+    /// Uses u128 arithmetic to prevent precision loss when proportionally reducing
+    /// min_a and min_b values during partial liquidity removal.
+    ///
+    /// # Precision
+    /// - u64 max: 18,446,744,073,709,551,615
+    /// - u128 max: 340,282,366,920,938,463,463,374,607,431,768,211,455
+    /// - For typical pool values (< 10^18), u128 arithmetic prevents precision loss
+    ///
+    /// # Example
     /// - Original liquidity: 1,000,000
     /// - Remove: 300,000 (30%)
     /// - Remaining: 700,000 (70%)
-    /// - min_a calculation: (min_a * 700,000) / 1,000,000 using u128
-    /// - This preserves all significant digits without rounding errors
+    /// - Calculation: (min_a * 700,000) / 1,000,000 using u128
+    /// - Result: All significant digits preserved without rounding errors
     public(package) fun decrease_liquidity(
         pos: &mut LPPosition,
         liquidity_amount: u64
@@ -583,27 +572,24 @@ module sui_amm::position {
         let original_liquidity = pos.liquidity;
         pos.liquidity = pos.liquidity - liquidity_amount;
         
-        // Proportionally decrease min amounts using u128 to prevent precision loss
         if (pos.liquidity == 0) {
-            // Complete removal - zero everything
+            // Complete removal: zero all values
             pos.min_a = 0;
             pos.min_b = 0;
             pos.original_deposit_a = 0;
             pos.original_deposit_b = 0;
         } else {
-            // Partial removal - reduce min_a and min_b proportionally
-            // Formula: new_min = old_min * remaining_liquidity / original_liquidity
-            // Using u128 to prevent any precision loss
+            // Partial removal: reduce values proportionally using u128 for precision
+            // Formula: new_value = old_value * remaining_liquidity / original_liquidity
             let new_min_a = ((pos.min_a as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
             let new_min_b = ((pos.min_b as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
             
-            // Also reduce original_deposit_a/b proportionally to maintain correct IL tracking
+            // Reduce original deposits proportionally to maintain correct IL tracking
             let new_original_a = ((pos.original_deposit_a as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
             let new_original_b = ((pos.original_deposit_b as u128) * (pos.liquidity as u128) / (original_liquidity as u128) as u64);
             
-            // FIX [P2-16.5]: Verify no precision loss occurred
-            // The new values should be proportional to the remaining liquidity
-            // This assertion catches any unexpected rounding issues
+            // SECURITY: Verify proportional reduction is accurate
+            // Check that new values maintain the expected ratio within 1 basis point tolerance
             let expected_ratio = (pos.liquidity as u128) * 10000 / (original_liquidity as u128);
             let actual_ratio_a = if (pos.min_a > 0) {
                 (new_min_a as u128) * 10000 / (pos.min_a as u128)
@@ -616,7 +602,6 @@ module sui_amm::position {
                 expected_ratio
             };
             
-            // Allow 1 basis point tolerance for rounding
             assert!(actual_ratio_a >= expected_ratio - 1 && actual_ratio_a <= expected_ratio + 1, EPrecisionLoss);
             assert!(actual_ratio_b >= expected_ratio - 1 && actual_ratio_b <= expected_ratio + 1, EPrecisionLoss);
             
@@ -647,7 +632,8 @@ module sui_amm::position {
         pos.cached_fee_b = fee_b;
         pos.cached_il_bps = il_bps;
         pos.last_metadata_update_ms = sui::clock::timestamp_ms(clock);
-        // Regenerate on-chain SVG with updated values
+        
+        // Regenerate SVG with updated values
         refresh_nft_image(pos);
     }
 
@@ -686,7 +672,6 @@ module sui_amm::position {
         let values = vector[
             string::utf8(b"{name}"),
             string::utf8(b"{description}"),
-            // On-chain SVG stored in cached_image_url field (generated by refresh_nft_image)
             string::utf8(b"{cached_image_url}"),
             string::utf8(b"https://sui-amm.io"),
             string::utf8(b"{liquidity} shares"),
@@ -752,15 +737,26 @@ module sui_amm::position {
     }
 
     /// Get enhanced staleness information
-    /// Returns (is_stale, age_ms) tuple
-    /// 
-    /// This function provides comprehensive staleness detection by:
-    /// - Using is_metadata_stale() internally for consistency
-    /// - Calculating the age of cached data in milliseconds
-    /// - Handling edge case where last_update_ms is 0 (never updated)
-    /// 
-    /// When last_metadata_update_ms is 0, the position has never been updated,
-    /// so we return the maximum possible age (u64::MAX) to indicate extreme staleness.
+    ///
+    /// Provides comprehensive staleness detection including both boolean flag
+    /// and precise age calculation.
+    ///
+    /// # Returns
+    /// - `is_stale`: True if age exceeds threshold
+    /// - `age_ms`: Age of cached data in milliseconds
+    ///
+    /// # Edge Cases
+    /// - If never updated (last_update_ms = 0): returns (true, u64::MAX)
+    /// - If clock went backwards: returns age of 0
+    ///
+    /// # Usage
+    /// ```move
+    /// let (is_stale, age_ms) = position::get_staleness_info(&pos, &clock, 3600000);
+    /// if (is_stale) {
+    ///     // Metadata is older than 1 hour
+    ///     pool::refresh_position_metadata(&pool, &mut pos, &clock);
+    /// };
+    /// ```
     public fun get_staleness_info(
         pos: &LPPosition,
         clock: &sui::clock::Clock,
@@ -770,12 +766,10 @@ module sui_amm::position {
         
         let current_time = sui::clock::timestamp_ms(clock);
         let age_ms = if (pos.last_metadata_update_ms == 0) {
-            // Never updated - return maximum age to indicate extreme staleness
-            18446744073709551615 // u64::MAX
+            18446744073709551615
         } else if (current_time > pos.last_metadata_update_ms) {
             current_time - pos.last_metadata_update_ms
         } else {
-            // Clock went backwards or same time - age is 0
             0
         };
         
@@ -783,22 +777,32 @@ module sui_amm::position {
     }
 
     /// Calculate what the original deposits would be worth if held separately
-    /// Used for impermanent loss calculation
-    /// SECURITY FIX [P1-15.5]: Updated to use 1e12 precision for better accuracy
+    ///
+    /// Used for impermanent loss calculation. Converts all values to token A terms
+    /// for consistent comparison with LP position value.
+    ///
+    /// # Formula
+    /// held_value = original_deposit_a + (original_deposit_b / current_price_ratio)
+    ///
+    /// # Parameters
+    /// - `original_deposit_a`: Initial deposit amount in token A
+    /// - `original_deposit_b`: Initial deposit amount in token B
+    /// - `current_price_ratio_scaled`: Current price ratio (B/A) scaled by 1e12
+    /// - `_entry_price_ratio_scaled`: Entry price ratio (unused, kept for signature compatibility)
+    ///
+    /// # Returns
+    /// Total value in token A terms (u128 for precision)
     fun calculate_held_value(
         original_deposit_a: u64,
         original_deposit_b: u64,
         current_price_ratio_scaled: u64,
         _entry_price_ratio_scaled: u64
     ): u128 {
-        // FIX [IL Calculation]: Removed incorrect optimization that returned sum of raw amounts
-        // We must always calculate value in terms of Token A to be correct
-        
-        // Calculate current value of original token A holdings
+        // Value of original token A holdings
         let value_a = (original_deposit_a as u128);
         
-        // Calculate current value of original token B holdings in terms of token A
-        // value_b_in_a = original_deposit_b * (1e12 / current_price_ratio_scaled)
+        // Value of original token B holdings converted to token A terms
+        // Formula: original_deposit_b * (1e12 / current_price_ratio_scaled)
         let value_b_in_a = if (current_price_ratio_scaled == 0) {
             0
         } else {
@@ -809,14 +813,27 @@ module sui_amm::position {
     }
 
     /// Calculate impermanent loss using original entry price
-    /// Returns IL in basis points (10000 = 100%)
+    ///
+    /// Compares the current LP position value against what the original deposits
+    /// would be worth if held separately (HODL value).
+    ///
+    /// # Formula
+    /// IL = (held_value - lp_value) / held_value * 10000
+    ///
+    /// Where:
+    /// - held_value = value of original deposits if held separately
+    /// - lp_value = current value of LP position
+    /// - Result in basis points (10000 = 100%)
+    ///
+    /// # Returns
+    /// Impermanent loss in basis points (0 if LP value >= held value)
     public fun get_impermanent_loss(
         pos: &LPPosition,
         current_value_a: u64,
         current_value_b: u64,
         current_price_ratio_scaled: u64
     ): u64 {
-        // Calculate what holdings would be worth if held separately
+        // Calculate HODL value (what holdings would be worth if held separately)
         let held_value = calculate_held_value(
             pos.original_deposit_a,
             pos.original_deposit_b,
@@ -824,8 +841,8 @@ module sui_amm::position {
             pos.entry_price_ratio_scaled
         );
         
-        // Calculate current LP position value (in terms of token A)
-        // SECURITY FIX [P1-15.5]: Updated to use 1e12 precision for better accuracy
+        // Calculate current LP position value in token A terms
+        // Using 1e12 precision for accurate conversion
         let lp_value_a = (current_value_a as u128);
         let lp_value_b_in_a = if (current_price_ratio_scaled == 0) {
             0
@@ -834,8 +851,7 @@ module sui_amm::position {
         };
         let lp_value = lp_value_a + lp_value_b_in_a;
         
-        // IL = (held_value - lp_value) / held_value * 10000 (in bps)
-        // If LP value >= held value, there's no impermanent loss
+        // Calculate IL: if LP value >= held value, there's no impermanent loss
         if (lp_value >= held_value || held_value == 0) {
             return 0
         };

@@ -1,3 +1,23 @@
+/// Limit order functionality for the AMM
+///
+/// This module implements limit orders that execute automatically when target prices are reached.
+/// Orders are stored on-chain and can be executed by anyone when conditions are met, creating
+/// a decentralized order matching system.
+///
+/// # Order Types
+/// - A->B orders: Sell token A to buy token B when price is favorable
+/// - B->A orders: Sell token B to buy token A when price is favorable
+///
+/// # Price Semantics
+/// target_price represents the MAXIMUM amount of input token the user is willing to pay per
+/// 1 unit of output token (scaled by 1e9). Orders execute when the current market price is
+/// at or better than this limit.
+///
+/// # Execution Model
+/// - Orders are permissionlessly executable by anyone when conditions are met
+/// - Executors pay gas but receive no direct reward (incentivized by arbitrage opportunities)
+/// - Output tokens are sent directly to the order owner, not the executor
+/// - Orders automatically expire after their deadline to prevent stale orders
 module sui_amm::limit_orders {
     use sui::table;
     use sui::coin;
@@ -7,38 +27,68 @@ module sui_amm::limit_orders {
     
     use sui_amm::pool::{Self, LiquidityPool};
 
-    // Error codes
+    /// Order has expired and can no longer be executed
     const EOrderExpired: u64 = 0;
+    /// Target price is invalid (must be > 0)
     const EInvalidPrice: u64 = 1;
+    /// Caller is not authorized to perform this action
     const EUnauthorized: u64 = 2;
+    /// Current market price does not meet the order's target price
     const EPriceNotMet: u64 = 3;
+    /// Insufficient balance to create order
     const EInsufficientBalance: u64 = 4;
+    /// Expected output is less than minimum required amount
     const EInsufficientOutput: u64 = 5;
 
-    /// A limit order that executes when target price is reached
+    /// A limit order that executes when the target price is reached
+    ///
+    /// Orders hold deposited tokens and execute automatically when market conditions
+    /// meet the specified price target. The order owner receives the output tokens
+    /// upon execution.
+    ///
+    /// # Fields
+    /// - `owner`: Address that created the order and will receive output tokens
+    /// - `pool_id`: The liquidity pool this order targets
+    /// - `pool_type`: Pool variant (0 = constant product, 1 = stable swap)
+    /// - `is_a_to_b`: Swap direction (true = A->B, false = B->A)
+    /// - `deposit`: Input tokens held by the order
+    /// - `target_price`: Maximum price willing to pay (scaled by 1e9, amount_in per 1 amount_out)
+    /// - `min_amount_out`: Minimum output tokens required (slippage protection)
+    /// - `expiry`: Timestamp after which order cannot be executed
+    /// - `created_at`: Order creation timestamp for tracking
     public struct LimitOrder<phantom CoinIn, phantom CoinOut> has key, store {
         id: object::UID,
         owner: address,
         pool_id: object::ID,
-        pool_type: u8, // 0 = regular, 1 = stable
+        pool_type: u8,
         is_a_to_b: bool,
         deposit: balance::Balance<CoinIn>,
-        target_price: u64,  // Scaled by 1e9 (amount_in per 1 amount_out)
+        target_price: u64,
         min_amount_out: u64,
-        expiry: u64, // timestamp_ms
+        expiry: u64,
         created_at: u64,
     }
 
-    /// Registry for all active limit orders
+    /// Global registry tracking all active limit orders
+    ///
+    /// Maintains multiple indexes to enable efficient order lookup by different criteria.
+    /// This allows users to query their orders, pools to find relevant orders, and the
+    /// system to track overall order activity.
+    ///
+    /// # Indexes
+    /// - `active_orders`: Maps order ID to owner for ownership verification
+    /// - `user_orders`: Maps user address to their order IDs for portfolio queries
+    /// - `pool_orders`: Maps pool ID to order IDs for pool-specific order matching
+    /// - `total_orders`: Cumulative count of all orders created (never decrements)
     public struct OrderRegistry has key {
         id: object::UID,
-        active_orders: table::Table<ID, address>, // order_id -> owner
-        user_orders: table::Table<address, vector<ID>>, // owner -> order_ids
-        pool_orders: table::Table<ID, vector<ID>>, // pool_id -> order_ids
+        active_orders: table::Table<ID, address>,
+        user_orders: table::Table<address, vector<ID>>,
+        pool_orders: table::Table<ID, vector<ID>>,
         total_orders: u64,
     }
 
-    // Events
+    /// Emitted when a new limit order is created
     public struct OrderCreated has copy, drop {
         order_id: object::ID,
         owner: address,
@@ -49,6 +99,11 @@ module sui_amm::limit_orders {
         expiry: u64,
     }
 
+    /// Emitted when a limit order is successfully executed
+    ///
+    /// Records both the executor (who paid gas) and owner (who receives output).
+    /// The execution_price shows the actual price achieved, which may be better
+    /// than the target_price.
     public struct OrderExecuted has copy, drop {
         order_id: object::ID,
         owner: address,
@@ -58,6 +113,7 @@ module sui_amm::limit_orders {
         execution_price: u64,
     }
 
+    /// Emitted when an order is cancelled by its owner
     public struct OrderCancelled has copy, drop {
         order_id: object::ID,
         owner: address,
@@ -78,7 +134,29 @@ module sui_amm::limit_orders {
         init(ctx);
     }
 
-    /// Create a limit order for regular pool
+    /// Create a limit order for a constant product pool
+    ///
+    /// Deposits input tokens and creates an order that will execute when the market
+    /// price reaches the target price. The order can be executed by anyone once
+    /// conditions are met.
+    ///
+    /// # Parameters
+    /// - `registry`: Global order registry for tracking
+    /// - `pool_id`: Target pool for this order
+    /// - `is_a_to_b`: Swap direction (true = sell A for B, false = sell B for A)
+    /// - `coin_in`: Input tokens to deposit
+    /// - `target_price`: Maximum price willing to pay (scaled by 1e9)
+    /// - `min_amount_out`: Minimum output required for slippage protection
+    /// - `clock`: For timestamp validation
+    /// - `expiry`: Deadline timestamp after which order cannot execute
+    ///
+    /// # Returns
+    /// The ID of the created order
+    ///
+    /// # Aborts
+    /// - `EInsufficientBalance`: If coin_in amount is 0
+    /// - `EInvalidPrice`: If target_price is 0
+    /// - `EOrderExpired`: If expiry is not in the future
     public fun create_limit_order<CoinIn, CoinOut>(
         registry: &mut OrderRegistry,
         pool_id: object::ID,
@@ -99,7 +177,7 @@ module sui_amm::limit_orders {
             id: object::new(ctx),
             owner: tx_context::sender(ctx),
             pool_id,
-            pool_type: 0, // regular
+            pool_type: 0,
             is_a_to_b,
             deposit: coin::into_balance(coin_in),
             target_price,
@@ -111,15 +189,17 @@ module sui_amm::limit_orders {
         let order_id = object::id(&order);
         let owner = tx_context::sender(ctx);
 
-        // Register order
+        // Register order in all indexes for efficient lookup
         table::add(&mut registry.active_orders, order_id, owner);
         
+        // Add to user's order list (create list if first order)
         if (!table::contains(&registry.user_orders, owner)) {
             table::add(&mut registry.user_orders, owner, vector::empty());
         };
         let user_list = table::borrow_mut(&mut registry.user_orders, owner);
         vector::push_back(user_list, order_id);
 
+        // Add to pool's order list (create list if first order for this pool)
         if (!table::contains(&registry.pool_orders, pool_id)) {
             table::add(&mut registry.pool_orders, pool_id, vector::empty());
         };
@@ -142,7 +222,34 @@ module sui_amm::limit_orders {
         order_id
     }
 
-    /// Execute a limit order A to B (anyone can call if conditions met)
+    /// Execute a limit order that swaps A to B
+    ///
+    /// This function can be called by anyone when the order's price conditions are met.
+    /// The executor pays gas but the output tokens go to the order owner. This creates
+    /// a permissionless order matching system.
+    ///
+    /// # Price Matching Logic
+    /// For A->B swaps (selling A to buy B):
+    /// - target_price = MAXIMUM amount of A user is willing to pay per 1 B (scaled by 1e9)
+    /// - current_price = reserve_a / reserve_b = how much A needed for 1 B at current spot rate
+    /// - Execution condition: current_price <= target_price (user gets favorable or equal rate)
+    ///
+    /// Example: User sets target_price = 1.05e9 (willing to pay up to 1.05 A per B)
+    ///          Current price = 1.0e9 (1 A per B at spot)
+    ///          Since 1.0 <= 1.05, order executes (user pays less than maximum)
+    ///
+    /// This implements a "sell limit order" - sell A when the price of B is favorable.
+    ///
+    /// # Parameters
+    /// - `registry`: Order registry to update
+    /// - `pool`: Target liquidity pool
+    /// - `order`: The order to execute (consumed)
+    /// - `clock`: For deadline validation
+    ///
+    /// # Aborts
+    /// - `EPriceNotMet`: If order doesn't match pool or price conditions not met
+    /// - `EOrderExpired`: If current time exceeds order expiry
+    /// - `EInsufficientOutput`: If expected output is below minimum
     public fun execute_limit_order_a_to_b<CoinA, CoinB>(
         registry: &mut OrderRegistry,
         pool: &mut LiquidityPool<CoinA, CoinB>,
@@ -150,32 +257,23 @@ module sui_amm::limit_orders {
         clock: &clock::Clock,
         ctx: &mut tx_context::TxContext
     ) {
-        // Validate order is for this pool
+        // Validate order matches this pool and direction
         assert!(order.pool_id == object::id(pool), EPriceNotMet);
         assert!(order.pool_type == 0, EPriceNotMet);
         assert!(order.is_a_to_b == true, EPriceNotMet);
         
-        // Check expiry
+        // Verify order has not expired
         let current_time = clock::timestamp_ms(clock);
         assert!(current_time <= order.expiry, EOrderExpired);
 
-        // Check if target price is met
+        // Check if current market price meets the order's target price
         let (reserve_a, reserve_b) = (pool::get_reserves(pool));
-        // FIX [V1]: Clarified price semantics for limit orders
-        // 
-        // For A->B swap (selling A to buy B):
-        // - target_price = MAXIMUM amount of A user is willing to pay per 1 B (scaled by 1e9)
-        // - current_price = reserve_a / reserve_b = how much A needed for 1 B at spot
-        // - Execute when: current_price <= target_price (user gets favorable or equal rate)
-        //
-        // Example: User sets target_price = 1.05e9 (willing to pay up to 1.05 A per B)
-        //          Current price = 1.0e9 (1 A per B)
-        //          1.0 <= 1.05 → Execute (user pays less than max)
-        //
-        // This is a "sell limit order" - sell A when price of B is low enough
+        
+        // Calculate current spot price: how much A is needed per 1 B
         let current_price = ((reserve_a as u128) * 1_000_000_000 / (reserve_b as u128) as u64);
         
-        // Execute when current rate is at or better than user's limit
+        // Execute only when current price is at or better than user's limit
+        // (user pays less than or equal to their maximum acceptable price)
         assert!(current_price <= order.target_price, EPriceNotMet);
 
         let order_id = object::id(&order);
@@ -199,17 +297,19 @@ module sui_amm::limit_orders {
         let amount_in = balance::value(&deposit);
         let coin_in = coin::from_balance(deposit, ctx);
 
-        // Slippage revalidation: Calculate expected output at execution time
+        // Revalidate slippage protection at execution time
+        // Pool state may have changed since order creation, so we recalculate
+        // the expected output and verify it still meets the minimum requirement
         let fee_percent = pool::get_fee_percent(pool);
         let fee_amount = (amount_in * fee_percent) / 10000;
         let amount_in_after_fee = amount_in - fee_amount;
         let expected_output = ((amount_in_after_fee as u128) * (reserve_b as u128) / ((reserve_a as u128) + (amount_in_after_fee as u128)) as u64);
         
-        // Validate that expected output meets minimum requirement
+        // Abort if expected output no longer meets minimum (protects against sandwich attacks)
         assert!(expected_output >= min_amount_out, EInsufficientOutput);
 
-        // Execute swap
-        let deadline = current_time + 60000; // 60 second deadline
+        // Execute the swap with a short deadline to prevent execution delays
+        let deadline = current_time + 60000;
         let coin_out = pool::swap_a_to_b(
             pool, 
             coin_in, 
@@ -223,20 +323,21 @@ module sui_amm::limit_orders {
         let amount_out = coin::value(&coin_out);
         let execution_price = ((amount_in as u128) * 1_000_000_000 / (amount_out as u128) as u64);
 
-        // Transfer output to order owner (not executor)
+        // Send output tokens to order owner, not the executor
+        // This ensures the order creator receives their tokens regardless of who executes
         transfer::public_transfer(coin_out, owner);
 
-        // Unregister order
+        // Remove order from all registry indexes
         table::remove(&mut registry.active_orders, order_id);
         
-        // Remove from user orders
+        // Remove from user's order list
         let user_list = table::borrow_mut(&mut registry.user_orders, owner);
         let (found, idx) = vector::index_of(user_list, &order_id);
         if (found) {
             vector::remove(user_list, idx);
         };
 
-        // Remove from pool orders
+        // Remove from pool's order list
         let pool_list = table::borrow_mut(&mut registry.pool_orders, pool_id);
         let (found2, idx2) = vector::index_of(pool_list, &order_id);
         if (found2) {
@@ -252,11 +353,36 @@ module sui_amm::limit_orders {
             execution_price,
         });
 
-        // Delete the order's UID
         object::delete(id);
     }
 
-    /// Execute a limit order B to A (anyone can call if conditions met)
+    /// Execute a limit order that swaps B to A
+    ///
+    /// This function can be called by anyone when the order's price conditions are met.
+    /// The executor pays gas but the output tokens go to the order owner.
+    ///
+    /// # Price Matching Logic
+    /// For B->A swaps (selling B to buy A):
+    /// - target_price = MAXIMUM amount of B user is willing to pay per 1 A (scaled by 1e9)
+    /// - current_price = reserve_b / reserve_a = how much B needed for 1 A at current spot rate
+    /// - Execution condition: current_price <= target_price (user gets favorable or equal rate)
+    ///
+    /// Example: User sets target_price = 0.95e9 (willing to pay up to 0.95 B per A)
+    ///          Current price = 0.9e9 (0.9 B per A at spot)
+    ///          Since 0.9 <= 0.95, order executes (user pays less than maximum)
+    ///
+    /// This implements a "sell limit order" - sell B when the price of A is favorable.
+    ///
+    /// # Parameters
+    /// - `registry`: Order registry to update
+    /// - `pool`: Target liquidity pool
+    /// - `order`: The order to execute (consumed)
+    /// - `clock`: For deadline validation
+    ///
+    /// # Aborts
+    /// - `EPriceNotMet`: If order doesn't match pool or price conditions not met
+    /// - `EOrderExpired`: If current time exceeds order expiry
+    /// - `EInsufficientOutput`: If expected output is below minimum
     public fun execute_limit_order_b_to_a<CoinA, CoinB>(
         registry: &mut OrderRegistry,
         pool: &mut LiquidityPool<CoinA, CoinB>,
@@ -264,33 +390,23 @@ module sui_amm::limit_orders {
         clock: &clock::Clock,
         ctx: &mut tx_context::TxContext
     ) {
-        // Validate order is for this pool
+        // Validate order matches this pool and direction
         assert!(order.pool_id == object::id(pool), EPriceNotMet);
         assert!(order.pool_type == 0, EPriceNotMet);
         assert!(order.is_a_to_b == false, EPriceNotMet);
         
-        // Check expiry
+        // Verify order has not expired
         let current_time = clock::timestamp_ms(clock);
         assert!(current_time <= order.expiry, EOrderExpired);
 
-        // Check if target price is met
+        // Check if current market price meets the order's target price
         let (reserve_a, reserve_b) = (pool::get_reserves(pool));
         
-        // FIX [V1]: Clarified price semantics for limit orders
-        //
-        // For B->A swap (selling B to buy A):
-        // - target_price = MAXIMUM amount of B user is willing to pay per 1 A (scaled by 1e9)
-        // - current_price = reserve_b / reserve_a = how much B needed for 1 A at spot
-        // - Execute when: current_price <= target_price (user gets favorable or equal rate)
-        //
-        // Example: User sets target_price = 0.95e9 (willing to pay up to 0.95 B per A)
-        //          Current price = 0.9e9 (0.9 B per A)
-        //          0.9 <= 0.95 → Execute (user pays less than max)
-        //
-        // This is a "sell limit order" - sell B when price of A is low enough
+        // Calculate current spot price: how much B is needed per 1 A
         let current_price = ((reserve_b as u128) * 1_000_000_000 / (reserve_a as u128) as u64);
         
-        // Execute when current rate is at or better than user's limit
+        // Execute only when current price is at or better than user's limit
+        // (user pays less than or equal to their maximum acceptable price)
         assert!(current_price <= order.target_price, EPriceNotMet);
 
         let order_id = object::id(&order);
@@ -314,17 +430,19 @@ module sui_amm::limit_orders {
         let amount_in = balance::value(&deposit);
         let coin_in = coin::from_balance(deposit, ctx);
 
-        // Slippage revalidation: Calculate expected output at execution time
+        // Revalidate slippage protection at execution time
+        // Pool state may have changed since order creation, so we recalculate
+        // the expected output and verify it still meets the minimum requirement
         let fee_percent = pool::get_fee_percent(pool);
         let fee_amount = (amount_in * fee_percent) / 10000;
         let amount_in_after_fee = amount_in - fee_amount;
         let expected_output = ((amount_in_after_fee as u128) * (reserve_a as u128) / ((reserve_b as u128) + (amount_in_after_fee as u128)) as u64);
         
-        // Validate that expected output meets minimum requirement
+        // Abort if expected output no longer meets minimum (protects against sandwich attacks)
         assert!(expected_output >= min_amount_out, EInsufficientOutput);
 
-        // Execute swap
-        let deadline = current_time + 60000; // 60 second deadline
+        // Execute the swap with a short deadline to prevent execution delays
+        let deadline = current_time + 60000;
         let coin_out = pool::swap_b_to_a(
             pool, 
             coin_in, 
@@ -338,20 +456,21 @@ module sui_amm::limit_orders {
         let amount_out = coin::value(&coin_out);
         let execution_price = ((amount_in as u128) * 1_000_000_000 / (amount_out as u128) as u64);
 
-        // Transfer output to order owner (not executor)
+        // Send output tokens to order owner, not the executor
+        // This ensures the order creator receives their tokens regardless of who executes
         transfer::public_transfer(coin_out, owner);
 
-        // Unregister order
+        // Remove order from all registry indexes
         table::remove(&mut registry.active_orders, order_id);
         
-        // Remove from user orders
+        // Remove from user's order list
         let user_list = table::borrow_mut(&mut registry.user_orders, owner);
         let (found, idx) = vector::index_of(user_list, &order_id);
         if (found) {
             vector::remove(user_list, idx);
         };
 
-        // Remove from pool orders
+        // Remove from pool's order list
         let pool_list = table::borrow_mut(&mut registry.pool_orders, pool_id);
         let (found2, idx2) = vector::index_of(pool_list, &order_id);
         if (found2) {
@@ -367,11 +486,24 @@ module sui_amm::limit_orders {
             execution_price,
         });
 
-        // Delete the order's UID
         object::delete(id);
     }
 
-    /// Cancel limit order (owner only)
+    /// Cancel a limit order and return deposited tokens
+    ///
+    /// Only the order owner can cancel their order. This allows users to retrieve
+    /// their deposited tokens if market conditions change or they no longer want
+    /// the order to execute.
+    ///
+    /// # Parameters
+    /// - `registry`: Order registry to update
+    /// - `order`: The order to cancel (consumed)
+    ///
+    /// # Returns
+    /// The deposited input tokens
+    ///
+    /// # Aborts
+    /// - `EUnauthorized`: If caller is not the order owner
     public fun cancel_limit_order<CoinIn, CoinOut>(
         registry: &mut OrderRegistry,
         order: LimitOrder<CoinIn, CoinOut>,
@@ -381,7 +513,7 @@ module sui_amm::limit_orders {
 
         let order_id = object::id(&order);
         
-        // Unregister order
+        // Remove order from all registry indexes
         table::remove(&mut registry.active_orders, order_id);
         
         let user_list = table::borrow_mut(&mut registry.user_orders, order.owner);
@@ -401,7 +533,7 @@ module sui_amm::limit_orders {
             owner: order.owner,
         });
 
-        // Return deposited coins
+        // Unpack order and return deposited tokens to owner
         let LimitOrder { 
             id, 
             owner: _,
@@ -419,7 +551,9 @@ module sui_amm::limit_orders {
         coin::from_balance(deposit, ctx)
     }
 
-    // View functions
+    /// Get all order IDs for a specific user
+    ///
+    /// Returns an empty vector if the user has no orders.
     public fun get_user_orders(registry: &OrderRegistry, user: address): vector<ID> {
         if (table::contains(&registry.user_orders, user)) {
             *table::borrow(&registry.user_orders, user)
@@ -428,6 +562,9 @@ module sui_amm::limit_orders {
         }
     }
 
+    /// Get all order IDs for a specific pool
+    ///
+    /// Returns an empty vector if the pool has no orders.
     public fun get_pool_orders(registry: &OrderRegistry, pool_id: object::ID): vector<ID> {
         if (table::contains(&registry.pool_orders, pool_id)) {
             *table::borrow(&registry.pool_orders, pool_id)
@@ -436,6 +573,10 @@ module sui_amm::limit_orders {
         }
     }
 
+    /// Get the total number of orders ever created
+    ///
+    /// This is a cumulative count that never decreases, even when orders are
+    /// executed or cancelled. Useful for tracking overall system activity.
     public fun total_orders(registry: &OrderRegistry): u64 {
         registry.total_orders
     }

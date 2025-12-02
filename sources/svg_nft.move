@@ -1,13 +1,35 @@
-/// Module: svg_nft
-/// Description: On-chain SVG generation for LP Position NFTs.
-/// This satisfies PRD requirement: "Display my LP NFT in wallets and marketplaces"
+/// On-chain SVG generation for LP Position NFTs
+///
+/// This module generates dynamic SVG images for liquidity position NFTs that display
+/// real-time position data including liquidity shares, token values, accumulated fees,
+/// and impermanent loss. The SVGs are encoded as base64 data URIs and can be displayed
+/// directly in wallets and marketplaces without external hosting.
+///
+/// The visual design adapts based on pool type (Standard vs Stable) with different
+/// color schemes and displays key metrics in a card-like format.
 module sui_amm::svg_nft {
     use std::string::{Self, String};
     use sui_amm::string_utils;
     use sui_amm::base64;
 
-    /// Generate SVG for an LP position NFT
-    /// Returns a base64-encoded data URI that can be used as image_url
+    /// Generate a complete SVG image for an LP position NFT
+    ///
+    /// Creates a visually rich SVG displaying all key position metrics in a card format.
+    /// The SVG includes gradient backgrounds, color-coded sections, and formatted numbers
+    /// for easy readability.
+    ///
+    /// # Parameters
+    /// - `pool_type`: Pool type string (e.g., "Standard", "Stable")
+    /// - `liquidity`: Total liquidity shares owned
+    /// - `value_a`: Current value in token A
+    /// - `value_b`: Current value in token B
+    /// - `fee_a`: Accumulated fees in token A
+    /// - `fee_b`: Accumulated fees in token B
+    /// - `il_bps`: Impermanent loss in basis points (e.g., 50 = 0.5%)
+    /// - `fee_tier_bps`: Pool fee tier in basis points (e.g., 30 = 0.3%)
+    ///
+    /// # Returns
+    /// Base64-encoded data URI suitable for NFT image_url field
     public fun generate_lp_position_svg(
         pool_type: string::String,
         liquidity: u64,
@@ -31,7 +53,18 @@ module sui_amm::svg_nft {
         base64::create_svg_data_uri(svg)
     }
 
-    /// Build the SVG string
+    /// Build the SVG XML string with all visual elements
+    ///
+    /// Constructs a 400x500px SVG with multiple sections:
+    /// - Gradient background (color varies by pool type)
+    /// - Title and pool type badge
+    /// - Liquidity shares display
+    /// - Position value breakdown (Token A and B)
+    /// - Accumulated fees display
+    /// - Impermanent loss indicator (color-coded by severity)
+    /// - Fee tier information
+    ///
+    /// The function builds the SVG by concatenating string fragments for each element.
     fun build_svg(
         pool_type: string::String,
         liquidity: u64,
@@ -44,10 +77,10 @@ module sui_amm::svg_nft {
     ): String {
         let mut svg = string::utf8(b"<svg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'>");
         
-        // Background gradient
+        // Define gradient background that varies by pool type
         string::append(&mut svg, string::utf8(b"<defs><linearGradient id='bg' x1='0%' y1='0%' x2='100%' y2='100%'>"));
         
-        // Color based on pool type
+        // Use blue gradient for stable pools, gray for standard pools
         let is_stable = string_contains(&pool_type, b"Stable");
         if (is_stable) {
             string::append(&mut svg, string::utf8(b"<stop offset='0%' style='stop-color:#1a365d'/><stop offset='100%' style='stop-color:#2c5282'/>"));
@@ -56,10 +89,10 @@ module sui_amm::svg_nft {
         };
         string::append(&mut svg, string::utf8(b"</linearGradient></defs>"));
         
-        // Background rect
+        // Apply gradient background with rounded corners
         string::append(&mut svg, string::utf8(b"<rect width='400' height='500' fill='url(#bg)' rx='20'/>"));
         
-        // Border
+        // Add subtle border for depth
         string::append(&mut svg, string::utf8(b"<rect x='10' y='10' width='380' height='480' fill='none' stroke='#4a5568' stroke-width='2' rx='15'/>"));
         
         // Title
@@ -95,8 +128,9 @@ module sui_amm::svg_nft {
         string::append(&mut svg, string_utils::format_with_commas(fee_b));
         string::append(&mut svg, string::utf8(b"</text>"));
         
-        // IL section
+        // Impermanent loss section with color-coded severity
         string::append(&mut svg, string::utf8(b"<text x='30' y='400' fill='#a0aec0' font-family='Arial' font-size='12'>IMPERMANENT LOSS</text>"));
+        // Color coding: red (>5%), yellow (1-5%), green (<1%)
         let il_color = if (il_bps > 500) { b"#fc8181" } else if (il_bps > 100) { b"#f6e05e" } else { b"#48bb78" };
         string::append(&mut svg, string::utf8(b"<text x='30' y='425' fill='"));
         string::append(&mut svg, string::utf8(il_color));
@@ -115,7 +149,17 @@ module sui_amm::svg_nft {
         svg
     }
 
-    /// Helper to check if string contains substring
+    /// Check if a string contains a substring
+    ///
+    /// Performs a sliding window search to find if substr appears anywhere in s.
+    /// Used to detect pool type keywords like "Stable" in pool type strings.
+    ///
+    /// # Parameters
+    /// - `s`: The string to search in
+    /// - `substr`: The substring to search for (as bytes)
+    ///
+    /// # Returns
+    /// true if substr is found anywhere in s, false otherwise
     fun string_contains(s: &String, substr: vector<u8>): bool {
         let s_bytes = string::as_bytes(s);
         let s_len = vector::length(s_bytes);
@@ -125,10 +169,12 @@ module sui_amm::svg_nft {
             return false
         };
         
+        // Sliding window search: try each position in the string
         let mut i = 0;
         while (i <= s_len - sub_len) {
             let mut is_match = true;
             let mut j = 0;
+            // Check if substring matches at current position
             while (j < sub_len) {
                 if (*vector::borrow(s_bytes, i + j) != *vector::borrow(&substr, j)) {
                     is_match = false;
@@ -144,7 +190,18 @@ module sui_amm::svg_nft {
         false
     }
 
-    /// Generate a simple badge SVG for compact display
+    /// Generate a compact badge SVG for simplified display
+    ///
+    /// Creates a smaller 200x100px SVG with minimal information (pool type and
+    /// liquidity shares). Useful for list views or compact displays where the
+    /// full position card would be too large.
+    ///
+    /// # Parameters
+    /// - `pool_type`: Pool type string (e.g., "Standard", "Stable")
+    /// - `liquidity`: Total liquidity shares owned
+    ///
+    /// # Returns
+    /// Base64-encoded data URI suitable for compact NFT display
     public fun generate_badge_svg(
         pool_type: string::String,
         liquidity: u64,

@@ -1,8 +1,11 @@
+/// Assertion helpers module providing specialized assertion functions for AMM testing
+/// Includes invariant checks, fee calculations, LP share verification, and value conservation
+/// All assertions use configurable tolerances to account for rounding in integer arithmetic
 #[test_only]
 module sui_amm::assertions {
     use sui_amm::test_utils::{Self, PoolSnapshot, StablePoolSnapshot, PositionSnapshot};
 
-    // Error codes for assertions
+    // Error codes for assertion failures
     const EKInvariantViolation: u64 = 0;
     const EKNotIncreased: u64 = 1;
     const EDInvariantViolation: u64 = 2;
@@ -27,8 +30,10 @@ module sui_amm::assertions {
     // INVARIANT ASSERTIONS - Core mathematical guarantees
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// K-invariant: K_after >= K_before (must never decrease from swaps)
-    /// Tolerance in absolute units (typically 1-10 for rounding)
+    /// Verify K-invariant (reserve_a * reserve_b) is maintained or increased after operation
+    /// K must never decrease from swaps due to fees being collected
+    /// Tolerance accounts for rounding in integer division (typically 1-10 units)
+    /// Used to verify constant product formula correctness
     public fun assert_k_invariant_maintained(
         before: &PoolSnapshot,
         after: &PoolSnapshot,
@@ -41,7 +46,9 @@ module sui_amm::assertions {
         assert!(k_after + tolerance >= k_before, EKInvariantViolation);
     }
     
-    /// K-invariant strict: K must increase (for liquidity additions)
+    /// Verify K-invariant strictly increases after liquidity addition
+    /// Adding liquidity must always increase the product of reserves
+    /// No tolerance needed as this should be a strict increase
     public fun assert_k_increased(
         before: &PoolSnapshot,
         after: &PoolSnapshot
@@ -53,7 +60,9 @@ module sui_amm::assertions {
         assert!(k_after > k_before, EKNotIncreased);
     }
     
-    /// K-invariant strict: K must decrease (for liquidity removals)
+    /// Verify K-invariant strictly decreases after liquidity removal
+    /// Removing liquidity must always decrease the product of reserves
+    /// No tolerance needed as this should be a strict decrease
     public fun assert_k_decreased(
         before: &PoolSnapshot,
         after: &PoolSnapshot
@@ -65,7 +74,10 @@ module sui_amm::assertions {
         assert!(k_after < k_before, EKInvariantViolation);
     }
     
-    /// D-invariant for StableSwap: D_after >= D_before
+    /// Verify D-invariant for StableSwap is maintained or increased after operation
+    /// D represents the total value in the pool and must not decrease from swaps
+    /// Allows 1 unit rounding error due to Newton's method approximation
+    /// Used to verify StableSwap formula correctness
     public fun assert_d_invariant_maintained(
         before: &StablePoolSnapshot,
         after: &StablePoolSnapshot
@@ -80,7 +92,8 @@ module sui_amm::assertions {
         };
     }
     
-    /// D-invariant strict: D must increase (for liquidity additions)
+    /// Verify D-invariant strictly increases after liquidity addition to stable pool
+    /// Adding liquidity must always increase total pool value
     public fun assert_d_increased(
         before: &StablePoolSnapshot,
         after: &StablePoolSnapshot
@@ -90,7 +103,8 @@ module sui_amm::assertions {
         assert!(d_after > d_before, EDInvariantViolation);
     }
     
-    /// D-invariant strict: D must decrease (for liquidity removals)
+    /// Verify D-invariant strictly decreases after liquidity removal from stable pool
+    /// Removing liquidity must always decrease total pool value
     public fun assert_d_decreased(
         before: &StablePoolSnapshot,
         after: &StablePoolSnapshot
@@ -104,7 +118,9 @@ module sui_amm::assertions {
     // FEE ASSERTIONS - Fee calculation correctness
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify fee calculation: fee = amount * fee_bps / 10000
+    /// Verify fee calculation matches expected formula: fee = amount * fee_bps / 10000
+    /// Tolerance accounts for rounding in integer division
+    /// Used to verify swap fees are calculated correctly
     public fun assert_fee_calculation(
         amount_in: u64,
         fee_bps: u64,
@@ -120,7 +136,9 @@ module sui_amm::assertions {
         assert!(diff <= tolerance, EFeeCalculationMismatch);
     }
     
-    /// Verify fee distribution: protocol + creator + lp = total
+    /// Verify fee distribution is complete with no loss or creation of value
+    /// Total fee must equal sum of protocol fee, creator fee, and LP fee
+    /// Ensures all collected fees are properly accounted for
     public fun assert_fee_distribution_complete(
         total_fee: u64,
         protocol_fee: u64,
@@ -130,7 +148,11 @@ module sui_amm::assertions {
         assert!(protocol_fee + creator_fee + lp_fee == total_fee, EFeeDistributionMismatch);
     }
     
-    /// Verify fee accumulation increased correctly
+    /// Verify accumulated fees per share increased by expected amount
+    /// Accumulated fees track total fees earned per unit of liquidity
+    /// Formula: increase = (lp_fee * ACC_PRECISION) / total_liquidity
+    /// Tolerance accounts for rounding in per-share calculations
+    /// Skips check if no liquidity exists to avoid division by zero
     public fun assert_fee_accumulation(
         before: &PoolSnapshot,
         after: &PoolSnapshot,
@@ -191,7 +213,9 @@ module sui_amm::assertions {
         assert!(diff_b <= tolerance, EFeeAccumulationMismatch);
     }
     
-    /// Verify no fee double-claiming possible
+    /// Verify position has no pending fees after claiming
+    /// Used to ensure fees cannot be double-claimed
+    /// Both token A and token B pending fees must be zero
     public fun assert_no_pending_fees(
         position: &PositionSnapshot
     ) {
@@ -200,7 +224,10 @@ module sui_amm::assertions {
         assert!(pending_b == 0, EPendingFeesNotZero);
     }
     
-    /// Verify pending fees match expected
+    /// Verify pending fees match expected amounts within tolerance
+    /// Pending fees = (liquidity * acc_fee_per_share) - fee_debt
+    /// Tolerance accounts for rounding in per-share calculations
+    /// Used to verify fee debt tracking is correct
     public fun assert_pending_fees(
         position: &PositionSnapshot,
         expected_fee_a: u64,
@@ -227,7 +254,11 @@ module sui_amm::assertions {
     // LP SHARE ASSERTIONS - Liquidity distribution fairness
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify LP share is proportional to contribution
+    /// Verify LP's share of total liquidity matches expected percentage
+    /// Share calculated in basis points (1 bps = 0.01%)
+    /// Tolerance accounts for rounding in share calculations
+    /// Used to verify fair liquidity distribution among LPs
+    /// Skips check if no liquidity exists to avoid division by zero
     public fun assert_lp_share_proportional(
         lp_liquidity: u64,
         total_liquidity: u64,
@@ -247,7 +278,10 @@ module sui_amm::assertions {
         assert!(diff <= tolerance_bps, ELPShareMismatch);
     }
     
-    /// Verify initial liquidity calculation: sqrt(a * b) - MINIMUM_LIQUIDITY
+    /// Verify initial liquidity minting uses formula: sqrt(a * b) - MINIMUM_LIQUIDITY
+    /// MINIMUM_LIQUIDITY is permanently locked to prevent division by zero attacks
+    /// Formula ensures geometric mean of deposits determines initial LP shares
+    /// Used to verify first liquidity addition is calculated correctly
     public fun assert_initial_liquidity_correct(
         amount_a: u64,
         amount_b: u64,
@@ -265,7 +299,11 @@ module sui_amm::assertions {
         assert!(minted_liquidity == expected, EInitialLiquidityMismatch);
     }
     
-    /// Verify subsequent liquidity minting is proportional
+    /// Verify subsequent liquidity minting is proportional to existing reserves
+    /// Formula: min(amount_a * total_supply / reserve_a, amount_b * total_supply / reserve_b)
+    /// Takes minimum to prevent manipulation through imbalanced deposits
+    /// Tolerance accounts for rounding in proportional calculations
+    /// Skips check if reserves or supply are zero (invalid state)
     public fun assert_subsequent_liquidity_correct(
         amount_a: u64,
         amount_b: u64,
@@ -295,7 +333,11 @@ module sui_amm::assertions {
     // SWAP OUTPUT ASSERTIONS - AMM formula correctness
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify constant product swap output formula
+    /// Verify constant product swap output matches expected formula
+    /// Formula: output = (amount_in_after_fee * reserve_out) / (reserve_in + amount_in_after_fee)
+    /// Fees are deducted from input before calculating output
+    /// Tolerance accounts for rounding in division operations
+    /// Skips check if reserves are zero (invalid state)
     public fun assert_swap_output_correct(
         amount_in: u64,
         reserve_in: u64,
@@ -323,7 +365,10 @@ module sui_amm::assertions {
     // SLIPPAGE & PRICE IMPACT ASSERTIONS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify slippage within tolerance
+    /// Verify slippage (difference between expected and actual output) is within tolerance
+    /// Slippage = (expected - actual) / expected * 10000 (in basis points)
+    /// Used to verify slippage protection mechanisms work correctly
+    /// Skips check if expected output is zero to avoid division by zero
     public fun assert_slippage_within(
         expected_out: u64,
         actual_out: u64,
@@ -339,7 +384,9 @@ module sui_amm::assertions {
         assert!(slippage_bps <= max_slippage_bps, ESlippageExceeded);
     }
     
-    /// Verify price impact within pool limits
+    /// Verify price impact is within acceptable limits
+    /// Price impact measures how much a swap moves the pool price
+    /// Used to verify large swaps are rejected or properly limited
     public fun assert_price_impact_within(
         impact_bps: u64,
         max_impact_bps: u64
@@ -347,7 +394,12 @@ module sui_amm::assertions {
         assert!(impact_bps <= max_impact_bps, EPriceImpactExceeded);
     }
     
-    /// Calculate and verify price impact
+    /// Calculate price impact from swap and verify it's within limits
+    /// Price impact = (ideal_output - actual_output) / ideal_output * 10000
+    /// Ideal output assumes no price movement (linear exchange rate)
+    /// Actual output accounts for price movement due to constant product formula
+    /// Used to verify swaps don't cause excessive price movement
+    /// Skips check if reserves or ideal output are zero (invalid state)
     public fun assert_price_impact_calculated(
         amount_in: u64,
         reserve_in: u64,
@@ -378,7 +430,11 @@ module sui_amm::assertions {
     // VALUE CONSERVATION ASSERTIONS - No value creation/destruction
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify total value in system is conserved (reserves + fees)
+    /// Verify total value in system is conserved across operations
+    /// Total value = reserves + LP fees + protocol fees
+    /// Conservation: total_before + external_in = total_after + external_out
+    /// Ensures no tokens are created or destroyed during operations
+    /// Used to verify accounting correctness for swaps and liquidity operations
     public fun assert_value_conserved(
         before: &PoolSnapshot,
         after: &PoolSnapshot,
@@ -407,14 +463,18 @@ module sui_amm::assertions {
     // OVERFLOW/UNDERFLOW ASSERTIONS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify no overflow in K calculation
+    /// Verify K-invariant calculation won't overflow u128
+    /// Max safe value is u128::MAX / 10000 to allow for fee calculations
+    /// Used to verify pool reserves are within safe bounds
     public fun assert_k_no_overflow(reserve_a: u64, reserve_b: u64) {
         let max_safe = 340282366920938463463374607431768211455u128 / 10000;
         let k = (reserve_a as u128) * (reserve_b as u128);
         assert!(k <= max_safe, EKOverflow);
     }
     
-    /// Verify reserves never reach zero
+    /// Verify both reserves remain positive after operation
+    /// Zero reserves would break the constant product formula
+    /// Used to verify pool never becomes empty
     public fun assert_reserves_positive(
         after: &PoolSnapshot
     ) {
@@ -427,7 +487,9 @@ module sui_amm::assertions {
     // GAS CONSUMPTION ASSERTIONS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Verify gas consumption is within target
+    /// Verify gas consumption is within target budget
+    /// Used to ensure operations remain cost-effective for users
+    /// Helps identify performance regressions
     public fun assert_gas_within_target(
         actual_gas: u64,
         target_gas: u64
@@ -439,7 +501,9 @@ module sui_amm::assertions {
     // HELPER FUNCTIONS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Calculate square root of u128 (for liquidity calculations)
+    /// Calculate integer square root using Newton's method
+    /// Used for initial liquidity calculations: sqrt(amount_a * amount_b)
+    /// Returns floor of square root for values >= 4, special cases for 0-3
     fun sqrt_u128(y: u128): u128 {
         if (y < 4) {
             if (y == 0) {

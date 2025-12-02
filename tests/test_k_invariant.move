@@ -9,15 +9,19 @@ module sui_amm::test_k_invariant {
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: K-INVARIANT NEVER DECREASES ACROSS RANDOM SWAP SEQUENCES
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that the K-invariant (constant product formula: x * y = k) is maintained
+    /// across a sequence of 1000 random swaps in both directions.
+    ///
+    /// The K-invariant is the core correctness property of constant product AMMs. After each
+    /// swap, K should either increase (due to fees) or remain constant (within rounding tolerance).
+    /// It should never decrease, as that would indicate value extraction from the pool.
+    ///
+    /// This test generates random swap amounts and directions, executing them sequentially
+    /// and verifying K is maintained after each operation.
     #[test]
     fun test_k_invariant_1000_random_swaps() {
         let mut scenario = test_scenario::begin(fixtures::admin());
         
-        // Create pool with standard liquidity
         let (retail_a, retail_b) = fixtures::retail_liquidity();
         let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
         let (_pool_id, position) = test_utils::create_initialized_pool<USDC, BTC>(
@@ -32,32 +36,29 @@ module sui_amm::test_k_invariant {
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
-        // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
-        // Run 1000 random swaps
+        // Execute 1000 random swaps to verify K-invariant holds across diverse scenarios
         let seed = fixtures::default_random_seed();
         let iterations = fixtures::property_test_iterations();
         let mut i = 0;
         
         while (i < iterations) {
-            // Capture K before swap
             let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
             let k_before = test_utils::get_k_invariant(&snapshot_before);
             
-            // Generate random swap parameters
             let (reserve_a, reserve_b) = pool::get_reserves(&pool);
             let is_a_to_b = (test_utils::lcg_random(seed, i * 2) % 2) == 0;
             
-            // Execute random swap
+            // Execute swap in randomly chosen direction with safe amount
             if (is_a_to_b) {
                 let amount_in = test_utils::random_safe_swap_amount(seed, i, reserve_a);
                 let coin_out = test_utils::swap_a_to_b_helper(
                     &mut pool,
                     amount_in,
-                    0, // min_out
-                    0, // max_price (no limit)
+                    0,
+                    0,
                     test_utils::far_future(),
                     &clock,
                     test_scenario::ctx(&mut scenario)
@@ -68,8 +69,8 @@ module sui_amm::test_k_invariant {
                 let coin_out = test_utils::swap_b_to_a_helper(
                     &mut pool,
                     amount_in,
-                    0, // min_out
-                    0, // max_price (no limit)
+                    0,
+                    0,
                     test_utils::far_future(),
                     &clock,
                     test_scenario::ctx(&mut scenario)
@@ -77,34 +78,34 @@ module sui_amm::test_k_invariant {
                 coin::burn_for_testing(coin_out);
             };
             
-            // Capture K after swap
             let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
             let k_after = test_utils::get_k_invariant(&snapshot_after);
             
-            // Verify K never decreased (with tolerance for rounding)
+            // Verify K-invariant is maintained: K_after >= K_before (within rounding tolerance)
+            // This is the fundamental correctness property of constant product AMMs
             assertions::assert_k_invariant_maintained(
                 &snapshot_before,
                 &snapshot_after,
                 fixtures::standard_tolerance_u128()
             );
             
-            // Additional check: K should not decrease
             assert!(k_after + fixtures::standard_tolerance_u128() >= k_before, 0);
             
             i = i + 1;
         };
         
-        // Cleanup
         transfer::public_transfer(position, fixtures::admin());
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: K-INVARIANT WITH RANDOMIZED TOKEN AMOUNTS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that the K-invariant holds across pools initialized with randomized token amounts.
+    ///
+    /// This test creates multiple pools with different initial liquidity amounts (ranging from
+    /// small to near-maximum values) and verifies that K is maintained after swaps regardless
+    /// of the initial pool size. This ensures the constant product formula works correctly
+    /// across the full range of possible pool configurations.
     #[test]
     fun test_k_invariant_randomized_amounts() {
         let mut scenario = test_scenario::begin(fixtures::admin());
@@ -114,18 +115,17 @@ module sui_amm::test_k_invariant {
         let mut i = 0;
         
         while (i < iterations) {
-            // Generate random initial liquidity (1 to u64::MAX/1000)
             let max_amount = fixtures::near_u64_max();
             let initial_a = test_utils::random_amount(seed, i * 3, max_amount);
             let initial_b = test_utils::random_amount(seed, i * 3 + 1, max_amount);
             
-            // Skip if amounts are too small
+            // Skip pools with insufficient liquidity to avoid edge cases
             if (initial_a < 10000 || initial_b < 10000) {
                 i = i + 1;
                 continue
             };
             
-            // Create pool with random liquidity
+
             let (fee_bps, protocol_fee_bps, creator_fee_bps) = fixtures::standard_fee_config();
             let (_pool_id, position) = test_utils::create_initialized_pool<USDC, BTC>(
                 fee_bps,
@@ -139,39 +139,35 @@ module sui_amm::test_k_invariant {
             
             test_scenario::next_tx(&mut scenario, fixtures::admin());
             
-            // Get pool and clock
             let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
             let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
             
-            // Capture K before swap
             let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
             
-            // Execute random swap
             let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
             let amount_in = test_utils::random_safe_swap_amount(seed, i * 3 + 2, reserve_a);
             
             let coin_out = test_utils::swap_a_to_b_helper(
                 &mut pool,
                 amount_in,
-                0, // min_out
-                0, // max_price (no limit)
+                0,
+                0,
                 test_utils::far_future(),
                 &clock,
                 test_scenario::ctx(&mut scenario)
             );
             coin::burn_for_testing(coin_out);
             
-            // Capture K after swap
             let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
             
-            // Verify K maintained
+            // Verify K-invariant holds regardless of initial pool size
             assertions::assert_k_invariant_maintained(
                 &snapshot_before,
                 &snapshot_after,
                 fixtures::standard_tolerance_u128()
             );
             
-            // Cleanup
+
             transfer::public_transfer(position, fixtures::admin());
             test_scenario::return_shared(pool);
             clock::destroy_for_testing(clock);
@@ -182,10 +178,12 @@ module sui_amm::test_k_invariant {
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: K-INVARIANT WITH RANDOMIZED FEE TIERS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that the K-invariant is maintained across different fee tiers.
+    ///
+    /// This test creates pools with randomized fee configurations (5, 30, or 100 basis points)
+    /// and verifies that K is maintained after swaps regardless of the fee tier. Different fee
+    /// tiers affect how much K increases per swap (higher fees = larger K increase), but K
+    /// should never decrease regardless of the fee configuration.
     #[test]
     fun test_k_invariant_randomized_fee_tiers() {
         let mut scenario = test_scenario::begin(fixtures::admin());
@@ -194,21 +192,20 @@ module sui_amm::test_k_invariant {
         let iterations = fixtures::property_test_iterations();
         let mut i = 0;
         
-        // Standard liquidity for all tests
         let (initial_a, initial_b) = fixtures::retail_liquidity();
         
         while (i < iterations) {
-            // Randomly select fee tier: 5, 30, or 100 bps
+            // Randomly select from three fee tiers representing different pool types
             let fee_selector = test_utils::lcg_random(seed, i) % 3;
             let fee_bps = if (fee_selector == 0) {
-                5  // Ultra-low fee
+                5
             } else if (fee_selector == 1) {
-                30 // Standard fee
+                30
             } else {
-                100 // High-volatility fee
+                100
             };
             
-            // Create pool with random fee tier
+
             let (_pool_id, position) = test_utils::create_initialized_pool<USDC, BTC>(
                 fee_bps,
                 100, // protocol_fee_bps
@@ -221,17 +218,15 @@ module sui_amm::test_k_invariant {
             
             test_scenario::next_tx(&mut scenario, fixtures::admin());
             
-            // Get pool and clock
             let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
             let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
             
-            // Execute multiple swaps with this fee tier
+            // Execute 10 swaps per fee tier to verify K-invariant holds
             let mut j = 0;
             while (j < 10) {
-                // Capture K before swap
                 let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                 
-                // Execute random swap
+
                 let (reserve_a, reserve_b) = pool::get_reserves(&pool);
                 let is_a_to_b = (test_utils::lcg_random(seed, i * 10 + j) % 2) == 0;
                 
@@ -240,8 +235,8 @@ module sui_amm::test_k_invariant {
                     let coin_out = test_utils::swap_a_to_b_helper(
                         &mut pool,
                         amount_in,
-                        0, // min_out
-                        0, // max_price (no limit)
+                        0,
+                        0,
                         test_utils::far_future(),
                         &clock,
                         test_scenario::ctx(&mut scenario)
@@ -252,8 +247,8 @@ module sui_amm::test_k_invariant {
                     let coin_out = test_utils::swap_b_to_a_helper(
                         &mut pool,
                         amount_in,
-                        0, // min_out
-                        0, // max_price (no limit)
+                        0,
+                        0,
                         test_utils::far_future(),
                         &clock,
                         test_scenario::ctx(&mut scenario)
@@ -261,10 +256,9 @@ module sui_amm::test_k_invariant {
                     coin::burn_for_testing(coin_out);
                 };
                 
-                // Capture K after swap
                 let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
                 
-                // Verify K maintained regardless of fee tier
+                // Verify K-invariant holds regardless of fee tier configuration
                 assertions::assert_k_invariant_maintained(
                     &snapshot_before,
                     &snapshot_after,
@@ -274,7 +268,6 @@ module sui_amm::test_k_invariant {
                 j = j + 1;
             };
             
-            // Cleanup
             transfer::public_transfer(position, fixtures::admin());
             test_scenario::return_shared(pool);
             clock::destroy_for_testing(clock);
@@ -285,10 +278,15 @@ module sui_amm::test_k_invariant {
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: K-INVARIANT WITH MIXED OPERATIONS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that the K-invariant behaves correctly across mixed pool operations.
+    ///
+    /// This test randomly interleaves three types of operations: swaps, adding liquidity,
+    /// and removing liquidity. Each operation should affect K predictably:
+    /// - Swaps: K should increase (fees) or stay constant (within tolerance)
+    /// - Add liquidity: K should increase proportionally
+    /// - Remove liquidity: K should decrease proportionally
+    ///
+    /// This ensures the constant product formula is maintained across all pool operations.
     #[test]
     fun test_k_invariant_mixed_operations() {
         let mut scenario = test_scenario::begin(fixtures::admin());
@@ -308,11 +306,9 @@ module sui_amm::test_k_invariant {
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
-        // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
-        // Run mixed operations: swaps and liquidity changes
         let seed = fixtures::default_random_seed();
         let mut i = 0;
         
@@ -321,7 +317,6 @@ module sui_amm::test_k_invariant {
             let operation = test_utils::lcg_random(seed, i) % 3;
             
             if (operation == 0) {
-                // Swap operation
                 let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                 
                 let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
@@ -339,23 +334,20 @@ module sui_amm::test_k_invariant {
                 
                 let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
                 
-                // K should be maintained after swap
+                // Swaps should maintain or increase K due to fees
                 assertions::assert_k_invariant_maintained(
                     &snapshot_before,
                     &snapshot_after,
                     fixtures::standard_tolerance_u128()
                 );
             } else if (operation == 1) {
-                // Add liquidity operation
                 let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                 
                 let (reserve_a, reserve_b) = pool::get_reserves(&pool);
                 
-                // Generate random amount A
                 let add_a = test_utils::random_amount(seed, i + 2, reserve_a / 10);
                 
-                // Calculate amount B to match ratio: add_b = add_a * reserve_b / reserve_a
-                // Use u128 to prevent overflow
+                // Calculate proportional amount B to maintain price ratio
                 let add_b = if (reserve_a > 0) {
                     ((add_a as u128) * (reserve_b as u128) / (reserve_a as u128)) as u64
                 } else {
@@ -376,18 +368,17 @@ module sui_amm::test_k_invariant {
                     
                     let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
                     
-                    // K should increase after adding liquidity
+                    // Adding liquidity should increase K proportionally
                     assertions::assert_k_increased(&snapshot_before, &snapshot_after);
                     
                     transfer::public_transfer(new_position, fixtures::admin());
                 };
             } else {
-                // Remove partial liquidity operation (if position has enough)
                 let liquidity = position::liquidity(&position);
                 if (liquidity > 2000) {
                     let snapshot_before = test_utils::snapshot_pool(&pool, &clock);
                     
-                    let remove_amount = liquidity / 10; // Remove 10%
+                    let remove_amount = liquidity / 10;
                     let (coin_a, coin_b) = test_utils::remove_liquidity_helper(
                         &mut pool,
                         &mut position,
@@ -403,7 +394,7 @@ module sui_amm::test_k_invariant {
                     
                     let snapshot_after = test_utils::snapshot_pool(&pool, &clock);
                     
-                    // K should decrease after removing liquidity
+                    // Removing liquidity should decrease K proportionally
                     assertions::assert_k_decreased(&snapshot_before, &snapshot_after);
                 };
             };
@@ -411,7 +402,6 @@ module sui_amm::test_k_invariant {
             i = i + 1;
         };
         
-        // Cleanup
         transfer::public_transfer(position, fixtures::admin());
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);

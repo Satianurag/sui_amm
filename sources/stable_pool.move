@@ -1,6 +1,23 @@
-/// Module: stable_pool
-/// Description: Implements the StableSwap invariant (Curve-like) for trading stable pairs (e.g., USDC-USDT).
-/// Supports dynamic amplification coefficient (A), admin fees, creator fees, and slippage protection.
+/// Implements the StableSwap invariant (Curve-like algorithm) for trading stable asset pairs.
+///
+/// StableSwap pools are optimized for assets that maintain a stable price relationship (e.g., USDC-USDT, wBTC-renBTC).
+/// Unlike constant product pools (x*y=k), StableSwap uses an amplified invariant that provides:
+/// - Lower slippage for trades near the 1:1 price ratio
+/// - Higher capital efficiency for stable pairs
+/// - Configurable amplification coefficient (amp) to tune curve flatness
+///
+/// # Key Features
+/// - Dynamic amplification coefficient with gradual ramping
+/// - Multi-tier fee structure (protocol, creator, LP)
+/// - Slippage protection and MEV resistance
+/// - Emergency pause mechanism
+/// - D-invariant validation for security
+///
+/// # Amplification Coefficient (amp)
+/// The amp parameter controls how "flat" the bonding curve is:
+/// - Higher amp = flatter curve = lower slippage for balanced pools
+/// - Lower amp = more like constant product (x*y=k)
+/// - Typical values: 10-200 for stable pairs
 module sui_amm::stable_pool {
     use sui::coin;
     use sui::balance;
@@ -17,39 +34,43 @@ module sui_amm::stable_pool {
     const EInsufficientLiquidity: u64 = 2;
     const EExcessivePriceImpact: u64 = 3;
     const EInvalidAmp: u64 = 4;
-    const ETooHighFee: u64 = 5;  // NEW: For protocol fee validation
-    const EOverflow: u64 = 6;  // NEW: For overflow protection
-    const EInsufficientOutput: u64 = 8; // NEW: For slippage protection
-    const EUnauthorized: u64 = 9; // NEW: Access control
-    const EPaused: u64 = 10; // NEW: Pool is paused
+    const ETooHighFee: u64 = 5;
+    const EOverflow: u64 = 6;
+    const EInsufficientOutput: u64 = 8;
+    const EUnauthorized: u64 = 9;
+    const EPaused: u64 = 10;
     
     // Constants
     const ACC_PRECISION: u128 = 1_000_000_000_000;
     const MAX_PRICE_IMPACT_BPS: u64 = 1000; // 10%
-    // AMPLIFICATION COEFFICIENT VALIDATION:
-    // The amplification coefficient (amp) controls the "flatness" of the StableSwap curve.
-    // 
-    // MIN_AMP = 1: Minimum valid amplification
-    // - amp=0 is INVALID and will cause division by zero in stable_math calculations
-    // - amp=1 behaves similar to a constant product curve (x*y=k)
-    // - Lower amp values provide less price stability but more capital efficiency
-    // 
-    // MAX_AMP = 1000: Maximum safe amplification (reduced from 10000)
-    // - Higher amp values create flatter curves (better for stable pairs)
-    // - Values above 1000 risk numerical instability and manipulation
-    // - Most production stable pools use amp between 10-200
-    // 
-    // Typical amp values:
-    // - USDC/USDT: amp=100-200 (very stable)
-    // - DAI/USDC: amp=50-100 (stable)
-    // - wBTC/renBTC: amp=10-50 (less stable)
+    
+    /// Amplification coefficient bounds
+    ///
+    /// The amplification coefficient (amp) controls the "flatness" of the StableSwap curve.
+    /// It determines how closely the pool behaves like a constant-sum (x+y=k) versus constant-product (x*y=k) curve.
+    ///
+    /// MIN_AMP = 1: Minimum valid amplification
+    /// - amp=0 is INVALID and causes division by zero in stable_math calculations
+    /// - amp=1 behaves similar to a constant product curve (x*y=k)
+    /// - Lower amp values provide less price stability around 1:1 but handle imbalanced pools better
+    ///
+    /// MAX_AMP = 1000: Maximum safe amplification
+    /// - Higher amp values create flatter curves (better price stability for balanced pools)
+    /// - Values above 1000 risk numerical instability and potential manipulation
+    /// - Most production stable pools use amp between 10-200
+    ///
+    /// Typical amp values by asset type:
+    /// - USDC/USDT: amp=100-200 (highly correlated stablecoins)
+    /// - DAI/USDC: amp=50-100 (stablecoins with slight variance)
+    /// - wBTC/renBTC: amp=10-50 (wrapped assets with bridge risk)
     const MIN_AMP: u64 = 1;
-    // SECURITY FIX [P2-18.3]: Reduced MAX_AMP from 10000 to 1000
-    // This prevents extreme amplification values that could lead to numerical instability
-    // and manipulation attacks. Most stable pools operate well below amp=1000.
-    const MAX_AMP: u64 = 1000;  // Reduced from 10000 for safety
-    const MAX_SAFE_VALUE: u128 = 34028236692093846346337460743176821145; // u128::MAX / 10000 - for price impact overflow check
+    const MAX_AMP: u64 = 1000;
+    const MAX_SAFE_VALUE: u128 = 34028236692093846346337460743176821145;
 
+    /// StableSwap pool state
+    ///
+    /// Manages reserves, fees, and amplification parameters for a stable asset pair.
+    /// The pool uses the StableSwap invariant D for pricing and liquidity calculations.
     public struct StableSwapPool<phantom CoinA, phantom CoinB> has key {
         id: object::UID,
         reserve_a: balance::Balance<CoinA>,
@@ -58,7 +79,6 @@ module sui_amm::stable_pool {
         fee_b: balance::Balance<CoinB>,
         protocol_fee_a: balance::Balance<CoinA>,
         protocol_fee_b: balance::Balance<CoinB>,
-        // FIX: Creator fees support
         creator: address,
         creator_fee_a: balance::Balance<CoinA>,
         creator_fee_b: balance::Balance<CoinB>,
@@ -68,13 +88,16 @@ module sui_amm::stable_pool {
         creator_fee_percent: u64,
         acc_fee_per_share_a: u128,
         acc_fee_per_share_b: u128,
-        amp: u64, // Current amplification coefficient
-        // FIX [L1]: Amp ramping support for dynamic optimization
-        target_amp: u64,           // Target amp when ramping
-        amp_ramp_start_time: u64,  // Start time of ramp (0 if not ramping)
-        amp_ramp_end_time: u64,    // End time of ram (0 if not ramping)
+        amp: u64,
+        /// Amplification ramping parameters
+        /// Allows gradual adjustment of amp to prevent sudden curve changes
+        /// When not ramping, amp_ramp_end_time is 0
+        target_amp: u64,
+        amp_ramp_start_time: u64,
+        amp_ramp_end_time: u64,
         max_price_impact_bps: u64,
-        // Emergency pause mechanism
+        /// Emergency pause mechanism
+        /// When paused, swaps and liquidity operations are disabled
         paused: bool,
         paused_at: u64,
     }
@@ -158,11 +181,22 @@ module sui_amm::stable_pool {
         timestamp: u64,
     }
 
-    // FIX [S5]: Max creator fee to protect LPs
-    const MAX_CREATOR_FEE_BPS: u64 = 500; // 5% max
-    const MIN_FEE_THRESHOLD: u64 = 1000; // Minimum fee to avoid precision loss
-    const MIN_FEE_BPS: u64 = 1; // Minimum fee of 1 basis point (0.01%) for pool creation (Requirement 10.1)
+    /// Fee configuration constants
+    const MAX_CREATOR_FEE_BPS: u64 = 500;
+    const MIN_FEE_THRESHOLD: u64 = 1000;
+    const MIN_FEE_BPS: u64 = 1;
 
+    /// Create a new StableSwap pool
+    ///
+    /// # Parameters
+    /// - `fee_percent`: Swap fee in basis points (e.g., 30 = 0.30%)
+    /// - `protocol_fee_percent`: Percentage of swap fees allocated to protocol
+    /// - `creator_fee_percent`: Percentage of swap fees allocated to pool creator
+    /// - `amp`: Amplification coefficient (must be between MIN_AMP and MAX_AMP)
+    ///
+    /// # Aborts
+    /// - `EInvalidAmp`: If amp is outside valid range [1, 1000]
+    /// - `ETooHighFee`: If protocol or creator fees exceed maximum allowed
     public fun create_pool<CoinA, CoinB>(
         fee_percent: u64,
         protocol_fee_percent: u64,
@@ -170,12 +204,10 @@ module sui_amm::stable_pool {
         amp: u64,
         ctx: &mut tx_context::TxContext
     ): StableSwapPool<CoinA, CoinB> {
-        // CRITICAL: Validate amp is within safe bounds
-        // amp=0 is INVALID and will cause division by zero errors in stable_math
-        // amp must be >= MIN_AMP (1) and <= MAX_AMP (1000)
+        // Validate amp is within safe bounds
+        // amp=0 causes division by zero in stable_math calculations
         assert!(amp >= MIN_AMP && amp <= MAX_AMP, EInvalidAmp);
         assert!(protocol_fee_percent <= 1000, ETooHighFee);
-        // FIX [S5]: Validate creator fee to protect LPs
         assert!(creator_fee_percent <= MAX_CREATOR_FEE_BPS, ETooHighFee);
         let pool = StableSwapPool<CoinA, CoinB> {
             id: object::new(ctx),
@@ -195,9 +227,9 @@ module sui_amm::stable_pool {
             acc_fee_per_share_a: 0,
             acc_fee_per_share_b: 0,
             amp,
-            target_amp: amp,        // Initially no ramp
-            amp_ramp_start_time: 0, // 0 means not ramping
-            amp_ramp_end_time: 0,   // 0 means not ramping
+            target_amp: amp,
+            amp_ramp_start_time: 0,
+            amp_ramp_end_time: 0,
             max_price_impact_bps: MAX_PRICE_IMPACT_BPS,
             paused: false,
             paused_at: 0,
@@ -215,10 +247,33 @@ module sui_amm::stable_pool {
         pool
     }
 
+    /// Minimum liquidity constants
+    ///
+    /// MINIMUM_LIQUIDITY is permanently burned on first deposit to prevent division by zero
+    /// and ensure the pool can never be completely drained. This protects against attacks
+    /// where an attacker could manipulate prices by reducing liquidity to near-zero.
     const MINIMUM_LIQUIDITY: u64 = 1000;
-    const MIN_INITIAL_LIQUIDITY_MULTIPLIER: u64 = 10; // Burn cap: creator loses <=10% of seed liquidity
+    const MIN_INITIAL_LIQUIDITY_MULTIPLIER: u64 = 10;
     const MIN_INITIAL_LIQUIDITY: u64 = MINIMUM_LIQUIDITY * MIN_INITIAL_LIQUIDITY_MULTIPLIER;
 
+    /// Add liquidity to the pool
+    ///
+    /// For StableSwap pools, liquidity is calculated based on the D invariant rather than
+    /// simple reserve ratios. This ensures fair LP token distribution regardless of pool balance.
+    ///
+    /// # Parameters
+    /// - `min_liquidity`: Minimum LP tokens to mint (slippage protection)
+    /// - `deadline`: Transaction deadline in milliseconds
+    ///
+    /// # Returns
+    /// - LP position NFT
+    /// - Refund of unused CoinA (if any)
+    /// - Refund of unused CoinB (if any)
+    ///
+    /// # Aborts
+    /// - `EPaused`: If pool is paused
+    /// - `EZeroAmount`: If either coin amount is zero
+    /// - `EInsufficientLiquidity`: If minted liquidity is below minimum
     public fun add_liquidity<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         coin_a: coin::Coin<CoinA>,
@@ -228,16 +283,12 @@ module sui_amm::stable_pool {
         deadline: u64,
         ctx: &mut tx_context::TxContext
     ): (position::LPPosition, coin::Coin<CoinA>, coin::Coin<CoinB>) {
-        // Check if pool is paused
         assert!(!pool.paused, EPaused);
-        
-        // FIX V2: Deadline enforcement
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         let amount_a = coin::value(&coin_a);
         let amount_b = coin::value(&coin_b);
-        // FIX [L3]: For stable pools, require both amounts > 0 to prevent D manipulation
-        // Single-sided deposits can manipulate the invariant in stable pools
+        // Both amounts must be non-zero to prevent D invariant manipulation
         assert!(amount_a > 0 && amount_b > 0, EZeroAmount);
 
         let (reserve_a, reserve_b) = (balance::value(&pool.reserve_a), balance::value(&pool.reserve_b));
@@ -249,13 +300,14 @@ module sui_amm::stable_pool {
         let refund_b;
         
         if (pool.total_liquidity == 0) {
-            // Initial liquidity
+            // Initial liquidity: Calculate D invariant and burn MINIMUM_LIQUIDITY
+            // This prevents the pool from ever being completely drained
             let d = stable_math::get_d(amount_a, amount_b, pool.amp);
             assert!(d >= MIN_INITIAL_LIQUIDITY, EInsufficientLiquidity);
             pool.total_liquidity = MINIMUM_LIQUIDITY;
             liquidity_minted = d - MINIMUM_LIQUIDITY;
             
-            // Create a position for the burned liquidity and transfer to dead address
+            // Burn minimum liquidity by creating and immediately destroying a position
             let burn_position = position::new(
                 object::id(pool),
                 MINIMUM_LIQUIDITY,
@@ -274,17 +326,18 @@ module sui_amm::stable_pool {
             refund_a = coin::zero<CoinA>(ctx);
             refund_b = coin::zero<CoinB>(ctx);
         } else {
-            // Subsequent liquidity - calculate based on D invariant
+            // Subsequent liquidity: Calculate based on D invariant change
+            // LP tokens minted proportional to the increase in D
             let d0 = stable_math::get_d(reserve_a, reserve_b, pool.amp);
             let d1 = stable_math::get_d(reserve_a + amount_a, reserve_b + amount_b, pool.amp);
             
             assert!(d1 > d0, EInsufficientLiquidity);
             
-            // mint = total_supply * (d1 - d0) / d0
+            // LP tokens = total_supply * (d1 - d0) / d0
             liquidity_minted = ((pool.total_liquidity as u128) * ((d1 - d0) as u128) / (d0 as u128) as u64);
             
-            // FIX [L3]: For stable pools, use all provided amounts (D-based calculation already optimal)
-            // Unlike constant product, stable pools don't require exact ratio matching
+            // Use all provided amounts (D-based calculation handles imbalanced deposits fairly)
+            // Unlike constant product pools, StableSwap doesn't require exact ratio matching
             balance::join(&mut pool.reserve_a, coin::into_balance(coin_a));
             balance::join(&mut pool.reserve_b, coin::into_balance(coin_b));
             amount_a_used = amount_a;
@@ -328,6 +381,24 @@ module sui_amm::stable_pool {
         (position, refund_a, refund_b)
     }
 
+    /// Remove all liquidity from a position
+    ///
+    /// Withdraws the position's share of pool reserves plus any unclaimed fees.
+    /// The position NFT is destroyed after liquidity removal.
+    ///
+    /// # Parameters
+    /// - `min_amount_a`: Minimum CoinA to receive (slippage protection)
+    /// - `min_amount_b`: Minimum CoinB to receive (slippage protection)
+    /// - `deadline`: Transaction deadline in milliseconds
+    ///
+    /// # Returns
+    /// - CoinA withdrawn (reserves + fees)
+    /// - CoinB withdrawn (reserves + fees)
+    ///
+    /// # Aborts
+    /// - `EPaused`: If pool is paused
+    /// - `EWrongPool`: If position doesn't belong to this pool
+    /// - `EInsufficientLiquidity`: If withdrawn amounts below minimums
     public fun remove_liquidity<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         position: position::LPPosition,
@@ -337,19 +408,17 @@ module sui_amm::stable_pool {
         deadline: u64,
         ctx: &mut tx_context::TxContext
     ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
-        // SECURITY FIX [P1-15.4]: Add pause check to liquidity operations
         assert!(!pool.paused, EPaused);
-        
-        // FIX V2: Deadline enforcement
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         assert!(position::pool_id(&position) == object::id(pool), EWrongPool);
 
         let liquidity = position::liquidity(&position);
+        // Calculate proportional share of reserves
         let amount_a = (((liquidity as u128) * (balance::value(&pool.reserve_a) as u128) / (pool.total_liquidity as u128)) as u64);
         let amount_b = (((liquidity as u128) * (balance::value(&pool.reserve_b) as u128) / (pool.total_liquidity as u128)) as u64);
 
-        // CRITICAL FIX [V2]: Slippage protection for remove_liquidity
+        // Enforce slippage protection
         assert!(amount_a >= min_amount_a, EInsufficientLiquidity);
         assert!(amount_b >= min_amount_b, EInsufficientLiquidity);
 
@@ -384,7 +453,20 @@ module sui_amm::stable_pool {
         (coin::from_balance(split_a, ctx), coin::from_balance(split_b, ctx))
     }
 
-    /// Remove partial liquidity (CRITICAL NEW Feature for PRD compliance)
+    /// Remove partial liquidity from a position
+    ///
+    /// Allows withdrawing a portion of liquidity while keeping the position active.
+    /// Useful for gradual exit strategies or rebalancing.
+    ///
+    /// # Parameters
+    /// - `liquidity_to_remove`: Amount of LP tokens to burn
+    /// - `min_amount_a`: Minimum CoinA to receive (slippage protection)
+    /// - `min_amount_b`: Minimum CoinB to receive (slippage protection)
+    ///
+    /// # Aborts
+    /// - `EPaused`: If pool is paused
+    /// - `EWrongPool`: If position doesn't belong to this pool
+    /// - `EInsufficientLiquidity`: If liquidity_to_remove exceeds position balance
     public fun remove_liquidity_partial<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         position: &mut position::LPPosition,
@@ -395,10 +477,10 @@ module sui_amm::stable_pool {
         deadline: u64,
         ctx: &mut tx_context::TxContext
     ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
-        // SECURITY FIX [P1-15.4]: Add pause check to liquidity operations
+        // SECURITY: Add pause check to liquidity operations
         assert!(!pool.paused, EPaused);
         
-        // FIX V2: Deadline enforcement
+        // Enforce deadline to prevent stale transactions
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
@@ -436,20 +518,16 @@ module sui_amm::stable_pool {
 
         position::decrease_liquidity(position, liquidity_to_remove);
         
-        // CRITICAL FIX [V1]: Proportional fee debt reduction
-        // Old logic (BROKEN): new_debt = remaining_liquidity * acc_fee_per_share
-        // This wiped out all unclaimed rewards for the remaining liquidity!
-        // New logic (FIXED): new_debt = old_debt - removed_debt
-        
+        // Update fee debt proportionally
+        // Fee debt must be reduced by the same proportion as liquidity to preserve unclaimed fees
         let old_debt_a = position::fee_debt_a(position);
         let old_debt_b = position::fee_debt_b(position);
         
-        // FIX [V2]: Use ceiling division for debt removal to prevent fee loss
-        // debt_removed = ceil(old_debt * liquidity_to_remove / total_liquidity)
+        // Use ceiling division to prevent fee loss due to rounding
         let debt_removed_a = ((old_debt_a * (liquidity_to_remove as u128)) + (total_position_liquidity as u128) - 1) / (total_position_liquidity as u128);
         let debt_removed_b = ((old_debt_b * (liquidity_to_remove as u128)) + (total_position_liquidity as u128) - 1) / (total_position_liquidity as u128);
         
-        // Cap at old_debt to prevent underflow (ceiling can exceed in edge cases)
+        // Cap at old_debt to prevent underflow
         let debt_removed_a_safe = if (debt_removed_a > old_debt_a) { old_debt_a } else { debt_removed_a };
         let debt_removed_b_safe = if (debt_removed_b > old_debt_b) { old_debt_b } else { debt_removed_b };
         
@@ -466,12 +544,22 @@ module sui_amm::stable_pool {
             liquidity_burned: liquidity_to_remove,
         });
 
-        // FIX [V6]: Refresh metadata to ensure NFT display is up-to-date
+        // Update NFT metadata to reflect new position state
         refresh_position_metadata(pool, position, clock);
 
         (coin::from_balance(split_a, ctx), coin::from_balance(split_b, ctx))
     }
 
+    /// Withdraw accumulated fees from a position
+    ///
+    /// Collects pending fees without removing liquidity. The position remains active.
+    ///
+    /// # Returns
+    /// - CoinA fees
+    /// - CoinB fees
+    ///
+    /// # Aborts
+    /// - `EWrongPool`: If position doesn't belong to this pool
     public(package) fun withdraw_fees<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         position: &mut position::LPPosition,
@@ -510,12 +598,31 @@ module sui_amm::stable_pool {
             amount_b: balance::value(&fee_b),
         });
 
-        // FIX [V6]: Refresh metadata to ensure NFT display is up-to-date
+        // Update NFT metadata to reflect fee withdrawal
         refresh_position_metadata(pool, position, clock);
 
         (coin::from_balance(fee_a, ctx), coin::from_balance(fee_b, ctx))
     }
 
+    /// Swap CoinA for CoinB using the StableSwap curve
+    ///
+    /// Calculates output using the D invariant and current amplification coefficient.
+    /// Enforces slippage protection, price impact limits, and D-invariant validation.
+    ///
+    /// # Parameters
+    /// - `min_out`: Minimum CoinB to receive (slippage protection)
+    /// - `max_price`: Optional maximum price limit for MEV protection
+    /// - `deadline`: Transaction deadline in milliseconds
+    ///
+    /// # Returns
+    /// - CoinB output after fees
+    ///
+    /// # Aborts
+    /// - `EPaused`: If pool is paused
+    /// - `EZeroAmount`: If input amount is zero
+    /// - `EInsufficientLiquidity`: If pool has insufficient reserves or D-invariant violated
+    /// - `EInsufficientOutput`: If output below min_out or price limit exceeded
+    /// - `EExcessivePriceImpact`: If price impact exceeds maximum allowed
     public fun swap_a_to_b<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         coin_in: coin::Coin<CoinA>,
@@ -525,9 +632,7 @@ module sui_amm::stable_pool {
         deadline: u64,
         ctx: &mut tx_context::TxContext
     ): coin::Coin<CoinB> {
-        // Check if pool is paused
         assert!(!pool.paused, EPaused);
-        
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         let amount_in = coin::value(&coin_in);
@@ -540,13 +645,14 @@ module sui_amm::stable_pool {
         let fee_amount = (amount_in * pool.fee_percent) / 10000;
         let amount_in_after_fee = amount_in - fee_amount;
 
-        // Calculate output using StableSwap curve with current (possibly ramped) amp
+        // Calculate output using StableSwap curve
+        // Uses current amp which may be interpolated if ramping is active
         let current_amp = get_current_amp(pool, clock);
         let d = stable_math::get_d(reserve_a, reserve_b, current_amp);
         let new_reserve_a = reserve_a + amount_in_after_fee;
         let new_reserve_b = stable_math::get_y(new_reserve_a, d, current_amp);
         
-        // CRITICAL FIX: Validate new_reserve_b to prevent pool draining
+        // Validate output to prevent pool draining
         assert!(new_reserve_b > 0, EInsufficientLiquidity);
         assert!(new_reserve_b < reserve_b, EInsufficientLiquidity);
         
@@ -554,24 +660,20 @@ module sui_amm::stable_pool {
 
         sui_amm::slippage_protection::check_slippage(amount_out, min_out);
 
-        // SECURITY FIX [P1-15.3]: Enforce MEV protection with default max slippage
-        // If max_price is not provided, enforce a default 2% maximum slippage for stable pools
+        // MEV protection: Enforce price limits
+        // If max_price not provided, default to 2% maximum slippage for stable pools
         if (option::is_some(&max_price)) {
             sui_amm::slippage_protection::check_price_limit(amount_in, amount_out, *option::borrow(&max_price));
         } else {
-            // Default: enforce 2% maximum slippage (200 bps) for stable pools when max_price not specified
-            // Stable pools should have lower slippage tolerance than regular pools
-            // Use "input per output" price representation (A per B)
+            // Default 2% slippage tolerance for stable pools
             let spot_price = ((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128);
             let effective_price = ((amount_in as u128) * 1_000_000_000) / (amount_out as u128);
-            let max_allowed_price = spot_price + (spot_price * 200 / 10000); // 2% worse than spot
+            let max_allowed_price = spot_price + (spot_price * 200 / 10000);
             assert!(effective_price <= max_allowed_price, EInsufficientOutput);
         };
 
-        // Calculate and check price impact for StableSwap based on the
-        // Stable invariant. Ideal output is approximated from a tiny
-        // trade on the curve (spot price), not from a constant-product
-        // or naive reserve ratio.
+        // Calculate and enforce price impact limits
+        // Uses StableSwap-specific calculation based on D invariant
         let impact = stable_price_impact_bps(
             reserve_a,
             reserve_b,
@@ -605,7 +707,7 @@ module sui_amm::stable_pool {
 
         let output_coin = coin::take(&mut pool.reserve_b, amount_out, ctx);
 
-        // FIX [L1]: Only accumulate fees if above threshold to prevent precision loss
+        // Accumulate LP fees with precision loss protection
         if (pool.total_liquidity > 0 && lp_fee_amount >= MIN_FEE_THRESHOLD) {
             pool.acc_fee_per_share_a = pool.acc_fee_per_share_a + ((lp_fee_amount as u128) * ACC_PRECISION / (pool.total_liquidity as u128));
         } else if (pool.total_liquidity > 0 && lp_fee_amount > 0) {
@@ -615,14 +717,13 @@ module sui_amm::stable_pool {
             };
         };
 
-        // S2: Verify D-invariant (post-swap check)
-        // SECURITY FIX [P1-15.7]: Strict D-invariant validation with zero tolerance
-        // D should never decrease after a swap (fees should keep it stable or increasing)
+        // Validate D-invariant post-swap
+        // The D invariant should never decrease after a swap (fees keep it stable or increasing)
+        // This prevents value extraction attacks
         let reserve_a_new = balance::value(&pool.reserve_a);
         let reserve_b_new = balance::value(&pool.reserve_b);
         let d_new = stable_math::get_d(reserve_a_new, reserve_b_new, current_amp);
-        // Strict check: D must not decrease (zero tolerance to prevent value extraction)
-        // Allow small rounding error (1 unit)
+        // Allow 1 unit tolerance for rounding errors
         if (d > d_new) {
             assert!(d - d_new <= 1, EInsufficientLiquidity);
         } else {
@@ -1104,10 +1205,10 @@ module sui_amm::stable_pool {
         deadline: u64,
         ctx: &mut tx_context::TxContext
     ): (coin::Coin<CoinA>, coin::Coin<CoinB>) {
-        // SECURITY FIX [P1-15.4]: Add pause check to liquidity operations
+        // SECURITY: Add pause check to liquidity operations
         assert!(!pool.paused, EPaused);
         
-        // FIX V2: Deadline enforcement
+        // Enforce deadline to prevent stale transactions
         sui_amm::slippage_protection::check_deadline(clock, deadline);
         
         assert!(position::pool_id(position) == object::id(pool), EWrongPool);
@@ -1200,7 +1301,10 @@ module sui_amm::stable_pool {
         pool.max_price_impact_bps = max_price_impact_bps;
     }
 
-    /// FIX [M2]: Allow protocol fee adjustment after pool creation
+    /// Allow protocol fee adjustment after pool creation
+    ///
+    /// Enables governance to adjust protocol fee percentage without recreating the pool.
+    /// This provides flexibility for fee optimization based on market conditions.
     public(package) fun set_protocol_fee_percent<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         new_percent: u64
@@ -1272,29 +1376,31 @@ module sui_amm::stable_pool {
         reserve_a - new_reserve_a
     }
 
-    /// FIX [S2][V3]: Public function to refresh position metadata from stable pool state
-    /// Allows users to update their NFT display with current values without claiming fees.
-    /// 
-    /// IMPORTANT STALENESS NOTE:
-    /// NFT metadata (cached_value_a, cached_value_b, cached_fee_a, cached_fee_b, cached_il_bps)
-    /// is NOT automatically updated on every swap to save gas. This is an intentional design
-    /// decision for gas efficiency.
-    /// 
-    /// For real-time data, use get_position_view() which computes values on-demand.
-    /// Call this function to update the NFT's Display metadata before:
-    /// - Listing on marketplaces
-    /// - Viewing in wallets that only read NFT metadata
-    /// - Taking screenshots for records
-    /// 
-    /// The metadata IS automatically refreshed on:
-    /// - remove_liquidity_partial()
-    /// - withdraw_fees()
-    /// - increase_liquidity()
-    /// Requirements: 2.3, 2.4 - Refresh metadata and regenerate SVG
-    /// This function:
-    /// - Updates last_metadata_update_ms timestamp
-    /// - Regenerates SVG image (always, even if values unchanged)
-    /// - Updates cached values if they've changed
+    /// Refresh position NFT metadata
+    ///
+    /// Updates the position's cached values and regenerates the SVG display.
+    /// NFT metadata is not automatically updated on every swap for gas efficiency.
+    ///
+    /// # When to Call
+    /// - Before listing on marketplaces
+    /// - Before viewing in wallets that only read NFT metadata
+    /// - For accurate display in UI
+    ///
+    /// # Automatic Refresh
+    /// Metadata is automatically refreshed when:
+    /// - Removing liquidity (partial or full)
+    /// - Withdrawing fees
+    /// - Adding liquidity
+    ///
+    /// # Real-Time Data
+    /// For real-time values without updating metadata, use `get_position_view()`
+    ///
+    /// # Updates
+    /// - Cached reserve values
+    /// - Cached fee amounts
+    /// - Impermanent loss calculation
+    /// - SVG image
+    /// - Last update timestamp
     public fun refresh_position_metadata<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         position: &mut position::LPPosition,
@@ -1304,7 +1410,7 @@ module sui_amm::stable_pool {
         
         let liquidity = position::liquidity(position);
         if (pool.total_liquidity == 0) {
-            // Even with zero liquidity, update timestamp and regenerate SVG
+            // Update timestamp and regenerate SVG even with zero liquidity
             position::touch_metadata_timestamp(position, clock);
             position::refresh_nft_image(position);
             return
@@ -1316,7 +1422,6 @@ module sui_amm::stable_pool {
         let fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
         let fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
         
-        // FIX [Metadata Staleness]: Always update timestamp on explicit refresh
         let cached_value_a = position::cached_value_a(position);
         let cached_value_b = position::cached_value_b(position);
         let cached_fee_a = position::cached_fee_a(position);
@@ -1324,29 +1429,30 @@ module sui_amm::stable_pool {
         
         if (value_a == cached_value_a && value_b == cached_value_b && 
             (fee_a as u64) == cached_fee_a && (fee_b as u64) == cached_fee_b) {
-            // Values unchanged but still update timestamp to mark metadata as fresh
-            // Task 9: Always regenerate SVG image on refresh, even if values unchanged
+            // Values unchanged but still update timestamp and regenerate SVG
             position::touch_metadata_timestamp(position, clock);
             position::refresh_nft_image(position);
             return
         };
         
         let il_bps = get_impermanent_loss(pool, position);
-        // update_cached_values already calls refresh_nft_image internally
         position::update_cached_values(position, value_a, value_b, (fee_a as u64), (fee_b as u64), il_bps, clock);
     }
 
-    /// Calculate impermanent loss for stable pool position
-    /// Uses approximation: IL = (Value_hold - Value_lp) / Value_hold
-    /// 
-    /// Note: For StableSwap, IL is generally much lower than constant product pools
-    /// as long as the price stays near 1. However, if the price depegs significantly,
-    /// IL can still occur.
-    /// 
-    /// Formula:
+    /// Calculate impermanent loss for a position
+    ///
+    /// Impermanent loss (IL) measures the opportunity cost of providing liquidity
+    /// versus simply holding the assets. For StableSwap pools, IL is typically much
+    /// lower than constant product pools when prices remain near 1:1.
+    ///
+    /// # Formula
     /// IL = (Value_hold - Value_lp) / Value_hold
-    /// Value_hold = initial_a * P + initial_b
-    /// Value_lp = current_a * P + current_b
+    /// - Value_hold = initial_a * current_price + initial_b
+    /// - Value_lp = current_a * current_price + current_b
+    ///
+    /// # Returns
+    /// - Impermanent loss in basis points (1 bps = 0.01%)
+    /// - Returns 0 if pool has no liquidity or reserves
     public fun get_impermanent_loss<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         position: &position::LPPosition
@@ -1362,15 +1468,13 @@ module sui_amm::stable_pool {
             return 0
         };
 
-        // SECURITY FIX [P1-15.5]: Increase IL calculation precision from 1e9 to 1e12
-        // Calculate current price ratio
+        // Calculate current price ratio with high precision (1e12)
         let current_price_ratio_scaled = ((reserve_b as u128) * 1_000_000_000_000) / (reserve_a as u128);
         
         // Calculate current position value
         let current_a = ((liquidity as u128) * (reserve_a as u128)) / (pool.total_liquidity as u128);
         let current_b = ((liquidity as u128) * (reserve_b as u128)) / (pool.total_liquidity as u128);
         
-        // Use position module's corrected IL calculation
         position::get_impermanent_loss(
             position,
             (current_a as u64),
@@ -1380,7 +1484,13 @@ module sui_amm::stable_pool {
     }
 
 
-    /// Get current exchange rate A->B (scaled by 1e9) - For stable pools, should be close to 1:1
+    /// Get current spot exchange rate A->B
+    ///
+    /// Returns the price of CoinA in terms of CoinB, scaled by 1e9.
+    /// For stable pools, this should be close to 1:1 (1e9).
+    ///
+    /// # Returns
+    /// - Exchange rate scaled by 1e9, or 0 if reserve_a is zero
     public fun get_exchange_rate<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>
     ): u64 {
@@ -1389,46 +1499,45 @@ module sui_amm::stable_pool {
         
         if (reserve_a == 0) return 0;
         
-        // Rate = reserve_b / reserve_a * 1e9
         (((reserve_b as u128) * 1_000_000_000) / (reserve_a as u128) as u64)
     }
 
-    /// Get B to A exchange rate with zero-reserve handling
-    /// Returns the price of B in terms of A, scaled by 1e9
-    /// Returns 0 if reserve_b is zero to prevent division by zero
-    /// For stable pools, this should be close to 1:1 (1e9)
+    /// Get current spot exchange rate B->A
+    ///
+    /// Returns the price of CoinB in terms of CoinA, scaled by 1e9.
+    /// For stable pools, this should be close to 1:1 (1e9).
+    ///
+    /// # Returns
+    /// - Exchange rate scaled by 1e9, or 0 if reserve_b is zero
     public fun get_exchange_rate_b_to_a<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>
     ): u64 {
         let reserve_a = balance::value(&pool.reserve_a);
         let reserve_b = balance::value(&pool.reserve_b);
         
-        // Handle zero reserve case
         if (reserve_b == 0) return 0;
         
-        // Rate = reserve_a / reserve_b * 1e9
         (((reserve_a as u128) * 1_000_000_000) / (reserve_b as u128) as u64)
     }
 
-    /// Get effective rate for a specific swap amount (includes slippage)
+    /// Get effective exchange rate for a specific swap amount
+    ///
+    /// Unlike spot rate, this includes price impact and slippage.
+    /// Useful for showing users the actual rate they'll receive.
     /// Returns the actual rate you would get for swapping amount_in, scaled by 1e9
-    /// This differs from spot rate because it accounts for price impact
-    /// Uses stored amp value (clock-free) for efficiency
     public fun get_effective_rate<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         amount_in: u64,
         is_a_to_b: bool
     ): u64 {
-        // Handle zero amount case
         if (amount_in == 0) return 0;
         
         let reserve_a = balance::value(&pool.reserve_a);
         let reserve_b = balance::value(&pool.reserve_b);
         
-        // Handle zero reserve cases
         if (reserve_a == 0 || reserve_b == 0) return 0;
         
-        // Calculate output amount after fees using StableSwap curve
+        // Calculate output using StableSwap curve
         let fee_amount = (amount_in * pool.fee_percent) / 10000;
         let amount_in_after_fee = amount_in - fee_amount;
         
@@ -1447,14 +1556,17 @@ module sui_amm::stable_pool {
             reserve_a - new_reserve_a
         };
         
-        // Return effective rate: amount_out / amount_in * 1e9
+        // Effective rate = amount_out / amount_in * 1e9
         ((amount_out as u128) * 1_000_000_000 / (amount_in as u128) as u64)
     }
 
-    /// Get price impact for a specific amount before execution
-    /// Returns price impact in basis points (1 bps = 0.01%)
-    /// Useful for showing users the expected price impact before they execute a swap
-    /// Uses stored amp value (clock-free) for efficiency
+    /// Get price impact for a hypothetical swap
+    ///
+    /// Calculates the expected price impact without executing the swap.
+    /// Useful for UI to show users impact before they commit.
+    ///
+    /// # Returns
+    /// - Price impact in basis points (1 bps = 0.01%)
     public fun get_price_impact_for_amount<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         amount_in: u64,
@@ -1463,56 +1575,57 @@ module sui_amm::stable_pool {
         let reserve_a = balance::value(&pool.reserve_a);
         let reserve_b = balance::value(&pool.reserve_b);
         
-        // Handle edge cases
         if (reserve_a == 0 || reserve_b == 0 || amount_in == 0) return 0;
         
         let fee_amount = (amount_in * pool.fee_percent) / 10000;
         let amount_in_after_fee = amount_in - fee_amount;
         
-        // Use stored amp (not ramped) for clock-free operation
         let d = stable_math::get_d(reserve_a, reserve_b, pool.amp);
         
         let (reserve_in, reserve_out, amount_out) = if (is_a_to_b) {
             let new_reserve_a = reserve_a + amount_in_after_fee;
             let new_reserve_b = stable_math::get_y(new_reserve_a, d, pool.amp);
-            if (new_reserve_b >= reserve_b) return 10000; // 100% impact
+            if (new_reserve_b >= reserve_b) return 10000;
             (reserve_a, reserve_b, reserve_b - new_reserve_b)
         } else {
             let new_reserve_b = reserve_b + amount_in_after_fee;
             let new_reserve_a = stable_math::get_y(new_reserve_b, d, pool.amp);
-            if (new_reserve_a >= reserve_a) return 10000; // 100% impact
+            if (new_reserve_a >= reserve_a) return 10000;
             (reserve_b, reserve_a, reserve_a - new_reserve_a)
         };
         
         stable_price_impact_bps(reserve_in, reserve_out, d, pool.amp, amount_in_after_fee, amount_out)
     }
 
-    /// FIX [L1]: Get current amplification coefficient (with ramping support)
-    /// Returns interpolated value if ramping is active
+    /// Get current amplification coefficient with ramping support
+    ///
+    /// Returns the interpolated amp value if ramping is active, otherwise returns the stored amp.
+    /// Ramping allows gradual adjustment of the curve shape to prevent sudden price changes.
+    ///
+    /// # Returns
+    /// - Current amp (interpolated if ramping, otherwise stored value)
     public fun get_current_amp<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         clock: &sui::clock::Clock
     ): u64 {
-        // FIX [Amp Ramping Sentinel]: Use end_time == 0 instead of start_time == 0
-        // This allows ramping to start at timestamp 0 (e.g., in test environments)
-        // If not ramping, amp_ramp_end_time will be 0
+        // Check if ramping is active (end_time == 0 means no active ramp)
         if (pool.amp_ramp_end_time == 0) {
             return pool.amp
         };
 
         let current_time = clock::timestamp_ms(clock);
         
-        // If ramp hasn't started yet, return current amp
+        // Ramp hasn't started yet
         if (current_time < pool.amp_ramp_start_time) {
             return pool.amp
         };
         
-        // If ramp has ended, return target amp
+        // Ramp has completed
         if (current_time >= pool.amp_ramp_end_time) {
             return pool.target_amp
         };
         
-        // Linear interpolation during ramp
+        // Linear interpolation during active ramp
         let time_elapsed = current_time - pool.amp_ramp_start_time;
         let total_time = pool.amp_ramp_end_time - pool.amp_ramp_start_time;
         
@@ -1529,17 +1642,22 @@ module sui_amm::stable_pool {
         }
     }
 
-    /// StableSwap-specific price impact helper (basis points).
-    /// Instead of comparing against a constant-product "ideal" or a
-    /// naive reserve ratio, we approximate the ideal output from the
-    /// Stable invariant itself by pricing a tiny trade on the curve.
+    /// Calculate price impact for StableSwap trades
     ///
-    /// Steps (for input token X, output token Y):
-    /// 1. Compute out_for_1 = Y_out when swapping 1 unit of X at
-    ///    current reserves using the same D and amp.
-    /// 2. Ideal_out = amount_in_after_fee * out_for_1.
-    /// 3. Impact = max(0, Ideal_out - Actual_out) / Ideal_out.
-    /// FIX L4: Added overflow protection
+    /// Unlike constant product pools, StableSwap price impact is calculated by comparing
+    /// the actual output against an "ideal" output derived from the curve's spot price.
+    ///
+    /// # Algorithm
+    /// 1. Calculate output for 1 unit input at current reserves (spot price)
+    /// 2. Scale to get ideal output: ideal_out = amount_in * spot_rate
+    /// 3. Price impact = (ideal_out - actual_out) / ideal_out
+    ///
+    /// # Returns
+    /// - Price impact in basis points (1 bps = 0.01%)
+    ///
+    /// # Aborts
+    /// - `EExcessivePriceImpact`: If calculation fails or impact is extreme
+    /// - `EOverflow`: If intermediate calculations would overflow
     fun stable_price_impact_bps(
         reserve_in: u64,
         reserve_out: u64,
@@ -1570,7 +1688,7 @@ module sui_amm::stable_pool {
             abort EExcessivePriceImpact
         };
 
-        // FIX L4: Check for overflow before multiplication
+        // Overflow protection for large trades
         assert!(ideal_out <= MAX_SAFE_VALUE, EOverflow);
 
         let actual_out = (amount_out as u128);
@@ -1582,8 +1700,22 @@ module sui_amm::stable_pool {
         }
     }
 
-    /// FIX [L1]: Initiate amp ramping (admin only via friend)
-    /// Gradually changes amp to target over specified duration for smooth transitions
+    /// Initiate amplification coefficient ramping
+    ///
+    /// Gradually adjusts amp to a target value over a specified duration.
+    /// This prevents sudden curve changes that could be exploited for arbitrage.
+    ///
+    /// # Safety Limits
+    /// - Maximum 1.5x increase per ramp
+    /// - Minimum 0.67x decrease per ramp
+    /// - Minimum ramp duration: 48 hours
+    ///
+    /// # Parameters
+    /// - `target_amp`: Target amplification coefficient
+    /// - `ramp_duration_ms`: Duration of ramp in milliseconds (min 48 hours)
+    ///
+    /// # Aborts
+    /// - `EInvalidAmp`: If target_amp outside valid range or change too large
     public(package) fun ramp_amp<CoinA, CoinB>(
         pool: &mut StableSwapPool<CoinA, CoinB>,
         target_amp: u64,
@@ -1592,8 +1724,7 @@ module sui_amm::stable_pool {
     ) {
         assert!(target_amp >= MIN_AMP && target_amp <= MAX_AMP, EInvalidAmp);
         
-        // FIX L3: Safety limits on amp changes
-        // Ensure no active ramp or complete it first
+        // Complete any active ramp before starting a new one
         if (pool.amp_ramp_start_time != 0) {
             pool.amp = get_current_amp(pool, clock);
             pool.amp_ramp_start_time = 0;
@@ -1602,26 +1733,21 @@ module sui_amm::stable_pool {
 
         let current_amp = pool.amp;
         
-        // SECURITY FIX [P1-15.6]: Tighten amp ramp limits to prevent manipulation
-        // Max 1.5x increase or 0.67x decrease per ramp (reduced from 2x/0.5x)
+        // Enforce safety limits to prevent manipulation
         if (target_amp > current_amp) {
-            // Max 1.5x increase: target_amp <= current_amp * 3 / 2
+            // Maximum 1.5x increase per ramp
             assert!(target_amp * 2 <= current_amp * 3, EInvalidAmp);
         } else {
-            // Min 0.67x decrease: target_amp >= current_amp * 2 / 3
+            // Minimum 0.67x decrease per ramp
             assert!(target_amp * 3 >= current_amp * 2, EInvalidAmp);
         };
         
-        // SECURITY FIX [P1-15.6]: Extend minimum ramp duration to 48 hours (from 24 hours)
-        // 48 hours = 172,800,000 milliseconds
+        // Minimum 48 hour ramp duration prevents rapid manipulation
         assert!(ramp_duration_ms >= 172_800_000, EInvalidAmp);
         
         let current_time = clock::timestamp_ms(clock);
         
-        // Update current amp to interpolated value if already ramping
         pool.amp = current_amp;
-        
-        // Set new ramp parameters
         pool.target_amp = target_amp;
         pool.amp_ramp_start_time = current_time;
         pool.amp_ramp_end_time = current_time + ramp_duration_ms;
@@ -1725,8 +1851,13 @@ module sui_amm::stable_pool {
         });
     }
 
-    /// Get the minimum fee in basis points required for pool creation (Requirement 10.3, 10.4)
-    /// Returns 1 basis point (0.01%) as the minimum fee to ensure meaningful LP returns
+    /// Get minimum fee in basis points for pool creation
+    ///
+    /// Returns the minimum swap fee required when creating a pool.
+    /// This ensures LPs receive meaningful returns for providing liquidity.
+    ///
+    /// # Returns
+    /// - Minimum fee of 1 basis point (0.01%)
     public fun min_fee_bps(): u64 {
         MIN_FEE_BPS
     }

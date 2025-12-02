@@ -147,9 +147,7 @@ module sui_amm::sui_amm {
     /// This is a convenience wrapper around pool::auto_compound_fees() that can be
     /// called directly from client applications.
     /// 
-    /// Requirements: 5.1, 5.2, 5.4, 5.5
-    /// 
-    /// # Arguments
+    /// # Parameters
     /// * `pool` - The liquidity pool (shared object)
     /// * `position` - The LP position to auto-compound (owned by sender)
     /// * `min_liquidity_increase` - Minimum liquidity shares to mint (slippage protection)
@@ -171,13 +169,8 @@ module sui_amm::sui_amm {
         deadline: u64,
         ctx: &mut tx_context::TxContext
     ) {
-        // Call underlying pool function with proper error handling and validation
-        // The pool function already performs all necessary validation:
-        // - Checks if pool is paused
-        // - Validates deadline
-        // - Verifies position belongs to pool
-        // - Checks minimum fee threshold
-        // - Validates minimum liquidity increase
+        // Delegate to pool module for actual implementation
+        // All validation (pause status, deadline, ownership, thresholds) happens there
         let (_liquidity_increase, refund_a, refund_b) = pool::auto_compound_fees(
             pool,
             position,
@@ -199,9 +192,7 @@ module sui_amm::sui_amm {
     /// This is a convenience wrapper around pool::refresh_position_metadata() that
     /// can be called directly from client applications.
     /// 
-    /// Requirements: 5.1, 5.2, 5.3, 5.4, 5.5
-    /// 
-    /// # Arguments
+    /// # Parameters
     /// * `pool` - The liquidity pool (shared object)
     /// * `position` - The LP position to refresh (owned by sender)
     /// * `clock` - Clock for timestamp tracking (shared object)
@@ -213,11 +204,8 @@ module sui_amm::sui_amm {
         position: &mut position::LPPosition,
         clock: &clock::Clock
     ) {
-        // Call underlying pool function with proper error handling and validation
-        // The pool function already performs all necessary validation:
-        // - Verifies position belongs to pool
-        // - Updates cached values if they've changed
-        // - Updates timestamp to mark metadata as fresh
+        // Delegate to pool module for actual implementation
+        // All validation (ownership, staleness checks) happens there
         pool::refresh_position_metadata(
             pool,
             position,

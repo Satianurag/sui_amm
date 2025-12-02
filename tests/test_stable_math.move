@@ -3,33 +3,32 @@ module sui_amm::test_stable_math {
     use sui_amm::stable_math;
     use sui_amm::fixtures;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // GET_D() NEWTON'S METHOD CONVERGENCE TESTS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that get_d() calculates D correctly for balanced reserves
+    ///
+    /// For a balanced pool (1:1 ratio), D should be approximately 2x the reserves.
+    /// This test ensures the Newton's method iteration converges to the correct value.
     #[test]
     fun test_get_d_balanced_reserves() {
-        // Test with balanced reserves (1:1 ratio)
         let x = 1_000_000;
         let y = 1_000_000;
         let amp = 100;
         
         let d = stable_math::get_d(x, y, amp);
         
-        // D should be approximately 2 * reserves for balanced pool
         assert!(d > 1_900_000, 0);
         assert!(d < 2_100_000, 1);
     }
     
+    /// Verifies that get_d() converges quickly without exceeding iteration limit
+    ///
+    /// Newton's method should converge in less than 64 iterations for typical inputs.
+    /// This test ensures the function doesn't abort with EConvergenceFailed.
     #[test]
     fun test_get_d_convergence_speed() {
-        // Test that get_d converges quickly (< 64 iterations)
-        // This test verifies the function doesn't abort with EConvergenceFailed
         let x = 1_000_000;
         let y = 1_000_000;
         let amp = 100;
         
-        // Should converge without aborting
         let d = stable_math::get_d(x, y, amp);
         assert!(d > 0, 0);
     }

@@ -9,9 +9,9 @@ module sui_amm::test_pool_core {
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // K-INVARIANT TESTS - Core constant product formula verification
-    // ═══════════════════════════════════════════════════════════════════════════
+    // K-Invariant Tests
+    // Verifies the constant product formula K = reserve_a * reserve_b is maintained
+    // K should never decrease after swaps (may increase slightly due to fees)
 
     #[test]
     fun test_k_invariant_maintained_after_swap() {
@@ -49,10 +49,8 @@ module sui_amm::test_pool_core {
             coin::burn_for_testing(refund_a);
             coin::burn_for_testing(refund_b);
             
-            // Snapshot K before swap
             let before = test_utils::snapshot_pool(pool, &clock);
             
-            // Execute swap: 10M USDC -> BTC
             let coin_in = test_utils::mint_coin<USDC>(10_000_000, ctx);
             let coin_out = pool::swap_a_to_b(
                 pool,
@@ -65,10 +63,9 @@ module sui_amm::test_pool_core {
             );
             coin::burn_for_testing(coin_out);
             
-            // Snapshot K after swap
             let after = test_utils::snapshot_pool(pool, &clock);
             
-            // Verify K_after >= K_before (with tolerance for rounding)
+            // Verifies K_after >= K_before (K may increase slightly due to fees)
             assertions::assert_k_invariant_maintained(&before, &after, 10);
             
             // Cleanup
@@ -82,10 +79,11 @@ module sui_amm::test_pool_core {
 
     #[test]
     fun test_k_increases_on_add_liquidity() {
+        // Verifies that adding liquidity increases K proportionally
+        // This ensures the pool grows correctly as more liquidity is added
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with initial liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -102,10 +100,8 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Snapshot K before adding more liquidity
         let before = test_utils::snapshot_pool(&pool, &clock);
         
-        // Add more liquidity
         let coin_a2 = test_utils::mint_coin<USDC>(500_000_000, ts::ctx(&mut scenario));
         let coin_b2 = test_utils::mint_coin<BTC>(500_000_000, ts::ctx(&mut scenario));
         
@@ -121,10 +117,8 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a2);
         coin::burn_for_testing(refund_b2);
         
-        // Snapshot K after adding liquidity
         let after = test_utils::snapshot_pool(&pool, &clock);
         
-        // Verify K increased
         assertions::assert_k_increased(&before, &after);
         
         // Cleanup
@@ -137,10 +131,11 @@ module sui_amm::test_pool_core {
 
     #[test]
     fun test_k_decreases_on_remove_liquidity() {
+        // Verifies that removing liquidity decreases K proportionally
+        // This ensures LPs can withdraw their share without breaking the pool
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with initial liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -157,10 +152,8 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Snapshot K before removing liquidity
         let before = test_utils::snapshot_pool(&pool, &clock);
         
-        // Remove half the liquidity
         let liquidity = position::liquidity(&position);
         let (coin_a_out, coin_b_out) = pool::remove_liquidity_partial(
             &mut pool,
@@ -175,10 +168,8 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(coin_a_out);
         coin::burn_for_testing(coin_b_out);
         
-        // Snapshot K after removing liquidity
         let after = test_utils::snapshot_pool(&pool, &clock);
         
-        // Verify K decreased
         assertions::assert_k_decreased(&before, &after);
         
         // Cleanup
@@ -188,16 +179,17 @@ module sui_amm::test_pool_core {
         ts::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SWAP OUTPUT CALCULATION TESTS
-    // ═══════════════════════════════════════════════════════════════════════════
+    // Swap Output Calculation Tests
+    // Verifies swap outputs match the constant product formula
+    // Formula: output = (input_after_fee * reserve_out) / (reserve_in + input_after_fee)
 
     #[test]
     fun test_swap_output_calculation_accuracy() {
+        // Verifies swap output matches the mathematical formula within tolerance
+        // This ensures users receive the correct amount for their swaps
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with 1M:1M liquidity, 0.3% fee
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -218,7 +210,6 @@ module sui_amm::test_pool_core {
         let amount_in = 10_000_000u64;
         let fee_bps = 30u64;
         
-        // Execute swap
         let coin_in = test_utils::mint_coin<USDC>(amount_in, ts::ctx(&mut scenario));
         let coin_out = pool::swap_a_to_b(
             &mut pool,
@@ -232,14 +223,13 @@ module sui_amm::test_pool_core {
         
         let actual_output = coin::value(&coin_out);
         
-        // Verify output matches formula: output = (input_after_fee * reserve_out) / (reserve_in + input_after_fee)
         assertions::assert_swap_output_correct(
             amount_in,
             reserve_a,
             reserve_b,
             fee_bps,
             actual_output,
-            10 // tolerance
+            10
         );
         
         // Cleanup
@@ -250,16 +240,18 @@ module sui_amm::test_pool_core {
         ts::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // LP TOKEN MINTING TESTS
-    // ═══════════════════════════════════════════════════════════════════════════
+    // LP Token Minting Tests
+    // Verifies liquidity tokens are minted correctly for initial and subsequent deposits
+    // Initial: liquidity = sqrt(amount_a * amount_b) - MINIMUM_LIQUIDITY
+    // Subsequent: liquidity = min(amount_a * total_supply / reserve_a, amount_b * total_supply / reserve_b)
 
     #[test]
     fun test_initial_lp_token_minting() {
+        // Verifies initial liquidity minting uses geometric mean formula
+        // MINIMUM_LIQUIDITY (1000) is burned to prevent inflation attacks
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         
         let amount_a = 1_000_000_000u64;
@@ -267,7 +259,6 @@ module sui_amm::test_pool_core {
         let coin_a = test_utils::mint_coin<USDC>(amount_a, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(amount_b, ts::ctx(&mut scenario));
         
-        // Add initial liquidity
         let (position, refund_a, refund_b) = pool::add_liquidity(
             &mut pool,
             coin_a,
@@ -282,8 +273,7 @@ module sui_amm::test_pool_core {
         
         let minted_liquidity = position::liquidity(&position);
         
-        // Verify initial liquidity = sqrt(amount_a * amount_b) - MINIMUM_LIQUIDITY
-        // Verify initial liquidity = sqrt(amount_a * amount_b) - MINIMUM_LIQUIDITY
+        // Expected: sqrt(1_000_000_000 * 1_000_000_000) - 1000 = 1_000_000_000 - 1000
         let expected_liquidity = 1_000_000_000 - 1000;
         assert!(minted_liquidity <= expected_liquidity, 0);
         assert!(minted_liquidity >= expected_liquidity - 100000, 1);
@@ -297,10 +287,11 @@ module sui_amm::test_pool_core {
 
     #[test]
     fun test_subsequent_lp_token_minting() {
+        // Verifies subsequent liquidity minting is proportional to existing reserves
+        // This ensures fair distribution of LP tokens based on contribution
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with initial liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -317,11 +308,9 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Get current state
         let (reserve_a, reserve_b) = pool::get_reserves(&pool);
         let total_supply = pool::get_total_liquidity(&pool);
         
-        // Change price (reduced to avoid price impact limits)
         let amount_a = 500_000_000u64;
         let amount_b = 500_000_000u64;
         let coin_a2 = test_utils::mint_coin<USDC>(amount_a, ts::ctx(&mut scenario));
@@ -341,7 +330,6 @@ module sui_amm::test_pool_core {
         
         let minted_liquidity = position::liquidity(&position2);
         
-        // Verify subsequent liquidity minting is proportional
         assertions::assert_subsequent_liquidity_correct(
             amount_a,
             amount_b,
@@ -349,7 +337,7 @@ module sui_amm::test_pool_core {
             reserve_b,
             total_supply,
             minted_liquidity,
-            10 // tolerance
+            10
         );
         
         // Cleanup
@@ -360,16 +348,17 @@ module sui_amm::test_pool_core {
         ts::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PRICE IMPACT CALCULATION TESTS
-    // ═══════════════════════════════════════════════════════════════════════════
+    // Price Impact Calculation Tests
+    // Verifies price impact is calculated correctly and stays within acceptable limits
+    // Large swaps relative to reserves should have higher price impact
 
     #[test]
     fun test_price_impact_calculation_accuracy() {
+        // Verifies price impact calculation for a 5% swap relative to reserves
+        // Price impact should be measurable but within acceptable limits
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with 1M:1M liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -387,9 +376,8 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_b);
         
         let (reserve_a, reserve_b) = pool::get_reserves(&pool);
-        let amount_in = 50_000_000u64; // 5% of reserve
+        let amount_in = 50_000_000u64;
         
-        // Execute swap
         let coin_in = test_utils::mint_coin<USDC>(amount_in, ts::ctx(&mut scenario));
         let coin_out = pool::swap_a_to_b(
             &mut pool,
@@ -403,13 +391,12 @@ module sui_amm::test_pool_core {
         
         let actual_output = coin::value(&coin_out);
         
-        // Verify price impact is calculated and within limits
         assertions::assert_price_impact_calculated(
             amount_in,
             reserve_a,
             reserve_b,
             actual_output,
-            1000 // max 10% price impact
+            1000
         );
         
         // Cleanup
@@ -420,18 +407,19 @@ module sui_amm::test_pool_core {
         ts::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // EXTREME VALUE HANDLING TESTS
-    // ═══════════════════════════════════════════════════════════════════════════
+    // Extreme Value Handling Tests
+    // Verifies pool operations handle edge cases without overflow or errors
+    // Tests include large reserves, dust amounts, and extreme imbalances
 
     #[test]
     fun test_extreme_value_handling_large_reserves() {
+        // Verifies pool handles near-maximum reserve values without overflow
+        // Uses u128 intermediate calculations to prevent u64 * u64 overflow
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with very large reserves (near u64 safe limits)
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
-        let large_amount = 18446744073709551u64; // u64::MAX / 1000
+        let large_amount = 18446744073709551u64;
         let coin_a = test_utils::mint_coin<USDC>(large_amount, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(large_amount, ts::ctx(&mut scenario));
         
@@ -449,11 +437,9 @@ module sui_amm::test_pool_core {
         
         let (reserve_a, reserve_b) = pool::get_reserves(&pool);
         
-        // Verify no overflow in K calculation
         assertions::assert_k_no_overflow(reserve_a, reserve_b);
         
-        // Execute swap with large amount
-        let swap_amount = large_amount / 100; // 1% of reserve
+        let swap_amount = large_amount / 100;
         let coin_in = test_utils::mint_coin<USDC>(swap_amount, ts::ctx(&mut scenario));
         let coin_out = pool::swap_a_to_b(
             &mut pool,
@@ -465,7 +451,6 @@ module sui_amm::test_pool_core {
             ts::ctx(&mut scenario)
         );
         
-        // Verify swap succeeded and K is maintained
         let after = test_utils::snapshot_pool(&pool, &clock);
         assertions::assert_reserves_positive(&after);
         
@@ -479,10 +464,11 @@ module sui_amm::test_pool_core {
 
     #[test]
     fun test_dust_amount_handling() {
+        // Verifies pool handles extremely small swap amounts gracefully
+        // Dust swaps may produce zero output due to rounding, but should not break K invariant
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with standard liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -499,22 +485,19 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Snapshot before dust swap
         let before = test_utils::snapshot_pool(&pool, &clock);
         
-        // Execute swap with dust amount (1 unit)
         let coin_in = test_utils::mint_coin<USDC>(1, ts::ctx(&mut scenario));
         let coin_out = pool::swap_a_to_b(
             &mut pool,
             coin_in,
-            0, // Accept any output for dust
+            0,
             option::some(18446744073709551615),
             &clock,
             fixtures::far_future_deadline(),
             ts::ctx(&mut scenario)
         );
         
-        // Verify K is maintained even with dust amounts
         let after = test_utils::snapshot_pool(&pool, &clock);
         assertions::assert_k_invariant_maintained(&before, &after, 10);
         
@@ -528,12 +511,13 @@ module sui_amm::test_pool_core {
 
     #[test]
     fun test_minimum_liquidity_edge_case() {
+        // Verifies MINIMUM_LIQUIDITY (1000) is burned on first deposit
+        // This prevents inflation attacks where attackers manipulate the price by donating tokens
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with minimum viable liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
-        let min_amount = 10_000u64; // Just above MINIMUM_LIQUIDITY threshold
+        let min_amount = 10_000u64;
         let coin_a = test_utils::mint_coin<USDC>(min_amount, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(min_amount, ts::ctx(&mut scenario));
         
@@ -549,11 +533,9 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Verify MINIMUM_LIQUIDITY (1000) was burned
         let total_liquidity = pool::get_total_liquidity(&pool);
         assert!(total_liquidity >= 1000, 0);
         
-        // Verify position received liquidity minus burned amount
         let position_liquidity = position::liquidity(&position);
         assert!(position_liquidity > 0, 1);
         
@@ -566,10 +548,11 @@ module sui_amm::test_pool_core {
 
     #[test]
     fun test_extreme_imbalance_operations() {
+        // Verifies pool handles extreme reserve imbalances (1:1000 ratio)
+        // Imbalanced pools should still maintain K invariant and positive reserves
         let mut scenario = ts::begin(@0x1);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with 1:1000 imbalance
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(10_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(10_000_000, ts::ctx(&mut scenario));
@@ -586,10 +569,8 @@ module sui_amm::test_pool_core {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Snapshot before swap
         let before = test_utils::snapshot_pool(&pool, &clock);
         
-        // Execute swap on imbalanced pool
         let coin_in = test_utils::mint_coin<USDC>(100_000_000, ts::ctx(&mut scenario));
         let coin_out = pool::swap_a_to_b(
             &mut pool,
@@ -601,7 +582,6 @@ module sui_amm::test_pool_core {
             ts::ctx(&mut scenario)
         );
         
-        // Verify K is maintained and reserves stay positive
         let after = test_utils::snapshot_pool(&pool, &clock);
         assertions::assert_k_invariant_maintained(&before, &after, 100);
         assertions::assert_reserves_positive(&after);

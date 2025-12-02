@@ -9,20 +9,22 @@ module sui_amm::test_edge_cases {
     use sui_amm::fixtures;
     use sui_amm::assertions;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // MINIMUM_LIQUIDITY EDGE CASES - Testing the 1000 unit burn threshold
-    // ═══════════════════════════════════════════════════════════════════════════
+    /// Tests that verify the MINIMUM_LIQUIDITY burn mechanism, which permanently
+    /// locks 1000 liquidity units on the first deposit to prevent division by zero
+    /// and ensure pool initialization security.
 
+    /// Verifies that exactly 1000 liquidity units are burned on the first deposit.
+    /// This permanent lock prevents the pool from ever reaching zero total liquidity,
+    /// which would enable price manipulation attacks.
     #[test]
     fun test_minimum_liquidity_burned_on_first_deposit() {
         let mut scenario = ts::begin(fixtures::admin());
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         
-        // Add initial liquidity - exactly at minimum threshold
-        let amount_a = 10_000u64; // sqrt(10000 * 10000) = 10000
+        // Add initial liquidity at the minimum threshold
+        let amount_a = 10_000u64;
         let amount_b = 10_000u64;
         let coin_a = test_utils::mint_coin<USDC>(amount_a, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(amount_b, ts::ctx(&mut scenario));
@@ -39,14 +41,13 @@ module sui_amm::test_edge_cases {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Verify MINIMUM_LIQUIDITY (1000) was burned
+        // Verify the burn mechanism locked exactly 1000 units
         let total_liquidity = pool::get_total_liquidity(&pool);
         let position_liquidity = position::liquidity(&position);
         
-        // Total liquidity should be sqrt(10000 * 10000) = 10000
         assert!(total_liquidity == 10000, 0);
         
-        // Position should have received: sqrt(10000 * 10000) - 1000 = 9000
+        // Position receives total minus the burned MINIMUM_LIQUIDITY
         let expected_liquidity = 10_000 - 1000;
         assert!(position_liquidity == expected_liquidity, 1);
         
@@ -57,6 +58,9 @@ module sui_amm::test_edge_cases {
         ts::end(scenario);
     }
 
+    /// Verifies that MINIMUM_LIQUIDITY is only burned on the first deposit.
+    /// Subsequent liquidity additions should not burn additional units, ensuring
+    /// LPs receive their full proportional share.
     #[test]
     fun test_minimum_liquidity_only_burned_once() {
         let mut scenario = ts::begin(fixtures::admin());
@@ -81,7 +85,7 @@ module sui_amm::test_edge_cases {
         
         let total_after_first = pool::get_total_liquidity(&pool);
         
-        // Add second liquidity - should NOT burn additional MINIMUM_LIQUIDITY
+        // Add more liquidity - no additional burn should occur
         let coin_a2 = test_utils::mint_coin<USDC>(500_000_000, ts::ctx(&mut scenario));
         let coin_b2 = test_utils::mint_coin<BTC>(500_000_000, ts::ctx(&mut scenario));
         
@@ -100,7 +104,7 @@ module sui_amm::test_edge_cases {
         let total_after_second = pool::get_total_liquidity(&pool);
         let position2_liquidity = position::liquidity(&position2);
         
-        // Total liquidity should increase by exactly the minted amount (no additional burn)
+        // Total liquidity increases by exactly the new position's liquidity
         assert!(total_after_second == total_after_first + position2_liquidity, 2);
         
         // Cleanup
@@ -111,21 +115,22 @@ module sui_amm::test_edge_cases {
         ts::end(scenario);
     }
 
+    /// Verifies that attempting to add liquidity below the minimum threshold fails.
+    /// The pool requires at least 10000 liquidity units (after the burn) to ensure
+    /// meaningful price discovery and prevent dust attacks.
     #[test]
     #[expected_failure(abort_code = sui_amm::pool::EInsufficientLiquidity)]
     fun test_minimum_liquidity_insufficient_initial_deposit() {
         let mut scenario = ts::begin(fixtures::admin());
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         
-        // Try to add liquidity below MIN_INITIAL_LIQUIDITY (10000)
-        // sqrt(5000 * 5000) = 5000 < 10000
+        // Attempt to add insufficient liquidity (sqrt(5000 * 5000) = 5000 < 10000)
         let coin_a = test_utils::mint_coin<USDC>(5_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(5_000, ts::ctx(&mut scenario));
         
-        // This should fail with EInsufficientLiquidity
+        // This should abort with EInsufficientLiquidity
         let (position, refund_a, refund_b) = pool::add_liquidity(
             &mut pool,
             coin_a,
@@ -145,10 +150,11 @@ module sui_amm::test_edge_cases {
         ts::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // ZERO AMOUNT HANDLING - Testing EZeroAmount error
-    // ═══════════════════════════════════════════════════════════════════════════
+    /// Tests that verify zero-amount operations are properly rejected to prevent
+    /// edge cases and potential exploits.
 
+    /// Verifies that attempting to swap zero tokens results in an abort.
+    /// Zero-amount swaps are meaningless and could be used to spam the system.
     #[test]
     #[expected_failure(abort_code = sui_amm::pool::EZeroAmount)]
     fun test_zero_amount_swap_fails() {
@@ -172,7 +178,7 @@ module sui_amm::test_edge_cases {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Try to swap zero amount - should fail
+        // Attempt to swap zero tokens - should abort
         let coin_in = test_utils::mint_coin<USDC>(0, ts::ctx(&mut scenario));
         let coin_out = pool::swap_a_to_b(
             &mut pool,
@@ -192,16 +198,17 @@ module sui_amm::test_edge_cases {
         ts::end(scenario);
     }
 
+    /// Verifies that attempting to add liquidity with zero amount in either token fails.
+    /// Both tokens must have non-zero amounts to maintain the pool's price ratio.
     #[test]
     #[expected_failure(abort_code = sui_amm::pool::EZeroAmount)]
     fun test_zero_amount_add_liquidity_fails() {
         let mut scenario = ts::begin(fixtures::admin());
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         
-        // Try to add zero liquidity - should fail
+        // Attempt to add liquidity with zero amount in token A
         let coin_a = test_utils::mint_coin<USDC>(0, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000, ts::ctx(&mut scenario));
         
@@ -224,6 +231,8 @@ module sui_amm::test_edge_cases {
         ts::end(scenario);
     }
 
+    /// Verifies that attempting to increase liquidity with zero amount fails.
+    /// This prevents meaningless operations and potential exploits.
     #[test]
     #[expected_failure(abort_code = sui_amm::pool::EZeroAmount)]
     fun test_zero_amount_increase_liquidity_fails() {
@@ -231,7 +240,6 @@ module sui_amm::test_edge_cases {
         let mut scenario = ts::begin(admin);
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
-        // Create pool with initial liquidity
         let mut pool = pool::create_pool<USDC, BTC>(30, 100, 0, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<BTC>(1_000_000_000, ts::ctx(&mut scenario));
@@ -248,7 +256,7 @@ module sui_amm::test_edge_cases {
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
         
-        // Try to increase liquidity with zero amount - should fail
+        // Attempt to increase liquidity with zero amount in token A
         let coin_a2 = test_utils::mint_coin<USDC>(0, ts::ctx(&mut scenario));
         let coin_b2 = test_utils::mint_coin<BTC>(1_000_000, ts::ctx(&mut scenario));
         

@@ -1,3 +1,6 @@
+/// Test utilities module providing helper functions, snapshot types, and test data generators
+/// for AMM testing. This module includes coin minting, clock manipulation, state snapshots,
+/// random number generation, and pool/liquidity management helpers.
 #[test_only]
 module sui_amm::test_utils {
     use sui::clock::{Self, Clock};
@@ -7,10 +10,7 @@ module sui_amm::test_utils {
     use sui_amm::pool::{Self, LiquidityPool};
     use sui_amm::position::{Self, LPPosition};
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // TEST TOKEN TYPES
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    // Test token types for multi-token pool testing scenarios
     public struct USDC has drop {}
     public struct USDT has drop {}
     public struct DAI has drop {}
@@ -19,26 +19,24 @@ module sui_amm::test_utils {
     public struct SUI has drop {}
     public struct WETH has drop {}
     
-    // Test address constants
+    // Standard test addresses for different roles in test scenarios
     const ADMIN: address = @0xAD;
     const USER_A: address = @0xA;
     const USER_B: address = @0xB;
     const USER_C: address = @0xC;
     
-    // Test amount constants
-    const INITIAL_BALANCE: u64 = 1_000_000_000_000; // 1000 tokens with 9 decimals
+    // Standard test amounts covering typical use cases from small to large values
+    const INITIAL_BALANCE: u64 = 1_000_000_000_000;
     const SMALL_AMOUNT: u64 = 1_000;
-    const LARGE_AMOUNT: u64 = 1_000_000_000_000_000; // 1M tokens
+    const LARGE_AMOUNT: u64 = 1_000_000_000_000_000;
     
-    // Test fee tier constants (in basis points)
-    const FEE_LOW: u64 = 5;      // 0.05%
-    const FEE_MEDIUM: u64 = 30;  // 0.30%
-    const FEE_HIGH: u64 = 100;   // 1.00%
+    // Common fee tier configurations in basis points for different pool types
+    const FEE_LOW: u64 = 5;
+    const FEE_MEDIUM: u64 = 30;
+    const FEE_HIGH: u64 = 100;
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SNAPSHOT STRUCTS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Snapshot of constant product pool state at a specific point in time
+    /// Used for before/after comparisons in invariant and conservation tests
     public struct PoolSnapshot has copy, drop, store {
         reserve_a: u64,
         reserve_b: u64,
@@ -53,6 +51,8 @@ module sui_amm::test_utils {
         timestamp_ms: u64,
     }
     
+    /// Snapshot of StableSwap pool state at a specific point in time
+    /// Captures D-invariant and amplification coefficient for stable pool testing
     public struct StablePoolSnapshot has copy, drop, store {
         reserve_a: u64,
         reserve_b: u64,
@@ -62,6 +62,8 @@ module sui_amm::test_utils {
         timestamp_ms: u64,
     }
     
+    /// Snapshot of LP position state for tracking liquidity and fee accumulation
+    /// Used to verify fee calculations and position value changes over time
     public struct PositionSnapshot has copy, drop, store {
         liquidity: u64,
         fee_debt_a: u128,
@@ -72,42 +74,34 @@ module sui_amm::test_utils {
         pending_fee_b: u64,
     }
     
-    // Getter functions for test addresses
     public fun admin(): address { ADMIN }
     public fun user_a(): address { USER_A }
     public fun user_b(): address { USER_B }
     public fun user_c(): address { USER_C }
     
-    // Getter functions for test amounts
     public fun initial_balance(): u64 { INITIAL_BALANCE }
     public fun small_amount(): u64 { SMALL_AMOUNT }
     public fun large_amount(): u64 { LARGE_AMOUNT }
     
-    // Getter functions for test fee tiers
     public fun fee_low(): u64 { FEE_LOW }
     public fun fee_medium(): u64 { FEE_MEDIUM }
     public fun fee_high(): u64 { FEE_HIGH }
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // COIN MINTING HELPERS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Mint test coins of any type for testing purposes
+    /// Wraps the Sui framework's mint_for_testing to provide a cleaner interface
     public fun mint_coin<T: drop>(amount: u64, ctx: &mut TxContext): Coin<T> {
         coin::mint_for_testing<T>(amount, ctx)
     }
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // CLOCK UTILITIES
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Advance the test clock by a specified number of milliseconds
+    /// Used to simulate time passage for deadline and time-based feature testing
     public fun advance_clock(clock: &mut Clock, delta_ms: u64) {
         clock::increment_for_testing(clock, delta_ms);
     }
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SNAPSHOT FUNCTIONS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Capture a complete snapshot of StableSwap pool state
+    /// Includes reserves, liquidity, D-invariant, and amplification coefficient
+    /// Used for before/after comparisons in stable pool tests
     public fun snapshot_stable_pool<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         clock: &Clock
@@ -123,6 +117,9 @@ module sui_amm::test_utils {
         }
     }
     
+    /// Capture a complete snapshot of constant product pool state
+    /// Includes reserves, fees, protocol fees, accumulated fees per share, and K-invariant
+    /// Used for invariant verification and fee calculation tests
     public fun snapshot_pool<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
         clock: &Clock
@@ -146,6 +143,8 @@ module sui_amm::test_utils {
         }
     }
     
+    /// Capture LP position state including liquidity and fee debt
+    /// Pending fees are set to 0 as they must be calculated separately using pool state
     public fun snapshot_position(position: &LPPosition): PositionSnapshot {
         PositionSnapshot {
             liquidity: position::liquidity(position),
@@ -153,16 +152,10 @@ module sui_amm::test_utils {
             fee_debt_b: position::fee_debt_b(position),
             cached_value_a: position::cached_value_a(position),
             cached_value_b: position::cached_value_b(position),
-            pending_fee_a: 0, // Will be calculated separately
+            pending_fee_a: 0,
             pending_fee_b: 0,
         }
     }
-    
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SNAPSHOT GETTERS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
-    // Pool snapshot getters
     public fun get_snapshot_reserves(snapshot: &PoolSnapshot): (u64, u64) {
         (snapshot.reserve_a, snapshot.reserve_b)
     }
@@ -225,7 +218,9 @@ module sui_amm::test_utils {
     // RANDOM NUMBER GENERATION
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Linear congruential generator for deterministic pseudo-random numbers
+    /// Generate deterministic pseudo-random numbers using linear congruential generator
+    /// Uses standard LCG parameters for full-period generation across u64 range
+    /// Iteration parameter allows generating sequences of random values from same seed
     public fun lcg_random(seed: u64, iteration: u64): u64 {
         let a: u128 = 6364136223846793005;
         let c: u128 = 1442695040888963407;
@@ -233,20 +228,25 @@ module sui_amm::test_utils {
         (((seed as u128) * a + c + (iteration as u128)) % m) as u64
     }
     
-    /// Generate random amount within safe bounds
+    /// Generate random amount within specified bounds [1, max]
+    /// Returns 1 if max is 0 to avoid division by zero
+    /// Used for property-based testing with controlled value ranges
     public fun random_amount(seed: u64, iteration: u64, max: u64): u64 {
         if (max == 0) return 1;
         (lcg_random(seed, iteration) % max) + 1
     }
     
-    /// Generate random swap that won't exceed price impact limits
+    /// Generate random swap amount limited to 5% of reserve
+    /// Prevents excessive price impact that would cause test failures
+    /// Used for property tests that verify swap behavior under normal conditions
     public fun random_safe_swap_amount(seed: u64, iteration: u64, reserve: u64): u64 {
         let max_swap = reserve / 20; // Max 5% of reserve
         if (max_swap == 0) return 1;
         random_amount(seed, iteration, max_swap)
     }
     
-    /// Generate random liquidity amounts
+    /// Generate pair of random liquidity amounts for two-token pools
+    /// Uses different iteration values to ensure independent randomness for each token
     public fun random_liquidity_amounts(seed: u64, iteration: u64, max: u64): (u64, u64) {
         let amount_a = random_amount(seed, iteration, max);
         let amount_b = random_amount(seed, iteration + 1, max);
@@ -257,17 +257,20 @@ module sui_amm::test_utils {
     // TIME UTILITIES
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Far future deadline (u64::MAX)
+    /// Return maximum u64 value for deadline tests that should never expire
+    /// Used to bypass deadline checks when testing other functionality
     public fun far_future(): u64 { 18446744073709551615 }
     
-    /// Create clock at specific timestamp
+    /// Create test clock initialized to specific timestamp
+    /// Useful for testing time-dependent features from a known starting point
     public fun create_clock_at(timestamp_ms: u64, ctx: &mut TxContext): Clock {
         let mut clock = clock::create_for_testing(ctx);
         clock::set_for_testing(&mut clock, timestamp_ms);
         clock
     }
     
-    /// Set clock to specific timestamp
+    /// Update existing clock to specific timestamp
+    /// Used to simulate time jumps in tests without creating new clock objects
     public fun set_clock_to(clock: &mut Clock, timestamp_ms: u64) {
         clock::set_for_testing(clock, timestamp_ms);
     }
@@ -276,7 +279,8 @@ module sui_amm::test_utils {
     // K-INVARIANT HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Get K invariant from pool snapshot
+    /// Extract K-invariant value from pool snapshot
+    /// K = reserve_a * reserve_b and must never decrease from swaps
     public fun get_k_invariant(snapshot: &PoolSnapshot): u128 {
         snapshot.k_invariant
     }
@@ -285,7 +289,10 @@ module sui_amm::test_utils {
     // POOL CREATION HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Create initialized pool with initial liquidity
+    /// Create constant product pool with initial liquidity in a single operation
+    /// Returns pool ID and LP position NFT for the initial liquidity provider
+    /// Automatically shares the pool and cleans up refunded coins
+    /// Used to simplify test setup by combining pool creation and initialization
     public fun create_initialized_pool<CoinA: drop, CoinB: drop>(
         fee_bps: u64,
         protocol_fee_bps: u64,
@@ -330,7 +337,9 @@ module sui_amm::test_utils {
     // LIQUIDITY HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Add liquidity helper
+    /// Add liquidity to existing pool with automatic coin minting and refund cleanup
+    /// Mints test coins, adds liquidity, burns refunds, and returns position NFT
+    /// Simplifies test code by handling boilerplate coin management
     public fun add_liquidity_helper<CoinA: drop, CoinB: drop>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         amount_a: u64,
@@ -360,7 +369,10 @@ module sui_amm::test_utils {
         position
     }
 
-    /// Create initialized stable pool helper
+    /// Create StableSwap pool with initial liquidity in a single operation
+    /// Returns pool ID and LP position NFT for the initial liquidity provider
+    /// Automatically shares the pool and cleans up refunded coins
+    /// Used to simplify stable pool test setup
     public fun create_initialized_stable_pool<CoinA: drop, CoinB: drop>(
         amp: u64,
         fee_bps: u64,
@@ -405,7 +417,9 @@ module sui_amm::test_utils {
         (pool_id, position)
     }
     
-    /// Remove liquidity helper (partial removal)
+    /// Remove partial liquidity from position
+    /// Withdraws specified amount of liquidity shares and returns underlying tokens
+    /// Position NFT remains valid with reduced liquidity
     public fun remove_liquidity_helper<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         position: &mut LPPosition,
@@ -428,7 +442,9 @@ module sui_amm::test_utils {
         )
     }
     
-    /// Remove liquidity full helper
+    /// Remove all liquidity from position and burn the position NFT
+    /// Withdraws all liquidity shares and returns underlying tokens
+    /// Position NFT is consumed and cannot be used after this operation
     public fun remove_liquidity_full_helper<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         position: LPPosition,
@@ -453,7 +469,10 @@ module sui_amm::test_utils {
     // SWAP HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     
-    /// Swap A to B helper
+    /// Swap token A for token B with automatic coin minting
+    /// Mints input coins, executes swap, and returns output coins
+    /// Max price defaults to u64::MAX if not specified (no price limit)
+    /// Simplifies test code by handling coin creation
     public fun swap_a_to_b_helper<CoinA: drop, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         amount_in: u64,
@@ -476,7 +495,10 @@ module sui_amm::test_utils {
         )
     }
     
-    /// Swap B to A helper
+    /// Swap token B for token A with automatic coin minting
+    /// Mints input coins, executes swap, and returns output coins
+    /// Max price defaults to u64::MAX if not specified (no price limit)
+    /// Simplifies test code by handling coin creation
     public fun swap_b_to_a_helper<CoinA, CoinB: drop>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         amount_in: u64,

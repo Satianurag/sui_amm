@@ -9,10 +9,15 @@ module sui_amm::test_fee_conservation {
     use sui_amm::fixtures;
     use sui_amm::fee_distributor;
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: TOTAL CLAIMED FEES NEVER EXCEED TOTAL ACCUMULATED FEES
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that total claimed fees never exceed total accumulated fees.
+    ///
+    /// This test creates multiple LP positions and randomly interleaves swap operations
+    /// (which generate fees) with fee claim operations (which distribute fees to LPs).
+    /// It tracks the total fees accumulated from swaps and the total fees claimed by all
+    /// positions, verifying that claimed fees never exceed accumulated fees.
+    ///
+    /// This is a fundamental accounting invariant: you can't claim more fees than have
+    /// been generated. Violation would indicate a critical bug in fee distribution logic.
     #[test]
     fun test_fee_conservation_1000_random_claims() {
         let mut scenario = test_scenario::begin(fixtures::admin());
@@ -29,12 +34,10 @@ module sui_amm::test_fee_conservation {
             fixtures::admin(),
             test_scenario::ctx(&mut scenario)
         );
-        // Transfer position1 to admin instead of destroying
         transfer::public_transfer(position1, fixtures::admin());
         
         test_scenario::next_tx(&mut scenario, fixtures::user1());
         
-        // Add second LP position
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
@@ -48,7 +51,6 @@ module sui_amm::test_fee_conservation {
             &clock,
             test_scenario::ctx(&mut scenario)
         );
-        // Transfer position2 to user1 instead of destroying
         transfer::public_transfer(position2, fixtures::user1());
         
         test_scenario::return_shared(pool);
@@ -56,7 +58,6 @@ module sui_amm::test_fee_conservation {
         
         test_scenario::next_tx(&mut scenario, fixtures::user2());
         
-        // Add third LP position
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
@@ -70,7 +71,6 @@ module sui_amm::test_fee_conservation {
             &clock,
             test_scenario::ctx(&mut scenario)
         );
-        // Transfer position3 to user2 instead of destroying
         transfer::public_transfer(position3, fixtures::user2());
         
         test_scenario::return_shared(pool);
@@ -78,7 +78,6 @@ module sui_amm::test_fee_conservation {
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
-        // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         let mut position1 = test_scenario::take_from_sender<position::LPPosition>(&scenario);
@@ -91,7 +90,7 @@ module sui_amm::test_fee_conservation {
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
-        // Track total fees accumulated and claimed
+
         let mut total_fees_accumulated_a = 0u128;
         let mut total_fees_accumulated_b = 0u128;
         let mut total_fees_claimed_a = 0u64;
@@ -105,7 +104,6 @@ module sui_amm::test_fee_conservation {
             let operation = test_utils::lcg_random(seed, i) % 4;
             
             if (operation == 0) {
-                // Execute swap to generate fees
                 let (reserve_a, reserve_b) = pool::get_reserves(&pool);
                 let is_a_to_b = (test_utils::lcg_random(seed, i * 2) % 2) == 0;
                 
@@ -124,7 +122,7 @@ module sui_amm::test_fee_conservation {
                     );
                     coin::burn_for_testing(coin_out);
                     
-                    // Calculate fees generated
+                    // Track LP fees generated (excluding protocol fees)
                     let fee_amount = ((amount_in as u128) * (fee_bps as u128) / 10000) as u64;
                     let protocol_fee = ((fee_amount as u128) * (protocol_fee_bps as u128) / 10000) as u64;
                     let lp_fee = fee_amount - protocol_fee;
@@ -142,7 +140,6 @@ module sui_amm::test_fee_conservation {
                     );
                     coin::burn_for_testing(coin_out);
                     
-                    // Calculate fees generated
                     let fee_amount = ((amount_in as u128) * (fee_bps as u128) / 10000) as u64;
                     let protocol_fee = ((fee_amount as u128) * (protocol_fee_bps as u128) / 10000) as u64;
                     let lp_fee = fee_amount - protocol_fee;
@@ -151,7 +148,6 @@ module sui_amm::test_fee_conservation {
                 
                 let _snapshot_after = test_utils::snapshot_pool(&pool, &clock);
             } else if (operation == 1) {
-                // Position 1 claims fees
                 let (fee_a, fee_b) = fee_distributor::claim_fees(
                     &mut pool,
                     &mut position1,
@@ -169,11 +165,10 @@ module sui_amm::test_fee_conservation {
                 coin::burn_for_testing(fee_a);
                 coin::burn_for_testing(fee_b);
                 
-                // Verify claimed fees don't exceed accumulated
+                // Verify the conservation property after each claim
                 assert!((total_fees_claimed_a as u128) <= total_fees_accumulated_a, 0);
                 assert!((total_fees_claimed_b as u128) <= total_fees_accumulated_b, 1);
             } else if (operation == 2) {
-                // Position 2 claims fees
                 let (fee_a, fee_b) = fee_distributor::claim_fees(
                     &mut pool,
                     &mut position2,
@@ -191,11 +186,9 @@ module sui_amm::test_fee_conservation {
                 coin::burn_for_testing(fee_a);
                 coin::burn_for_testing(fee_b);
                 
-                // Verify claimed fees don't exceed accumulated
                 assert!((total_fees_claimed_a as u128) <= total_fees_accumulated_a, 2);
                 assert!((total_fees_claimed_b as u128) <= total_fees_accumulated_b, 3);
             } else {
-                // Position 3 claims fees
                 let (fee_a, fee_b) = fee_distributor::claim_fees(
                     &mut pool,
                     &mut position3,
@@ -213,7 +206,6 @@ module sui_amm::test_fee_conservation {
                 coin::burn_for_testing(fee_a);
                 coin::burn_for_testing(fee_b);
                 
-                // Verify claimed fees don't exceed accumulated
                 assert!((total_fees_claimed_a as u128) <= total_fees_accumulated_a, 4);
                 assert!((total_fees_claimed_b as u128) <= total_fees_accumulated_b, 5);
             };
@@ -221,11 +213,10 @@ module sui_amm::test_fee_conservation {
             i = i + 1;
         };
         
-        // Final verification: total claimed should never exceed total accumulated
         assert!((total_fees_claimed_a as u128) <= total_fees_accumulated_a, 6);
         assert!((total_fees_claimed_b as u128) <= total_fees_accumulated_b, 7);
         
-        // Cleanup
+
         transfer::public_transfer(position1, fixtures::admin());
         transfer::public_transfer(position2, fixtures::user1());
         transfer::public_transfer(position3, fixtures::user2());
@@ -234,10 +225,14 @@ module sui_amm::test_fee_conservation {
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: NO FEE DOUBLE-CLAIMING ACROSS RANDOM SEQUENCES
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that fees cannot be claimed twice without new swaps generating fees.
+    ///
+    /// This test executes a swap (generating fees), claims fees (should return non-zero),
+    /// then immediately claims again (should return zero). This pattern is repeated to
+    /// ensure the fee debt tracking mechanism prevents double-claiming.
+    ///
+    /// If a position could claim the same fees twice, it would violate fee conservation
+    /// and allow LPs to extract more value than they're entitled to.
     #[test]
     fun test_no_fee_double_claiming() {
         let mut scenario = test_scenario::begin(fixtures::admin());
@@ -257,14 +252,12 @@ module sui_amm::test_fee_conservation {
         
         test_scenario::next_tx(&mut scenario, fixtures::admin());
         
-        // Get pool and clock
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
-        // Simplified test: just do a few swaps and verify no double-claiming
-        // Execute a swap to generate fees
+
         let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
-        let amount_in = reserve_a / 100; // 1% of reserve
+        let amount_in = reserve_a / 100;
         let coin_out = test_utils::swap_a_to_b_helper(
             &mut pool,
             amount_in,
@@ -276,7 +269,6 @@ module sui_amm::test_fee_conservation {
         );
         coin::burn_for_testing(coin_out);
         
-        // Claim fees first time
         let (fee_a_1, fee_b_1) = fee_distributor::claim_fees(
             &mut pool,
             &mut position,
@@ -288,13 +280,12 @@ module sui_amm::test_fee_conservation {
         let claimed_a_1 = coin::value(&fee_a_1);
         let claimed_b_1 = coin::value(&fee_b_1);
         
-        // Should have some fees from the swap
         assert!(claimed_a_1 > 0 || claimed_b_1 > 0, 0);
         
         coin::burn_for_testing(fee_a_1);
         coin::burn_for_testing(fee_b_1);
         
-        // Immediately claim fees second time (should be zero)
+        // Claiming again immediately should return zero since no new swaps occurred
         let (fee_a_2, fee_b_2) = fee_distributor::claim_fees(
             &mut pool,
             &mut position,
@@ -306,16 +297,15 @@ module sui_amm::test_fee_conservation {
         let claimed_a_2 = coin::value(&fee_a_2);
         let claimed_b_2 = coin::value(&fee_b_2);
         
-        // Second claim should yield zero (no double-claiming)
         assert!(claimed_a_2 == 0, 1);
         assert!(claimed_b_2 == 0, 2);
         
         coin::burn_for_testing(fee_a_2);
         coin::burn_for_testing(fee_b_2);
         
-        // Do another swap and repeat the test
+        // Execute another swap to generate new fees
         let (_reserve_a, reserve_b) = pool::get_reserves(&pool);
-        let amount_in_b = reserve_b / 100; // 1% of reserve
+        let amount_in_b = reserve_b / 100;
         let coin_out_2 = test_utils::swap_b_to_a_helper(
             &mut pool,
             amount_in_b,
@@ -327,7 +317,6 @@ module sui_amm::test_fee_conservation {
         );
         coin::burn_for_testing(coin_out_2);
         
-        // Claim fees third time (should have new fees)
         let (fee_a_3, fee_b_3) = fee_distributor::claim_fees(
             &mut pool,
             &mut position,
@@ -339,13 +328,12 @@ module sui_amm::test_fee_conservation {
         let claimed_a_3 = coin::value(&fee_a_3);
         let claimed_b_3 = coin::value(&fee_b_3);
         
-        // Should have some fees from the second swap
         assert!(claimed_a_3 > 0 || claimed_b_3 > 0, 3);
         
         coin::burn_for_testing(fee_a_3);
         coin::burn_for_testing(fee_b_3);
         
-        // Immediately claim fees fourth time (should be zero again)
+        // Again, claiming immediately should return zero
         let (fee_a_4, fee_b_4) = fee_distributor::claim_fees(
             &mut pool,
             &mut position,
@@ -357,24 +345,27 @@ module sui_amm::test_fee_conservation {
         let claimed_a_4 = coin::value(&fee_a_4);
         let claimed_b_4 = coin::value(&fee_b_4);
         
-        // Fourth claim should yield zero (no double-claiming)
         assert!(claimed_a_4 == 0, 4);
         assert!(claimed_b_4 == 0, 5);
         
         coin::burn_for_testing(fee_a_4);
         coin::burn_for_testing(fee_b_4);
         
-        // Cleanup
+
         transfer::public_transfer(position, fixtures::admin());
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);
         test_scenario::end(scenario);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PROPERTY TEST: FEE CONSERVATION WITH MULTIPLE LPS
-    // ═══════════════════════════════════════════════════════════════════════════
-    
+    /// Verifies that fee conservation holds when multiple LPs claim fees.
+    ///
+    /// This test creates multiple LP positions with varying liquidity amounts, executes
+    /// swaps to generate fees, then has all LPs claim their proportional share of fees.
+    /// It verifies that the sum of all claimed fees doesn't exceed the total fees generated.
+    ///
+    /// This ensures the fee distribution mechanism correctly splits fees among LPs based
+    /// on their share of the pool, without over-distributing.
     #[test]
     fun test_fee_conservation_multiple_lps() {
         let mut scenario = test_scenario::begin(fixtures::admin());
@@ -397,7 +388,6 @@ module sui_amm::test_fee_conservation {
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
-        // Add multiple LP positions with varying amounts
         let seed = fixtures::default_random_seed();
         let mut positions = vector::empty<position::LPPosition>();
         vector::push_back(&mut positions, position1);
@@ -428,7 +418,6 @@ module sui_amm::test_fee_conservation {
             i = i + 1;
         };
         
-        // Execute swaps to generate fees
         let mut total_lp_fees_a = 0u128;
         let mut total_lp_fees_b = 0u128;
         
@@ -450,7 +439,6 @@ module sui_amm::test_fee_conservation {
                 );
                 coin::burn_for_testing(coin_out);
                 
-                // Track LP fees
                 let fee_amount = ((amount_in as u128) * (fee_bps as u128) / 10000) as u64;
                 let protocol_fee = ((fee_amount as u128) * (protocol_fee_bps as u128) / 10000) as u64;
                 let lp_fee = fee_amount - protocol_fee;
@@ -468,7 +456,6 @@ module sui_amm::test_fee_conservation {
                 );
                 coin::burn_for_testing(coin_out);
                 
-                // Track LP fees
                 let fee_amount = ((amount_in as u128) * (fee_bps as u128) / 10000) as u64;
                 let protocol_fee = ((fee_amount as u128) * (protocol_fee_bps as u128) / 10000) as u64;
                 let lp_fee = fee_amount - protocol_fee;
@@ -478,7 +465,7 @@ module sui_amm::test_fee_conservation {
             i = i + 1;
         };
         
-        // All LPs claim their fees
+
         let mut total_claimed_a = 0u128;
         let mut total_claimed_b = 0u128;
         
@@ -508,13 +495,12 @@ module sui_amm::test_fee_conservation {
         
         vector::destroy_empty(positions);
         
-        // Verify total claimed fees don't exceed total accumulated fees
-        // Allow small tolerance for rounding
+        // Verify conservation: sum of all claimed fees ≤ total generated fees (with rounding tolerance)
         let tolerance = 1000u128;
         assert!(total_claimed_a <= total_lp_fees_a + tolerance, 0);
         assert!(total_claimed_b <= total_lp_fees_b + tolerance, 1);
         
-        // Cleanup
+
         test_scenario::return_shared(pool);
         clock::destroy_for_testing(clock);
         test_scenario::end(scenario);
