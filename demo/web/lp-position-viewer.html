@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUI AMM - LP Position Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .demo-notice {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .position-input {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+            animation: fadeIn 1.2s ease;
+        }
+
+        .position-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .position-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .position-id {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            font-family: 'Courier New', monospace;
+        }
+
+        .pool-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .position-value {
+            margin-bottom: 15px;
+        }
+
+        .value-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .value-amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .token-symbol {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-left: 5px;
+        }
+
+        .position-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .pending-fees {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .fee-amount {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+
+        .il-indicator {
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .il-green {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .il-yellow {
+            background: rgba(255, 193, 7, 0.3);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+        }
+
+        .il-red {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏊 LP Position Viewer</h1>
+            <p class="subtitle">View your liquidity positions on SUI AMM</p>
+        </header>
+
+        <div class="demo-notice">
+            <h3>📌 Demo Mode</h3>
+            <p>This viewer displays sample LP positions. In production, connect your wallet to view real positions from the blockchain.</p>
+        </div>
+
+        <div class="position-input">
+            <label for="addressInput">Wallet Address or Position ID</label>
+            <input 
+                type="text" 
+                id="addressInput" 
+                placeholder="0x1234...abcd or enter 'demo' to load samples"
+                value="demo"
+            >
+            <button onclick="loadPositions()">Load Positions</button>
+        </div>
+
+        <div class="positions-grid" id="positionsGrid">
+            <!-- Positions will be dynamically loaded here -->
+        </div>
+
+        <footer class="footer">
+            <p>SUI AMM - Decentralized Exchange | Built on Sui Blockchain</p>
+        </footer>
+    </div>
+
+    <script>
+        // Sample positions for demo
+        const samplePositions = [
+            {
+                id: '0x7a8f9c...4d2e1b',
+                poolPair: 'SUI/USDC',
+                poolType: 'Standard',
+                feeTier: '0.30%',
+                liquidity: 15000,
+                valueTokenA: 7823.45,
+                valueTokenB: 7654.32,
+                tokenASymbol: 'SUI',
+                tokenBSymbol: 'USDC',
+                pendingFeeA: 12.67,
+                pendingFeeB: 23.89,
+                impermanentLoss: -2.34,
+                entryPrice: 0.9784,
+                currentPrice: 1.0156
+            },
+            {
+                id: '0x3b5c7e...9f1a2d',
+                poolPair: 'USDC/USDT',
+                poolType: 'Stable',
+                feeTier: '0.05%',
+                liquidity: 50000,
+                valueTokenA: 25123.00,
+                valueTokenB: 25089.50,
+                tokenASymbol: 'USDC',
+                tokenBSymbol: 'USDT',
+                pendingFeeA: 5.67,
+                pendingFeeB: 5.71,
+                impermanentLoss: -0.05,
+                entryPrice: 0.9998,
+                currentPrice: 1.0001
+            },
+            {
+                id: '0x9d4e2f...7c8b3a',
+                poolPair: 'SUI/ETH',
+                poolType: 'Standard',
+                feeTier: '0.30%',
+                liquidity: 8500,
+                valueTokenA: 12456.78,
+                valueTokenB: 3.892,
+                tokenASymbol: 'SUI',
+                tokenBSymbol: 'ETH',
+                pendingFeeA: 34.12,
+                pendingFeeB: 0.0091,
+                impermanentLoss: 5.67,
+                entryPrice: 3200.45,
+                currentPrice: 3198.21
+            },
+            {
+                id: '0x1f8d3c...6e5a4b',
+                poolPair: 'USDC/DAI',
+                poolType: 'Stable',
+                feeTier: '0.05%',
+                liquidity: 100000,
+                valueTokenA: 50234.67,
+                valueTokenB: 50198.23,
+                tokenASymbol: 'USDC',
+                tokenBSymbol: 'DAI',
+                pendingFeeA: 18.90,
+                pendingFeeB: 19.05,
+                impermanentLoss: -0.12,
+                entryPrice: 0.9995,
+                currentPrice: 1.0003
+            }
+        ];
+
+        function loadPositions() {
+            const input = document.getElementById('addressInput').value.trim().toLowerCase();
+            const grid = document.getElementById('positionsGrid');
+            
+            if (input === 'demo' || input === '') {
+                displayPositions(samplePositions);
+            } else {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                        <h3>🔍 No positions found for this address</h3>
+                        <p style="margin-top: 10px; opacity: 0.8;">Enter 'demo' to load sample positions</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayPositions(positions) {
+            const grid = document.getElementById('positionsGrid');
+            grid.innerHTML = positions.map(pos => createPositionCard(pos)).join('');
+        }
+
+        function createPositionCard(pos) {
+            const ilClass = pos.impermanentLoss >= 0 ? 'il-green' : 
+                           pos.impermanentLoss > -5 ? 'il-yellow' : 'il-red';
+            
+            const ilSign = pos.impermanentLoss >= 0 ? '+' : '';
+            
+            return `
+                <div class="position-card">
+                    <div class="position-header">
+                        <div class="position-id">${pos.id}</div>
+                        <div class="pool-badge">${pos.poolType}</div>
+                    </div>
+                    
+                    <div class="position-value">
+                        <h2 style="margin-bottom: 5px;">${pos.poolPair}</h2>
+                        <div class="value-label">Liquidity</div>
+                        <div class="value-amount">${pos.liquidity.toLocaleString()} LP</div>
+                    </div>
+                    
+                    <div class="position-details">
+                        <div class="detail-item">
+                            <div class="detail-label">${pos.tokenASymbol} Value</div>
+                            <div class="detail-value">${pos.valueTokenA.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">${pos.tokenBSymbol} Value</div>
+                            <div class="detail-value">${pos.valueTokenB.toLocaleString(undefined, {maximumFractionDigits: 4})}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Fee Tier</div>
+                            <div class="detail-value">${pos.feeTier}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Entry Price</div>
+                            <div class="detail-value">${pos.entryPrice.toFixed(4)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="pending-fees">
+                        <div class="detail-label">💰 Pending Fees</div>
+                        <div class="fee-amount">
+                            <span>${pos.tokenASymbol}:</span>
+                            <strong>${pos.pendingFeeA.toFixed(2)}</strong>
+                        </div>
+                        <div class="fee-amount">
+                            <span>${pos.tokenBSymbol}:</span>
+                            <strong>${pos.pendingFeeB.toFixed(4)}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="il-indicator ${ilClass}">
+                        Impermanent Loss: ${ilSign}${pos.impermanentLoss.toFixed(2)}%
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load demo positions on page load
+        window.onload = () => {
+            loadPositions();
+        };
+    </script>
+</body>
+</html>

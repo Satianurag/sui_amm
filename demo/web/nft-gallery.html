@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUI AMM - NFT Gallery</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .filters {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 40px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.2);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            animation: fadeIn 1s ease;
+        }
+
+        .nft-card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .nft-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .nft-image {
+            width: 100%;
+            height: 320px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nft-image::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg,
+                    transparent 30%,
+                    rgba(255, 255, 255, 0.1) 50%,
+                    transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        .nft-gradient-1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .nft-gradient-2 {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .nft-gradient-3 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .nft-gradient-4 {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .nft-gradient-5 {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .nft-gradient-6 {
+            background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);
+        }
+
+        .nft-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            z-index: 10;
+        }
+
+        .nft-info {
+            padding: 25px;
+        }
+
+        .nft-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .nft-id {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 15px;
+        }
+
+        .nft-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .nft-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 2rem;
+            cursor: pointer;
+            color: white;
+            line-height: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+
+        .metadata-table {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .metadata-table tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .metadata-table td {
+            padding: 12px 0;
+        }
+
+        .metadata-table td:first-child {
+            opacity: 0.7;
+            width: 40%;
+        }
+
+        .metadata-table td:last-child {
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            grid-column: 1/-1;
+        }
+
+        .empty-state h3 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 LP Position NFT Gallery</h1>
+            <p class="subtitle">Explore beautiful on-chain generated NFTs representing liquidity positions</p>
+        </header>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="filterType">Pool Type</label>
+                <select id="filterType" onchange="filterNFTs()">
+                    <option value="all">All Types</option>
+                    <option value="standard">Standard</option>
+                    <option value="stable">Stable</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterPair">Token Pair</label>
+                <select id="filterPair" onchange="filterNFTs()">
+                    <option value="all">All Pairs</option>
+                    <option value="SUI/USDC">SUI/USDC</option>
+                    <option value="USDC/USDT">USDC/USDT</option>
+                    <option value="SUI/ETH">SUI/ETH</option>
+                    <option value="USDC/DAI">USDC/DAI</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="searchId">Search by ID</label>
+                <input type="text" id="searchId" placeholder="Enter NFT ID..." oninput="filterNFTs()">
+            </div>
+        </div>
+
+        <div class="gallery" id="nftGallery">
+            <!-- NFTs will be dynamically loaded here -->
+        </div>
+
+        <footer class="footer">
+            <p>SUI AMM NFT Gallery | On-chain SVG Generation | No IPFS Required</p>
+        </footer>
+    </div>
+
+    <!-- Modal for detailed view -->
+    <div id="nftModal" class="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const sampleNFTs = [
+            {
+                id: '0x7a8f9c4d2e1b',
+                tokenId: '#001',
+                poolPair: 'SUI/USDC',
+                poolType: 'Standard',
+                feeTier: '0.30%',
+                liquidity: 15000,
+                valueA: 7823.45,
+                valueB: 7654.32,
+                symbolA: 'SUI',
+                symbolB: 'USDC',
+                feeA: 12.67,
+                feeB: 23.89,
+                il: -2.34,
+                gradient: 'nft-gradient-1',
+                emoji: '🌊'
+            },
+            {
+                id: '0x3b5c7e9f1a2d',
+                tokenId: '#002',
+                poolPair: 'USDC/USDT',
+                poolType: 'Stable',
+                feeTier: '0.05%',
+                liquidity: 50000,
+                valueA: 25123.00,
+                valueB: 25089.50,
+                symbolA: 'USDC',
+                symbolB: 'USDT',
+                feeA: 5.67,
+                feeB: 5.71,
+                il: -0.05,
+                gradient: 'nft-gradient-2',
+                emoji: '💎'
+            },
+            {
+                id: '0x9d4e2f7c8b3a',
+                tokenId: '#003',
+                poolPair: 'SUI/ETH',
+                poolType: 'Standard',
+                feeTier: '0.30%',
+                liquidity: 8500,
+                valueA: 12456.78,
+                valueB: 3.892,
+                symbolA: 'SUI',
+                symbolB: 'ETH',
+                feeA: 34.12,
+                feeB: 0.0091,
+                il: 5.67,
+                gradient: 'nft-gradient-3',
+                emoji: '⚡'
+            },
+            {
+                id: '0x1f8d3c6e5a4b',
+                tokenId: '#004',
+                poolPair: 'USDC/DAI',
+                poolType: 'Stable',
+                feeTier: '0.05%',
+                liquidity: 100000,
+                valueA: 50234.67,
+                valueB: 50198.23,
+                symbolA: 'USDC',
+                symbolB: 'DAI',
+                feeA: 18.90,
+                feeB: 19.05,
+                il: -0.12,
+                gradient: 'nft-gradient-4',
+                emoji: '🔷'
+            },
+            {
+                id: '0x2c9b5e8a7f3d',
+                tokenId: '#005',
+                poolPair: 'SUI/USDC',
+                poolType: 'Standard',
+                feeTier: '1.00%',
+                liquidity: 5000,
+                valueA: 3456.78,
+                valueB: 3421.90,
+                symbolA: 'SUI',
+                symbolB: 'USDC',
+                feeA: 45.23,
+                feeB: 44.12,
+                il: -1.23,
+                gradient: 'nft-gradient-5',
+                emoji: '🚀'
+            },
+            {
+                id: '0x4e7a1d9c2b5f',
+                tokenId: '#006',
+                poolPair: 'SUI/ETH',
+                poolType: 'Standard',
+                feeTier: '0.30%',
+                liquidity: 12000,
+                valueA: 8934.56,
+                valueB: 2.789,
+                symbolA: 'SUI',
+                symbolB: 'ETH',
+                feeA: 23.45,
+                feeB: 0.0067,
+                il: 3.21,
+                gradient: 'nft-gradient-6',
+                emoji: '🌟'
+            }
+        ];
+
+        let allNFTs = sampleNFTs;
+
+        function createNFTCard(nft) {
+            return `
+                <div class="nft-card" onclick="openModal('${nft.id}')">
+                    <div class="nft-image ${nft.gradient}">
+                        <span style="font-size: 5rem; z-index: 5;">${nft.emoji}</span>
+                        <div class="nft-badge">${nft.poolType}</div>
+                    </div>
+                    <div class="nft-info">
+                        <div class="nft-title">${nft.poolPair}</div>
+                        <div class="nft-id">Token ID: ${nft.tokenId} • ${nft.id}</div>
+                        
+                        <div class="nft-stats">
+                            <div class="stat-item">
+                                <div class="stat-label">Liquidity</div>
+                                <div class="stat-value">${nft.liquidity.toLocaleString()} LP</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Fee Tier</div>
+                                <div class="stat-value">${nft.feeTier}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Pending Fees</div>
+                                <div class="stat-value">${nft.feeA.toFixed(2)} ${nft.symbolA}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">IL</div>
+                                <div class="stat-value" style="color: ${nft.il >= 0 ? '#4caf50' : '#f44336'}">
+                                    ${nft.il >= 0 ? '+' : ''}${nft.il.toFixed(2)}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="nft-actions">
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); alert('In production, this would open wallet transfer UI')">
+                                View Details
+                            </button>
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); alert('SVG download feature')">
+                                Download SVG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayNFTs(nfts) {
+            const gallery = document.getElementById('nftGallery');
+            if (nfts.length === 0) {
+                gallery.innerHTML = `
+                    <div class="empty-state">
+                        <h3>🔍 No NFTs Found</h3>
+                        <p>Try adjusting your filters or search criteria</p>
+                    </div>
+                `;
+            } else {
+                gallery.innerHTML = nfts.map(createNFTCard).join('');
+            }
+        }
+
+        function filterNFTs() {
+            const typeFilter = document.getElementById('filterType').value;
+            const pairFilter = document.getElementById('filterPair').value;
+            const searchId = document.getElementById('searchId').value.toLowerCase();
+
+            let filtered = allNFTs;
+
+            if (typeFilter !== 'all') {
+                filtered = filtered.filter(nft => nft.poolType.toLowerCase() === typeFilter);
+            }
+
+            if (pairFilter !== 'all') {
+                filtered = filtered.filter(nft => nft.poolPair === pairFilter);
+            }
+
+            if (searchId) {
+                filtered = filtered.filter(nft =>
+                    nft.id.toLowerCase().includes(searchId) ||
+                    nft.tokenId.toLowerCase().includes(searchId)
+                );
+            }
+
+            displayNFTs(filtered);
+        }
+
+        function openModal(nftId) {
+            const nft = allNFTs.find(n => n.id === nftId);
+            if (!nft) return;
+
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = `
+                <div class="nft-image ${nft.gradient}" style="border-radius: 15px; margin-bottom: 25px;">
+                    <span style="font-size: 6rem; z-index: 5;">${nft.emoji}</span>
+                    <div class="nft-badge">${nft.poolType}</div>
+                </div>
+                <h2>${nft.poolPair} Position</h2>
+                <p style="opacity: 0.7; margin-top: 5px;">Token ID: ${nft.tokenId}</p>
+                
+                <table class="metadata-table">
+                    <tr>
+                        <td>Position ID</td>
+                        <td>${nft.id}</td>
+                    </tr>
+                    <tr>
+                        <td>Pool Type</td>
+                        <td>${nft.poolType}</td>
+                    </tr>
+                    <tr>
+                        <td>Fee Tier</td>
+                        <td>${nft.feeTier}</td>
+                    </tr>
+                    <tr>
+                        <td>Liquidity</td>
+                        <td>${nft.liquidity.toLocaleString()} LP</td>
+                    </tr>
+                    <tr>
+                        <td>${nft.symbolA} Value</td>
+                        <td>${nft.valueA.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${nft.symbolA}</td>
+                    </tr>
+                    <tr>
+                        <td>${nft.symbolB} Value</td>
+                        <td>${nft.valueB.toLocaleString(undefined, { maximumFractionDigits: 4 })} ${nft.symbolB}</td>
+                    </tr>
+                    <tr>
+                        <td>Pending Fees (${nft.symbolA})</td>
+                        <td>${nft.feeA.toFixed(2)} ${nft.symbolA}</td>
+                    </tr>
+                    <tr>
+                        <td>Pending Fees (${nft.symbolB})</td>
+                        <td>${nft.feeB.toFixed(4)} ${nft.symbolB}</td>
+                    </tr>
+                    <tr>
+                        <td>Impermanent Loss</td>
+                        <td style="color: ${nft.il >= 0 ? '#4caf50' : '#f44336'}">
+                            ${nft.il >= 0 ? '+' : ''}${nft.il.toFixed(2)}%
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="margin-top: 30px; display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="alert('Transfer functionality would open here')">
+                        Transfer NFT
+                    </button>
+                    <button class="btn btn-secondary" onclick="alert('SVG export functionality')">
+                        Export SVG
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('nftModal').style.display = 'flex';
+        }
+
+        function closeModal(event) {
+            if (!event || event.target.id === 'nftModal') {
+                document.getElementById('nftModal').style.display = 'none';
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            displayNFTs(allNFTs);
+        };
+    </script>
+</body>
+
+</html>
