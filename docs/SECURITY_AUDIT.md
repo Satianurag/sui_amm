@@ -1,7 +1,6 @@
 # Security Audit Checklist
 
 **Project:** SUI AMM - Decentralized Exchange  
-**Audit Date:** 2025-12-02  
 **Version:** 1.0  
 **Auditor:** Internal Security Review  
 
