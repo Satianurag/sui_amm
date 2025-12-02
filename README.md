@@ -4,22 +4,24 @@ A sophisticated automated market maker (AMM) protocol on Sui blockchain featurin
 
 ## Testnet Deployment
 
-**Network:** Sui Testnet
+**Network:** Sui Testnet  
 
 | Resource | Address |
 |----------|---------|
-| Package ID | `0xbee008f7d698b99ba3dd2efc48f9143d34e1b35a9d65cf45587c307f3475c733` |
-| PoolRegistry | `0x82383421e87ba28d3d8ffcf274d83c20c985df660f2034a34a0cdf4fa82125d7` |
-| StatisticsRegistry | `0x45274f9d63eb5ac7da83d546c47e5b545086a01942459496d7ab15b48b322533` |
-| OrderRegistry | `0x883c3d313cc5202cc597dfe24109c211cce39dbe1671ca1822b9c18341123c46` |
-| GovernanceConfig | `0xeb87f8cc247f12efb07efa9a76e094c6085c870eee5d9caba598f22d5995d1ce` |
-| Publisher | `0x39954e21546389ed1ab069f2d945a78ded386b276f4ad064b40d450a375c3dd2` |
-| AdminCap | `0xedb3e6dd5a03b3d8286c05b6671bef6bdfa473bc6dd7562a7058bbeb6de8cd30` |
-| UpgradeCap | `0x0986f457c639d6f26073f287aa5b17bf53d0b0960ccde06ce3da926307e1bb2c` |
+| Package ID | `0x6ddd7fa2cb774fdf82425c70f0f54797abef9f6b74e42d260c0d0ad3dc148001` |
+| PoolRegistry | `0xa3f09fde64bafa93790f85f526ef4af002fcfe72214761090294e1f94216a8e0` |
+| StatisticsRegistry | `0xd3da6ae9f10c018e289e6c45e52867632c9b6c6974fa81bff599eea28c78d873` |
+| OrderRegistry | `0xfc6e61245144e3c9dea60448b5bc46525caf1f98c95699895bc99474dda8b4b2` |
+| GovernanceConfig | `0x36d7e0d53f3fe1b88138f2f4532ad2e3ae981bb21b63c57158e9b6f31fc1aa87` |
+| Publisher | `0x069365f26289a9187475a106552adc33c57582bda6b16213cd0d007a954d2505` |
+| AdminCap | `0xcfef50a23eec5c9c7d598f5ac3f546d7a842523e2cbc19f55153c2e496fa0d5c` |
+| UpgradeCap | `0x96f2e09bc5d16701122d00cac0674204b8c9e2a09a29aab760ca24a56d3cc932` |
 
-**Transaction Digest:** `414dUtDPCaR6VySpyyKxN8tYFyECYjDFksGLnk6jbtBe`
+**Deployment Digest:** `5iMW4cq1M7sULbEG2PgD295HwyTRZg4N3vaPpYdD1YqY`
 
-**Explorer:** [View on Sui Explorer](https://suiscan.xyz/testnet/tx/414dUtDPCaR6VySpyyKxN8tYFyECYjDFksGLnk6jbtBe)
+**Explorer:** [View on Sui Explorer](https://suiscan.xyz/testnet/object/0x6ddd7fa2cb774fdf82425c70f0f54797abef9f6b74e42d260c0d0ad3dc148001)
+
+> 📝 **Full deployment details and transaction history**: See [TESTNET_DEPLOYMENT.md](./TESTNET_DEPLOYMENT.md)
 
 ## Table of Contents
 - [Testnet Deployment](#testnet-deployment)

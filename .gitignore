@@ -4,4 +4,4 @@ traces/*
 .coverage*
 .kiro
 demo/test_coins
-
+test_coins
