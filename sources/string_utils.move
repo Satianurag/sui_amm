@@ -203,6 +203,31 @@ module sui_amm::string_utils {
         result
     }
 
+    /// Check if a string starts with a given prefix
+    /// Example: starts_with("data:image/svg", "data:") = true
+    public fun starts_with(s: &String, prefix: &String): bool {
+        let s_bytes = string::as_bytes(s);
+        let prefix_bytes = string::as_bytes(prefix);
+        let s_len = vector::length(s_bytes);
+        let prefix_len = vector::length(prefix_bytes);
+        
+        // If prefix is longer than string, it can't be a prefix
+        if (prefix_len > s_len) {
+            return false
+        };
+        
+        // Check if all prefix bytes match
+        let mut i = 0;
+        while (i < prefix_len) {
+            if (*vector::borrow(s_bytes, i) != *vector::borrow(prefix_bytes, i)) {
+                return false
+            };
+            i = i + 1;
+        };
+        
+        true
+    }
+
     #[test]
     fun test_u64_to_string() {
         assert!(u64_to_string(0) == string::utf8(b"0"), 0);
@@ -253,5 +278,19 @@ module sui_amm::string_utils {
         let s = string::utf8(b"0x1234567890abcdef");
         assert!(truncate(&s, 10) == string::utf8(b"0x12345..."), 0);
         assert!(truncate(&s, 20) == s, 1);
+    }
+
+    #[test]
+    fun test_starts_with() {
+        let s = string::utf8(b"data:image/svg+xml;base64,abc123");
+        let prefix1 = string::utf8(b"data:");
+        let prefix2 = string::utf8(b"data:image/svg+xml;base64,");
+        let prefix3 = string::utf8(b"http:");
+        let prefix4 = string::utf8(b"data:image/svg+xml;base64,abc123def");
+        
+        assert!(starts_with(&s, &prefix1) == true, 0);
+        assert!(starts_with(&s, &prefix2) == true, 1);
+        assert!(starts_with(&s, &prefix3) == false, 2);
+        assert!(starts_with(&s, &prefix4) == false, 3); // prefix longer than string
     }
 }

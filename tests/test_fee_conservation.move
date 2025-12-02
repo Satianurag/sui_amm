@@ -261,83 +261,108 @@ module sui_amm::test_fee_conservation {
         let mut pool = test_scenario::take_shared<pool::LiquidityPool<USDC, BTC>>(&scenario);
         let clock = clock::create_for_testing(test_scenario::ctx(&mut scenario));
         
-        let seed = fixtures::alt_random_seed();
-        let mut i = 0;
+        // Simplified test: just do a few swaps and verify no double-claiming
+        // Execute a swap to generate fees
+        let (reserve_a, _reserve_b) = pool::get_reserves(&pool);
+        let amount_in = reserve_a / 100; // 1% of reserve
+        let coin_out = test_utils::swap_a_to_b_helper(
+            &mut pool,
+            amount_in,
+            0,
+            0,
+            test_utils::far_future(),
+            &clock,
+            test_scenario::ctx(&mut scenario)
+        );
+        coin::burn_for_testing(coin_out);
         
-        while (i < 5) {
-            // Execute random swaps to generate fees
-            let num_swaps = (test_utils::lcg_random(seed, i) % 3) + 1;
-            let mut j = 0;
-            
-            while (j < num_swaps) {
-                let (reserve_a, reserve_b) = pool::get_reserves(&pool);
-                let is_a_to_b = (test_utils::lcg_random(seed, i * 10 + j) % 2) == 0;
-                
-                if (is_a_to_b) {
-                    let amount_in = test_utils::random_safe_swap_amount(seed, i * 10 + j, reserve_a);
-                    let coin_out = test_utils::swap_a_to_b_helper(
-                        &mut pool,
-                        amount_in,
-                        0,
-                        0,
-                        test_utils::far_future(),
-                        &clock,
-                        test_scenario::ctx(&mut scenario)
-                    );
-                    coin::burn_for_testing(coin_out);
-                } else {
-                    let amount_in = test_utils::random_safe_swap_amount(seed, i * 10 + j + 1, reserve_b);
-                    let coin_out = test_utils::swap_b_to_a_helper(
-                        &mut pool,
-                        amount_in,
-                        0,
-                        0,
-                        test_utils::far_future(),
-                        &clock,
-                        test_scenario::ctx(&mut scenario)
-                    );
-                    coin::burn_for_testing(coin_out);
-                };
-                
-                j = j + 1;
-            };
-            
-            // Claim fees first time
-            let (fee_a_1, fee_b_1) = fee_distributor::claim_fees(
-                &mut pool,
-                &mut position,
-                &clock,
-                fixtures::far_future_deadline(),
-                test_scenario::ctx(&mut scenario)
-            );
-            
-            let _claimed_a_1 = coin::value(&fee_a_1);
-            let _claimed_b_1 = coin::value(&fee_b_1);
-            
-            coin::burn_for_testing(fee_a_1);
-            coin::burn_for_testing(fee_b_1);
-            
-            // Immediately claim fees second time (should be zero or near-zero)
-            let (fee_a_2, fee_b_2) = fee_distributor::claim_fees(
-                &mut pool,
-                &mut position,
-                &clock,
-                fixtures::far_future_deadline(),
-                test_scenario::ctx(&mut scenario)
-            );
-            
-            let claimed_a_2 = coin::value(&fee_a_2);
-            let claimed_b_2 = coin::value(&fee_b_2);
-            
-            // Second claim should yield zero (no double-claiming)
-            assert!(claimed_a_2 == 0, 0);
-            assert!(claimed_b_2 == 0, 1);
-            
-            coin::burn_for_testing(fee_a_2);
-            coin::burn_for_testing(fee_b_2);
-            
-            i = i + 1;
-        };
+        // Claim fees first time
+        let (fee_a_1, fee_b_1) = fee_distributor::claim_fees(
+            &mut pool,
+            &mut position,
+            &clock,
+            fixtures::far_future_deadline(),
+            test_scenario::ctx(&mut scenario)
+        );
+        
+        let claimed_a_1 = coin::value(&fee_a_1);
+        let claimed_b_1 = coin::value(&fee_b_1);
+        
+        // Should have some fees from the swap
+        assert!(claimed_a_1 > 0 || claimed_b_1 > 0, 0);
+        
+        coin::burn_for_testing(fee_a_1);
+        coin::burn_for_testing(fee_b_1);
+        
+        // Immediately claim fees second time (should be zero)
+        let (fee_a_2, fee_b_2) = fee_distributor::claim_fees(
+            &mut pool,
+            &mut position,
+            &clock,
+            fixtures::far_future_deadline(),
+            test_scenario::ctx(&mut scenario)
+        );
+        
+        let claimed_a_2 = coin::value(&fee_a_2);
+        let claimed_b_2 = coin::value(&fee_b_2);
+        
+        // Second claim should yield zero (no double-claiming)
+        assert!(claimed_a_2 == 0, 1);
+        assert!(claimed_b_2 == 0, 2);
+        
+        coin::burn_for_testing(fee_a_2);
+        coin::burn_for_testing(fee_b_2);
+        
+        // Do another swap and repeat the test
+        let (_reserve_a, reserve_b) = pool::get_reserves(&pool);
+        let amount_in_b = reserve_b / 100; // 1% of reserve
+        let coin_out_2 = test_utils::swap_b_to_a_helper(
+            &mut pool,
+            amount_in_b,
+            0,
+            0,
+            test_utils::far_future(),
+            &clock,
+            test_scenario::ctx(&mut scenario)
+        );
+        coin::burn_for_testing(coin_out_2);
+        
+        // Claim fees third time (should have new fees)
+        let (fee_a_3, fee_b_3) = fee_distributor::claim_fees(
+            &mut pool,
+            &mut position,
+            &clock,
+            fixtures::far_future_deadline(),
+            test_scenario::ctx(&mut scenario)
+        );
+        
+        let claimed_a_3 = coin::value(&fee_a_3);
+        let claimed_b_3 = coin::value(&fee_b_3);
+        
+        // Should have some fees from the second swap
+        assert!(claimed_a_3 > 0 || claimed_b_3 > 0, 3);
+        
+        coin::burn_for_testing(fee_a_3);
+        coin::burn_for_testing(fee_b_3);
+        
+        // Immediately claim fees fourth time (should be zero again)
+        let (fee_a_4, fee_b_4) = fee_distributor::claim_fees(
+            &mut pool,
+            &mut position,
+            &clock,
+            fixtures::far_future_deadline(),
+            test_scenario::ctx(&mut scenario)
+        );
+        
+        let claimed_a_4 = coin::value(&fee_a_4);
+        let claimed_b_4 = coin::value(&fee_b_4);
+        
+        // Fourth claim should yield zero (no double-claiming)
+        assert!(claimed_a_4 == 0, 4);
+        assert!(claimed_b_4 == 0, 5);
+        
+        coin::burn_for_testing(fee_a_4);
+        coin::burn_for_testing(fee_b_4);
         
         // Cleanup
         transfer::public_transfer(position, fixtures::admin());

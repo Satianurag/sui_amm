@@ -1,3 +1,149 @@
+/// Liquidity Pool implementation for the Sui AMM
+/// 
+/// This module implements a constant product automated market maker (AMM) with advanced features
+/// including auto-compounding, dynamic NFT positions, and comprehensive display data.
+/// 
+/// # Overview
+/// 
+/// The pool module manages liquidity pools that enable:
+/// - Token swaps using the constant product formula (x * y = k)
+/// - Liquidity provision with LP Position NFTs
+/// - Fee accumulation and distribution
+/// - Auto-compounding of trading fees
+/// - Real-time position valuation
+/// - Impermanent loss tracking
+/// 
+/// # Key Features
+/// 
+/// ## Auto-Compounding
+/// Automatically reinvest accumulated fees back into positions to maximize returns:
+/// ```move
+/// let liquidity_increase = pool::auto_compound_fees(
+///     &mut pool,
+///     &mut position,
+///     min_liquidity_increase,
+///     &clock,
+///     deadline,
+///     ctx
+/// );
+/// ```
+/// 
+/// ## NFT Display Data
+/// Get comprehensive position information in a single query:
+/// ```move
+/// let display_data = pool::get_nft_display_data(
+///     &pool,
+///     &position,
+///     &clock,
+///     staleness_threshold_ms
+/// );
+/// ```
+/// 
+/// ## Metadata Refresh
+/// Update cached NFT metadata with current values:
+/// ```move
+/// pool::refresh_position_metadata(&pool, &mut position, &clock);
+/// ```
+/// 
+/// # Usage Examples
+/// 
+/// ## Creating a Pool
+/// ```move
+/// let pool = pool::create_pool<CoinA, CoinB>(
+///     30,    // 0.3% fee
+///     1000,  // 10% protocol fee
+///     100,   // 1% creator fee
+///     ctx
+/// );
+/// transfer::public_share_object(pool);
+/// ```
+/// 
+/// ## Adding Liquidity
+/// ```move
+/// let (position, refund_a, refund_b) = pool::add_liquidity(
+///     &mut pool,
+///     coin_a,
+///     coin_b,
+///     min_liquidity,
+///     &clock,
+///     deadline,
+///     ctx
+/// );
+/// ```
+/// 
+/// ## Swapping Tokens
+/// ```move
+/// let coin_b = pool::swap_a_to_b(
+///     &mut pool,
+///     coin_a,
+///     min_out,
+///     option::some(max_price),
+///     &clock,
+///     deadline,
+///     ctx
+/// );
+/// ```
+/// 
+/// ## Checking Position Value
+/// ```move
+/// let view = pool::get_position_view(&pool, &position);
+/// let (value_a, value_b) = position::view_value(&view);
+/// let (fees_a, fees_b) = position::view_fees(&view);
+/// ```
+/// 
+/// ## Withdrawing Fees
+/// ```move
+/// let (fee_a, fee_b) = pool::withdraw_fees(
+///     &mut pool,
+///     &mut position,
+///     &clock,
+///     deadline,
+///     ctx
+/// );
+/// ```
+/// 
+/// ## Removing Liquidity
+/// ```move
+/// // Remove all liquidity
+/// let (coin_a, coin_b) = pool::remove_liquidity(
+///     &mut pool,
+///     position,
+///     min_amount_a,
+///     min_amount_b,
+///     &clock,
+///     deadline,
+///     ctx
+/// );
+/// 
+/// // Or remove partial liquidity
+/// let (coin_a, coin_b) = pool::remove_liquidity_partial(
+///     &mut pool,
+///     &mut position,
+///     liquidity_to_remove,
+///     min_amount_a,
+///     min_amount_b,
+///     &clock,
+///     deadline,
+///     ctx
+/// );
+/// ```
+/// 
+/// # Important Constants
+/// 
+/// - `MIN_COMPOUND_THRESHOLD` (1000): Minimum fees required for auto-compound
+/// - `MINIMUM_LIQUIDITY` (1000): Permanently burned on first liquidity addition
+/// - `MAX_STALENESS_THRESHOLD` (86400000): 24 hours in milliseconds
+/// - `ACC_PRECISION` (1e12): Precision for fee accumulation calculations
+/// 
+/// # Security Features
+/// 
+/// - **Pause Mechanism**: Emergency pause for pool operations
+/// - **Slippage Protection**: Minimum output and deadline checks
+/// - **Price Impact Limits**: Maximum price impact per swap
+/// - **Ratio Tolerance**: Liquidity addition ratio validation
+/// - **Fee Validation**: Minimum and maximum fee constraints
+/// - **Overflow Protection**: Safe arithmetic for large values
+/// 
 module sui_amm::pool {
     use sui::coin;
     use sui::balance;
@@ -20,6 +166,11 @@ module sui_amm::pool {
     const ECreatorFeeTooHigh: u64 = 10; // FIX [S5]: Creator fee validation
     const EPaused: u64 = 11; // NEW: Pool is paused
     const EInvalidFeePercent: u64 = 12; // NEW: Fee below minimum (Requirement 10.2)
+    
+    /// Error: Insufficient fees to perform auto-compound operation
+    /// Thrown when attempting to auto-compound with fees below MIN_COMPOUND_THRESHOLD
+    /// Requirements: 1.4 - Auto-compound minimum threshold validation
+    const EInsufficientFeesToCompound: u64 = 100;
 
     // Constants
     // FIX [P2-16.2]: MINIMUM_LIQUIDITY Documentation
@@ -43,6 +194,11 @@ module sui_amm::pool {
     const MAX_CREATOR_FEE_BPS: u64 = 500; // 5% max creator fee to protect LPs
     const MIN_FEE_THRESHOLD: u64 = 1000; // Minimum fee to avoid precision loss
     const MIN_FEE_BPS: u64 = 1; // Minimum fee of 1 basis point (0.01%) for pool creation (Requirement 10.1)
+    
+    /// Minimum total fees required for auto-compound operation
+    /// Prevents auto-compounding with dust amounts that would result in precision loss
+    /// Requirements: 1.4 - Auto-compound with insufficient fees should be rejected
+    const MIN_COMPOUND_THRESHOLD: u64 = 1000;
 
     public struct LiquidityPool<phantom CoinA, phantom CoinB> has key {
         id: object::UID,
@@ -131,6 +287,14 @@ module sui_amm::pool {
     public struct PoolUnpaused has copy, drop {
         pool_id: object::ID,
         timestamp: u64,
+    }
+
+    public struct AutoCompoundExecuted has copy, drop {
+        pool_id: object::ID,
+        position_id: object::ID,
+        amount_a: u64,
+        amount_b: u64,
+        liquidity_increase: u64,
     }
 
     /// Creates pool with initial liquidity atomically (improvement over spec's 2-step flow).
@@ -1056,6 +1220,194 @@ module sui_amm::pool {
         (coin::from_balance(balance_a, ctx), coin::from_balance(balance_b, ctx))
     }
 
+    /// Auto-compound accumulated fees back into the position
+    /// 
+    /// This function automatically reinvests accumulated trading fees back into the liquidity
+    /// position, increasing the position's share of the pool without requiring manual withdrawal
+    /// and re-deposit. This maximizes returns by continuously compounding earnings.
+    /// 
+    /// # How It Works
+    /// 
+    /// 1. **Withdraw Fees**: Extracts pending fees from the pool
+    /// 2. **Balance Fees**: If fees are unbalanced, swaps to match pool ratio
+    /// 3. **Add Liquidity**: Reinvests fees as additional liquidity
+    /// 4. **Update Position**: Increases position's liquidity shares
+    /// 5. **Emit Event**: Records the auto-compound operation
+    /// 
+    /// # Usage Example
+    /// 
+    /// ```move
+    /// // Auto-compound with 1% slippage tolerance
+    /// let position_view = pool::get_position_view(&pool, &position);
+    /// let (pending_a, pending_b) = position::view_fees(&position_view);
+    /// 
+    /// // Calculate expected liquidity increase (approximate)
+    /// let expected_liquidity = calculate_expected_shares(pending_a, pending_b);
+    /// let min_liquidity = expected_liquidity * 99 / 100; // 1% slippage
+    /// 
+    /// // Execute auto-compound
+    /// let liquidity_increase = pool::auto_compound_fees(
+    ///     &mut pool,
+    ///     &mut position,
+    ///     min_liquidity,
+    ///     &clock,
+    ///     deadline,
+    ///     ctx
+    /// );
+    /// 
+    /// // Position now has more liquidity shares
+    /// assert!(position::liquidity(&position) > original_liquidity);
+    /// ```
+    /// 
+    /// # Gas Optimization Tips
+    /// 
+    /// - Only auto-compound when fees exceed MIN_COMPOUND_THRESHOLD (1000)
+    /// - Consider batching multiple positions in a single transaction
+    /// - Auto-compound less frequently for smaller positions
+    /// - Use higher staleness thresholds to reduce metadata refresh costs
+    /// 
+    /// # Important Notes
+    /// 
+    /// - **Minimum Threshold**: Total fees must be >= MIN_COMPOUND_THRESHOLD (1000)
+    /// - **Ratio Maintenance**: Fees are automatically balanced to match pool ratio
+    /// - **Refunds**: Any dust amounts are refunded to the sender
+    /// - **Metadata Refresh**: Position metadata is automatically updated
+    /// - **Fee Debt Reset**: Fee debt is updated so pending fees become zero
+    /// 
+    /// # Value Preservation
+    /// 
+    /// The total value of the position (liquidity + fees) is preserved during auto-compound:
+    /// ```
+    /// value_before = position_value + pending_fees
+    /// value_after = position_value_increased
+    /// assert!(value_after >= value_before - rounding_error)
+    /// ```
+    /// 
+    /// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
+    /// 
+    /// # Arguments
+    /// * `pool` - The liquidity pool (must match position's pool_id)
+    /// * `position` - The LP position to auto-compound (must have sufficient fees)
+    /// * `min_liquidity_increase` - Minimum liquidity shares to mint (slippage protection)
+    /// * `clock` - Clock for deadline checking and timestamp tracking
+    /// * `deadline` - Transaction deadline timestamp in milliseconds
+    /// * `ctx` - Transaction context (for sender address and refunds)
+    /// 
+    /// # Returns
+    /// * `u64` - The amount of liquidity shares added to the position
+    /// 
+    /// # Aborts
+    /// * `EWrongPool` - If position doesn't belong to this pool
+    /// * `EInsufficientFeesToCompound` - If total fees < MIN_COMPOUND_THRESHOLD (1000)
+    /// * `EInsufficientOutput` - If liquidity increase < min_liquidity_increase
+    /// * `EPaused` - If pool is paused
+    /// * Deadline exceeded - If current time > deadline
+    /// 
+    /// # Events Emitted
+    /// * `AutoCompoundExecuted` - Contains pool_id, position_id, amounts, and liquidity_increase
+    /// 
+    /// # Returns
+    /// * `u64` - Liquidity increase amount
+    /// * `Coin<CoinA>` - Refund of unused CoinA (may be zero)
+    /// * `Coin<CoinB>` - Refund of unused CoinB (may be zero)
+    public fun auto_compound_fees<CoinA, CoinB>(
+        pool: &mut LiquidityPool<CoinA, CoinB>,
+        position: &mut position::LPPosition,
+        min_liquidity_increase: u64,
+        clock: &clock::Clock,
+        deadline: u64,
+        ctx: &mut tx_context::TxContext
+    ): (u64, coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // Check if pool is paused
+        assert!(!pool.paused, EPaused);
+        
+        // Check deadline
+        sui_amm::slippage_protection::check_deadline(clock, deadline);
+        
+        // Validate position belongs to pool (Requirement 1.1)
+        assert!(position::pool_id(position) == object::id(pool), EWrongPool);
+
+        // Get pending fees using get_position_view() (Requirement 1.1)
+        let liquidity = position::liquidity(position);
+        let pending_fee_a = ((liquidity as u128) * pool.acc_fee_per_share_a / ACC_PRECISION) - position::fee_debt_a(position);
+        let pending_fee_b = ((liquidity as u128) * pool.acc_fee_per_share_b / ACC_PRECISION) - position::fee_debt_b(position);
+
+        // Check fees meet minimum threshold (Requirement 1.4)
+        let total_fees = (pending_fee_a as u64) + (pending_fee_b as u64);
+        assert!(total_fees >= MIN_COMPOUND_THRESHOLD, EInsufficientFeesToCompound);
+
+        // Store liquidity before increase to calculate the delta
+        let liquidity_before = position::liquidity(position);
+
+        // Withdraw fees to temporary coins (Requirement 1.1)
+        let (mut fee_coin_a, mut fee_coin_b) = withdraw_fees(pool, position, clock, deadline, ctx);
+        
+        let mut fee_amount_a = coin::value(&fee_coin_a);
+        let mut fee_amount_b = coin::value(&fee_coin_b);
+
+        // Handle unbalanced fees by swapping to match pool ratio (Requirement 1.2)
+        // If one fee is zero or fees are very unbalanced, swap to balance them
+        if (fee_amount_a == 0 || fee_amount_b == 0) {
+            // One fee is zero - swap half of the non-zero fee to get both tokens
+            if (fee_amount_a == 0 && fee_amount_b > 0) {
+                // Swap half of B to A
+                let swap_amount = fee_amount_b / 2;
+                let swap_coin = coin::split(&mut fee_coin_b, swap_amount, ctx);
+                let swapped_coin_a = swap_b_to_a(pool, swap_coin, 0, option::none(), clock, deadline, ctx);
+                coin::join(&mut fee_coin_a, swapped_coin_a);
+                fee_amount_a = coin::value(&fee_coin_a);
+                fee_amount_b = coin::value(&fee_coin_b);
+            } else if (fee_amount_b == 0 && fee_amount_a > 0) {
+                // Swap half of A to B
+                let swap_amount = fee_amount_a / 2;
+                let swap_coin = coin::split(&mut fee_coin_a, swap_amount, ctx);
+                let swapped_coin_b = swap_a_to_b(pool, swap_coin, 0, option::none(), clock, deadline, ctx);
+                coin::join(&mut fee_coin_b, swapped_coin_b);
+                fee_amount_a = coin::value(&fee_coin_a);
+                fee_amount_b = coin::value(&fee_coin_b);
+            };
+        };
+
+        // Verify we still have enough fees after potential swap
+        let total_fees_after_swap = fee_amount_a + fee_amount_b;
+        assert!(total_fees_after_swap >= MIN_COMPOUND_THRESHOLD / 2, EInsufficientFeesToCompound);
+
+        // Calculate optimal amounts maintaining pool ratio (Requirement 1.2)
+        // Use increase_liquidity which already handles ratio calculation
+        let (refund_a, refund_b) = increase_liquidity(
+            pool,
+            position,
+            fee_coin_a,
+            fee_coin_b,
+            min_liquidity_increase,
+            clock,
+            deadline,
+            ctx
+        );
+
+        // Calculate liquidity increase (Requirement 1.3)
+        let liquidity_after = position::liquidity(position);
+        let liquidity_increase = liquidity_after - liquidity_before;
+
+        // Calculate amounts actually used
+        let refund_amount_a = coin::value(&refund_a);
+        let refund_amount_b = coin::value(&refund_b);
+        let amount_a_used = fee_amount_a - refund_amount_a;
+        let amount_b_used = fee_amount_b - refund_amount_b;
+
+        // Emit AutoCompoundExecuted event (Requirement 1.5)
+        event::emit(AutoCompoundExecuted {
+            pool_id: object::id(pool),
+            position_id: position::get_id(position),
+            amount_a: amount_a_used,
+            amount_b: amount_b_used,
+            liquidity_increase,
+        });
+
+        // Return liquidity increase amount and refund coins (Requirement 1.3)
+        (liquidity_increase, refund_a, refund_b)
+    }
+
     public(package) fun withdraw_protocol_fees<CoinA, CoinB>(
         pool: &mut LiquidityPool<CoinA, CoinB>,
         ctx: &mut tx_context::TxContext
@@ -1212,6 +1564,167 @@ module sui_amm::pool {
         )
     }
 
+    /// Get comprehensive NFT display data for wallet and marketplace integration
+    /// 
+    /// This function provides a unified interface for retrieving all LP Position NFT information
+    /// in a single call, optimized for wallet and marketplace integrations. It combines real-time
+    /// calculated values with cached metadata, allowing clients to choose between accuracy and
+    /// gas efficiency.
+    /// 
+    /// # What This Function Returns
+    /// 
+    /// The returned `NFTDisplayData` struct contains:
+    /// 
+    /// ## Real-Time Values (Always Accurate)
+    /// - Current position value in both tokens
+    /// - Pending unclaimed fees
+    /// - Current impermanent loss percentage
+    /// 
+    /// ## Cached Values (May Be Stale)
+    /// - Last cached position values
+    /// - Last cached fees
+    /// - Last cached impermanent loss
+    /// 
+    /// ## Metadata
+    /// - Position and pool identifiers
+    /// - Display name and description
+    /// - Pool type and fee tier
+    /// - Base64-encoded SVG image
+    /// 
+    /// ## Staleness Information
+    /// - Boolean flag indicating if cached data is stale
+    /// - Timestamp of last metadata update
+    /// - Age of cached data in milliseconds
+    /// 
+    /// # Usage Example
+    /// 
+    /// ```move
+    /// // Get display data with 1 hour staleness threshold
+    /// let display_data = pool::get_nft_display_data(
+    ///     &pool,
+    ///     &position,
+    ///     &clock,
+    ///     3_600_000  // 1 hour in milliseconds
+    /// );
+    /// 
+    /// // Check if metadata is stale
+    /// if (position::display_is_stale(&display_data)) {
+    ///     // Cached values are outdated - use real-time values
+    ///     let current_value_a = position::display_current_value_a(&display_data);
+    ///     let current_value_b = position::display_current_value_b(&display_data);
+    ///     
+    ///     // Optionally refresh metadata for future queries
+    ///     pool::refresh_position_metadata(&pool, &mut position, &clock);
+    /// } else {
+    ///     // Cached values are fresh - can use either cached or real-time
+    ///     let cached_value_a = position::display_cached_value_a(&display_data);
+    /// };
+    /// 
+    /// // Display NFT image
+    /// let image_url = position::display_image_url(&display_data);
+    /// // image_url format: "data:image/svg+xml;base64,PHN2Zy4uLg=="
+    /// ```
+    /// 
+    /// # Staleness Threshold Recommendations
+    /// 
+    /// Choose a threshold based on your use case:
+    /// 
+    /// - **Real-time trading UI**: 60,000 ms (1 minute)
+    ///   - Users need up-to-the-second accuracy
+    ///   - Prompt refresh frequently
+    /// 
+    /// - **Portfolio dashboard**: 300,000 ms (5 minutes)
+    ///   - Balance between accuracy and UX
+    ///   - Refresh on user action
+    /// 
+    /// - **Wallet display**: 3,600,000 ms (1 hour)
+    ///   - Casual viewing, less critical
+    ///   - Refresh when user opens position details
+    /// 
+    /// - **Marketplace listing**: 86,400,000 ms (24 hours)
+    ///   - Static display, updated rarely
+    ///   - Refresh before listing
+    /// 
+    /// # Performance Considerations
+    /// 
+    /// This function is gas-efficient because:
+    /// - It only reads from storage (no writes)
+    /// - Real-time calculations are done on-demand
+    /// - No state changes or events emitted
+    /// 
+    /// For maximum gas efficiency:
+    /// - Use cached values when staleness is acceptable
+    /// - Batch multiple position queries in one transaction
+    /// - Only call refresh_position_metadata() when necessary
+    /// 
+    /// # Integration Guide
+    /// 
+    /// ## For Wallet Developers
+    /// ```move
+    /// // Display position in wallet
+    /// let data = pool::get_nft_display_data(&pool, &position, &clock, 3_600_000);
+    /// 
+    /// // Show basic info
+    /// display_name(position::display_name(&data));
+    /// display_image(position::display_image_url(&data));
+    /// 
+    /// // Show current values (always accurate)
+    /// display_value(
+    ///     position::display_current_value_a(&data),
+    ///     position::display_current_value_b(&data)
+    /// );
+    /// 
+    /// // Show staleness warning if needed
+    /// if (position::display_is_stale(&data)) {
+    ///     show_refresh_button();
+    /// };
+    /// ```
+    /// 
+    /// ## For Marketplace Developers
+    /// ```move
+    /// // Before listing, ensure metadata is fresh
+    /// let data = pool::get_nft_display_data(&pool, &position, &clock, 86_400_000);
+    /// 
+    /// if (position::display_is_stale(&data)) {
+    ///     // Prompt user to refresh before listing
+    ///     pool::refresh_position_metadata(&pool, &mut position, &clock);
+    /// };
+    /// 
+    /// // Use image URL for marketplace display
+    /// let image = position::display_image_url(&data);
+    /// ```
+    /// 
+    /// Requirements: 2.1, 2.2, 2.3, 2.4, 2.5
+    /// 
+    /// # Arguments
+    /// * `pool` - The liquidity pool (must match position's pool_id)
+    /// * `position` - The LP position to query
+    /// * `clock` - Clock for staleness calculation
+    /// * `staleness_threshold_ms` - Threshold in milliseconds for staleness check
+    /// 
+    /// # Returns
+    /// * `NFTDisplayData` - Complete display data struct with all fields populated
+    /// 
+    /// # Aborts
+    /// * `EWrongPool` - If position doesn't belong to this pool (checked in get_position_view)
+    public fun get_nft_display_data<CoinA, CoinB>(
+        pool: &LiquidityPool<CoinA, CoinB>,
+        position: &position::LPPosition,
+        clock: &clock::Clock,
+        staleness_threshold_ms: u64
+    ): position::NFTDisplayData {
+        // Get real-time position view
+        let position_view = get_position_view(pool, position);
+        
+        // Build and return NFTDisplayData using position module's helper
+        position::make_nft_display_data(
+            position,
+            &position_view,
+            clock,
+            staleness_threshold_ms
+        )
+    }
+
     /// Calculate impermanent loss for standard pool position
     /// 
     /// Formula:
@@ -1278,6 +1791,12 @@ module sui_amm::pool {
     /// - remove_liquidity_partial()
     /// - withdraw_fees()
     /// - increase_liquidity()
+    /// 
+    /// Requirements: 2.3, 2.4 - Refresh metadata and regenerate SVG
+    /// This function:
+    /// - Updates last_metadata_update_ms timestamp
+    /// - Regenerates SVG image (always, even if values unchanged)
+    /// - Updates cached values if they've changed
     public fun refresh_position_metadata<CoinA, CoinB>(
         pool: &LiquidityPool<CoinA, CoinB>,
         position: &mut position::LPPosition,
@@ -1287,6 +1806,9 @@ module sui_amm::pool {
         
         let liquidity = position::liquidity(position);
         if (pool.total_liquidity == 0) {
+            // Even with zero liquidity, update timestamp and regenerate SVG
+            position::touch_metadata_timestamp(position, clock);
+            position::refresh_nft_image(position);
             return
         };
         
@@ -1307,12 +1829,15 @@ module sui_amm::pool {
         if (value_a == cached_value_a && value_b == cached_value_b && 
             (fee_a as u64) == cached_fee_a && (fee_b as u64) == cached_fee_b) {
             // Values unchanged but still update timestamp to mark metadata as fresh
+            // Task 9: Always regenerate SVG image on refresh, even if values unchanged
             position::touch_metadata_timestamp(position, clock);
+            position::refresh_nft_image(position);
             return
         };
 
         let il_bps = get_impermanent_loss(pool, position);
         
+        // update_cached_values already calls refresh_nft_image internally
         position::update_cached_values(
             position,
             value_a,

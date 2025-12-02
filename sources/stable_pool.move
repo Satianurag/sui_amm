@@ -1290,6 +1290,11 @@ module sui_amm::stable_pool {
     /// - remove_liquidity_partial()
     /// - withdraw_fees()
     /// - increase_liquidity()
+    /// Requirements: 2.3, 2.4 - Refresh metadata and regenerate SVG
+    /// This function:
+    /// - Updates last_metadata_update_ms timestamp
+    /// - Regenerates SVG image (always, even if values unchanged)
+    /// - Updates cached values if they've changed
     public fun refresh_position_metadata<CoinA, CoinB>(
         pool: &StableSwapPool<CoinA, CoinB>,
         position: &mut position::LPPosition,
@@ -1299,6 +1304,9 @@ module sui_amm::stable_pool {
         
         let liquidity = position::liquidity(position);
         if (pool.total_liquidity == 0) {
+            // Even with zero liquidity, update timestamp and regenerate SVG
+            position::touch_metadata_timestamp(position, clock);
+            position::refresh_nft_image(position);
             return
         };
         
@@ -1317,11 +1325,14 @@ module sui_amm::stable_pool {
         if (value_a == cached_value_a && value_b == cached_value_b && 
             (fee_a as u64) == cached_fee_a && (fee_b as u64) == cached_fee_b) {
             // Values unchanged but still update timestamp to mark metadata as fresh
+            // Task 9: Always regenerate SVG image on refresh, even if values unchanged
             position::touch_metadata_timestamp(position, clock);
+            position::refresh_nft_image(position);
             return
         };
         
         let il_bps = get_impermanent_loss(pool, position);
+        // update_cached_values already calls refresh_nft_image internally
         position::update_cached_values(position, value_a, value_b, (fee_a as u64), (fee_b as u64), il_bps, clock);
     }
 
