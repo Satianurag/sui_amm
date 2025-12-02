@@ -1,7 +1,6 @@
 # Gas Benchmarking Results
 
 **Project:** SUI AMM - Decentralized Exchange  
-**Benchmark Date:** 2025-12-02  
 **Network:** Sui Testnet  
 **Gas Price:** Variable (current testnet rates)
 
