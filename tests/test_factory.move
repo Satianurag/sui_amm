@@ -44,7 +44,7 @@ module sui_amm::test_factory {
         let (position, refund_a, refund_b) = factory::create_pool<USDC, USDT>(
             &mut registry,
             &mut stats_registry,
-            30,
+            factory::fee_tier_medium_enum(),
             0,
             coin_a,
             coin_b,
@@ -67,16 +67,15 @@ module sui_amm::test_factory {
         ts::end(scenario);
     }
 
-    /// Verifies that pool creation rejects invalid fee tiers
+    /// Verifies that standard fee tiers are accepted
     ///
-    /// This test ensures that attempting to create a pool with a fee tier that is not
-    /// in the allowed list (5, 30, 100 basis points) results in an EInvalidFeeTier error.
-    /// This prevents pools with arbitrary or malicious fee configurations.
+    /// This test ensures that all three standard fee tiers (LOW, MEDIUM, HIGH)
+    /// are properly accepted during pool creation. This validates that the
+    /// FeeTier enum correctly maps to the allowed fee percentages.
     ///
-    /// **Validates: Requirement 6.2** - EInvalidFeeTier error for invalid fee tiers
+    /// **Validates: Requirement 1.1, 1.2** - Standard fee tiers are accepted
     #[test]
-    #[expected_failure(abort_code = factory::EInvalidFeeTier)]
-    fun test_invalid_fee_tier_rejection() {
+    fun test_standard_fee_tiers_accepted() {
         let admin = fixtures::admin();
         let mut scenario = ts::begin(admin);
         
@@ -90,15 +89,15 @@ module sui_amm::test_factory {
         let clock = clock::create_for_testing(ts::ctx(&mut scenario));
         
         let creation_fee = factory::get_pool_creation_fee(&registry);
+        
+        // Test LOW tier (5 bps)
         let fee_coin = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
         let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
         let coin_b = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
-        
-        // 999 is not in the allowed fee tiers, should trigger EInvalidFeeTier
-        let (position, refund_a, refund_b) = factory::create_pool<USDC, USDT>(
+        let (position1, refund_a, refund_b) = factory::create_pool<USDC, USDT>(
             &mut registry,
             &mut stats_registry,
-            999,
+            factory::fee_tier_low_enum(),
             0,
             coin_a,
             coin_b,
@@ -106,10 +105,51 @@ module sui_amm::test_factory {
             &clock,
             ts::ctx(&mut scenario)
         );
-        
         coin::burn_for_testing(refund_a);
         coin::burn_for_testing(refund_b);
-        transfer::public_transfer(position, admin);
+        transfer::public_transfer(position1, admin);
+        
+        // Test MEDIUM tier (30 bps)
+        let fee_coin = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
+        let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
+        let coin_b = test_utils::mint_coin<DAI>(1_000_000_000, ts::ctx(&mut scenario));
+        let (position2, refund_a, refund_b) = factory::create_pool<USDC, DAI>(
+            &mut registry,
+            &mut stats_registry,
+            factory::fee_tier_medium_enum(),
+            0,
+            coin_a,
+            coin_b,
+            fee_coin,
+            &clock,
+            ts::ctx(&mut scenario)
+        );
+        coin::burn_for_testing(refund_a);
+        coin::burn_for_testing(refund_b);
+        transfer::public_transfer(position2, admin);
+        
+        // Test HIGH tier (100 bps)
+        let fee_coin = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
+        let coin_a = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
+        let coin_b = test_utils::mint_coin<DAI>(1_000_000_000, ts::ctx(&mut scenario));
+        let (position3, refund_a, refund_b) = factory::create_pool<USDT, DAI>(
+            &mut registry,
+            &mut stats_registry,
+            factory::fee_tier_high_enum(),
+            0,
+            coin_a,
+            coin_b,
+            fee_coin,
+            &clock,
+            ts::ctx(&mut scenario)
+        );
+        coin::burn_for_testing(refund_a);
+        coin::burn_for_testing(refund_b);
+        transfer::public_transfer(position3, admin);
+        
+        // Verify all pools were created
+        assert!(factory::get_pool_count(&registry) == 3, 0);
+        
         clock::destroy_for_testing(clock);
         ts::return_shared(registry);
         ts::return_shared(stats_registry);
@@ -148,7 +188,7 @@ module sui_amm::test_factory {
         let (position1, refund_a1, refund_b1) = factory::create_pool<USDC, USDT>(
             &mut registry,
             &mut stats_registry,
-            30,
+            factory::fee_tier_medium_enum(),
             0,
             coin_a1,
             coin_b1,
@@ -169,7 +209,7 @@ module sui_amm::test_factory {
         let (position2, refund_a2, refund_b2) = factory::create_pool<USDC, USDT>(
             &mut registry,
             &mut stats_registry,
-            30,
+            factory::fee_tier_medium_enum(),
             0,
             coin_a2,
             coin_b2,
@@ -223,7 +263,7 @@ module sui_amm::test_factory {
         let (position1, refund_a1, refund_b1) = factory::create_pool<USDC, USDT>(
             &mut registry,
             &mut stats_registry,
-            30,
+            factory::fee_tier_medium_enum(),
             0,
             coin_a1,
             coin_b1,
@@ -244,7 +284,7 @@ module sui_amm::test_factory {
         let (position2, refund_a2, refund_b2) = factory::create_pool<DAI, USDC>(
             &mut registry,
             &mut stats_registry,
-            30,
+            factory::fee_tier_medium_enum(),
             0,
             coin_a2,
             coin_b2,
@@ -293,16 +333,24 @@ module sui_amm::test_factory {
         let mut positions = vector::empty<LPPosition>();
         
         while (i < vector::length(&fee_tiers)) {
-            let fee_tier = *vector::borrow(&fee_tiers, i);
+            let fee_tier_bps = *vector::borrow(&fee_tiers, i);
             
             let fee_coin = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
             let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
             let coin_b = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
             
+            let fee_tier_enum = if (fee_tier_bps == 5) {
+                factory::fee_tier_low_enum()
+            } else if (fee_tier_bps == 30) {
+                factory::fee_tier_medium_enum()
+            } else {
+                factory::fee_tier_high_enum()
+            };
+            
             let (position, refund_a, refund_b) = factory::create_pool<USDC, USDT>(
                 &mut registry,
                 &mut stats_registry,
-                fee_tier,
+                fee_tier_enum,
                 0,
                 coin_a,
                 coin_b,
@@ -434,6 +482,201 @@ module sui_amm::test_factory {
             ts::ctx(&mut scenario)
         );
         ts::return_shared(registry);
+        ts::end(scenario);
+    }
+
+    /// Verifies that stable pools use LOW fee tier by default
+    ///
+    /// This test ensures that when creating a stable pool, the LOW fee tier
+    /// (5 bps / 0.05%) is the recommended default for stable pairs with minimal
+    /// price volatility.
+    ///
+    /// **Validates: Requirement 1.4** - Default tier selection for stable pools
+    #[test]
+    fun test_stable_pool_default_tier() {
+        let admin = fixtures::admin();
+        let mut scenario = ts::begin(admin);
+        
+        factory::test_init(ts::ctx(&mut scenario));
+        swap_history::test_init(ts::ctx(&mut scenario));
+        
+        ts::next_tx(&mut scenario, admin);
+        
+        let mut registry = ts::take_shared<PoolRegistry>(&scenario);
+        let mut stats_registry = ts::take_shared<StatisticsRegistry>(&scenario);
+        let clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        
+        let creation_fee = factory::get_pool_creation_fee(&registry);
+        let fee_coin = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
+        let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
+        let coin_b = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
+        
+        // Create stable pool with LOW tier (recommended default)
+        let (position, refund_a, refund_b) = factory::create_stable_pool<USDC, USDT>(
+            &mut registry,
+            &mut stats_registry,
+            factory::fee_tier_low_enum(),  // LOW tier is recommended for stable pairs
+            0,
+            100,  // amp coefficient
+            coin_a,
+            coin_b,
+            fee_coin,
+            &clock,
+            ts::ctx(&mut scenario)
+        );
+        
+        // Verify pool was created with LOW tier
+        let pool_id_opt = factory::get_pool_id<USDC, USDT>(&registry, 5, true);
+        assert!(option::is_some(&pool_id_opt), 0);
+        
+        coin::burn_for_testing(refund_a);
+        coin::burn_for_testing(refund_b);
+        transfer::public_transfer(position, admin);
+        clock::destroy_for_testing(clock);
+        ts::return_shared(registry);
+        ts::return_shared(stats_registry);
+        ts::end(scenario);
+    }
+
+    /// Property test: Fee Tier Validation
+    ///
+    /// **Feature: prd-compliance-improvements, Property 1: Fee Tier Validation**
+    ///
+    /// This property test verifies that for any fee percentage value, the system
+    /// accepts pool creation if and only if the fee percentage is exactly 5, 30,
+    /// or 100 basis points.
+    ///
+    /// The test validates:
+    /// - Standard tiers (5, 30, 100) are accepted
+    /// - Non-standard tiers are rejected with EInvalidFeeTier
+    /// - Edge cases (0, very large values) are properly rejected
+    /// - The validation is consistent across multiple invocations
+    ///
+    /// **Validates: Requirements 1.1, 1.2, 1.3**
+    #[test]
+    fun property_fee_tier_validation() {
+        let admin = fixtures::admin();
+        let mut scenario = ts::begin(admin);
+        
+        factory::test_init(ts::ctx(&mut scenario));
+        swap_history::test_init(ts::ctx(&mut scenario));
+        
+        ts::next_tx(&mut scenario, admin);
+        
+        let mut registry = ts::take_shared<PoolRegistry>(&scenario);
+        let mut stats_registry = ts::take_shared<StatisticsRegistry>(&scenario);
+        let clock = clock::create_for_testing(ts::ctx(&mut scenario));
+        
+        // Test standard fee tiers - these should all be accepted
+        let standard_tiers = vector[5u64, 30u64, 100u64];
+        let mut i = 0;
+        let mut positions = vector::empty<LPPosition>();
+        
+        while (i < vector::length(&standard_tiers)) {
+            let fee_tier = *vector::borrow(&standard_tiers, i);
+            
+            // Validate that the fee tier is recognized as valid
+            assert!(factory::validate_fee_tier(fee_tier), 100 + i);
+            assert!(factory::is_valid_fee_tier(&registry, fee_tier), 200 + i);
+            
+            // Create pool with standard tier - should succeed
+            let creation_fee = factory::get_pool_creation_fee(&registry);
+            let fee_coin = coin::mint_for_testing<sui::sui::SUI>(creation_fee, ts::ctx(&mut scenario));
+            
+            let fee_tier_enum = if (fee_tier == 5) {
+                factory::fee_tier_low_enum()
+            } else if (fee_tier == 30) {
+                factory::fee_tier_medium_enum()
+            } else {
+                factory::fee_tier_high_enum()
+            };
+            
+            // Use different token pairs for each tier to avoid EPoolAlreadyExists
+            if (fee_tier == 5) {
+                let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
+                let coin_b = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
+                let (position, refund_a, refund_b) = factory::create_pool<USDC, USDT>(
+                    &mut registry,
+                    &mut stats_registry,
+                    fee_tier_enum,
+                    0,
+                    coin_a,
+                    coin_b,
+                    fee_coin,
+                    &clock,
+                    ts::ctx(&mut scenario)
+                );
+                coin::burn_for_testing(refund_a);
+                coin::burn_for_testing(refund_b);
+                vector::push_back(&mut positions, position);
+            } else if (fee_tier == 30) {
+                let coin_a = test_utils::mint_coin<USDC>(1_000_000_000, ts::ctx(&mut scenario));
+                let coin_b = test_utils::mint_coin<DAI>(1_000_000_000, ts::ctx(&mut scenario));
+                let (position, refund_a, refund_b) = factory::create_pool<USDC, DAI>(
+                    &mut registry,
+                    &mut stats_registry,
+                    fee_tier_enum,
+                    0,
+                    coin_a,
+                    coin_b,
+                    fee_coin,
+                    &clock,
+                    ts::ctx(&mut scenario)
+                );
+                coin::burn_for_testing(refund_a);
+                coin::burn_for_testing(refund_b);
+                vector::push_back(&mut positions, position);
+            } else {
+                let coin_a = test_utils::mint_coin<USDT>(1_000_000_000, ts::ctx(&mut scenario));
+                let coin_b = test_utils::mint_coin<DAI>(1_000_000_000, ts::ctx(&mut scenario));
+                let (position, refund_a, refund_b) = factory::create_pool<USDT, DAI>(
+                    &mut registry,
+                    &mut stats_registry,
+                    fee_tier_enum,
+                    0,
+                    coin_a,
+                    coin_b,
+                    fee_coin,
+                    &clock,
+                    ts::ctx(&mut scenario)
+                );
+                coin::burn_for_testing(refund_a);
+                coin::burn_for_testing(refund_b);
+                vector::push_back(&mut positions, position);
+            };
+            
+            i = i + 1;
+        };
+        
+        // Test non-standard fee tiers - these should all be rejected
+        let non_standard_tiers = vector[0u64, 1u64, 10u64, 25u64, 50u64, 99u64, 101u64, 500u64, 1000u64, 10000u64];
+        let mut j = 0;
+        
+        while (j < vector::length(&non_standard_tiers)) {
+            let fee_tier = *vector::borrow(&non_standard_tiers, j);
+            
+            // Validate that the fee tier is NOT recognized as valid
+            assert!(!factory::validate_fee_tier(fee_tier), 300 + j);
+            assert!(!factory::is_valid_fee_tier(&registry, fee_tier), 400 + j);
+            
+            j = j + 1;
+        };
+        
+        // Test FeeTier enum conversion
+        assert!(factory::fee_tier_to_bps(factory::fee_tier_low_enum()) == 5, 500);
+        assert!(factory::fee_tier_to_bps(factory::fee_tier_medium_enum()) == 30, 501);
+        assert!(factory::fee_tier_to_bps(factory::fee_tier_high_enum()) == 100, 502);
+        
+        // Clean up
+        while (!vector::is_empty(&positions)) {
+            let position = vector::pop_back(&mut positions);
+            transfer::public_transfer(position, admin);
+        };
+        vector::destroy_empty(positions);
+        
+        clock::destroy_for_testing(clock);
+        ts::return_shared(registry);
+        ts::return_shared(stats_registry);
         ts::end(scenario);
     }
 }

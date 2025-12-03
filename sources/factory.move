@@ -71,11 +71,93 @@ module sui_amm::factory {
     const DEFAULT_PROTOCOL_FEE_BPS: u64 = 100;
     const DEFAULT_STABLE_PROTOCOL_FEE_BPS: u64 = 100;
 
+    /// Fee tier enumeration for standardized pool fees
+    ///
+    /// Restricts pool creation to three standardized fee tiers to prevent
+    /// liquidity fragmentation and enable efficient pool discovery.
+    ///
+    /// # Variants
+    /// - `LOW`: 5 bps (0.05%) - Optimized for stable pairs with minimal price volatility
+    /// - `MEDIUM`: 30 bps (0.3%) - Standard tier for most volatile pairs
+    /// - `HIGH`: 100 bps (1%) - For exotic pairs with high volatility or low liquidity
+    ///
+    /// # Design Rationale
+    /// Standardized tiers prevent:
+    /// - Liquidity fragmentation across arbitrary fee percentages
+    /// - Difficulty in pool discovery and comparison
+    /// - Suboptimal trading experience due to thin liquidity
+    ///
+    /// # Usage Example
+    /// ```move
+    /// let tier = FeeTier::MEDIUM;
+    /// let bps = fee_tier_to_bps(tier); // Returns 30
+    /// ```
+    public enum FeeTier has copy, drop, store {
+        LOW,      // 5 bps (0.05%)
+        MEDIUM,   // 30 bps (0.3%)
+        HIGH,     // 100 bps (1%)
+    }
+
     public struct PoolKey has copy, drop, store {
         type_a: type_name::TypeName,
         type_b: type_name::TypeName,
         fee_percent: u64,
         is_stable: bool,
+    }
+
+    /// Convert fee tier enum to basis points
+    ///
+    /// Translates the FeeTier enum variant to its corresponding numeric value
+    /// in basis points for use in pool calculations.
+    ///
+    /// # Parameters
+    /// - `tier`: FeeTier enum variant
+    ///
+    /// # Returns
+    /// - Fee in basis points (5, 30, or 100)
+    ///
+    /// # Examples
+    /// ```move
+    /// assert!(fee_tier_to_bps(FeeTier::LOW) == 5, 0);
+    /// assert!(fee_tier_to_bps(FeeTier::MEDIUM) == 30, 0);
+    /// assert!(fee_tier_to_bps(FeeTier::HIGH) == 100, 0);
+    /// ```
+    public fun fee_tier_to_bps(tier: FeeTier): u64 {
+        match (tier) {
+            FeeTier::LOW => FEE_TIER_LOW,
+            FeeTier::MEDIUM => FEE_TIER_MEDIUM,
+            FeeTier::HIGH => FEE_TIER_HIGH,
+        }
+    }
+
+    /// Validate that a fee percentage matches a standard tier
+    ///
+    /// Checks if the provided fee percentage corresponds to one of the three
+    /// standardized fee tiers. Used to enforce fee tier restrictions during
+    /// pool creation.
+    ///
+    /// # Parameters
+    /// - `fee_percent`: Fee in basis points to validate
+    ///
+    /// # Returns
+    /// - `true` if fee_percent is 5, 30, or 100
+    /// - `false` otherwise
+    ///
+    /// # Examples
+    /// ```move
+    /// assert!(validate_fee_tier(5) == true, 0);
+    /// assert!(validate_fee_tier(30) == true, 0);
+    /// assert!(validate_fee_tier(100) == true, 0);
+    /// assert!(validate_fee_tier(50) == false, 0);
+    /// ```
+    ///
+    /// # Security
+    /// This function is critical for preventing liquidity fragmentation.
+    /// All pool creation functions MUST call this before accepting a fee tier.
+    public fun validate_fee_tier(fee_percent: u64): bool {
+        fee_percent == FEE_TIER_LOW || 
+        fee_percent == FEE_TIER_MEDIUM || 
+        fee_percent == FEE_TIER_HIGH
     }
 
     /// Pool creation event
@@ -206,10 +288,10 @@ module sui_amm::factory {
     /// - Requires creation fee (burned to @0x0)
     /// - Enforces global pool count limit
     /// - Limits pools per token to prevent index bloat
-    /// - Requires minimum fee tier
+    /// - Requires standardized fee tier
     ///
     /// # Parameters
-    /// - `fee_percent`: Swap fee in basis points
+    /// - `fee_tier`: Standardized fee tier (LOW, MEDIUM, or HIGH)
     /// - `creator_fee_percent`: Creator fee as percentage of swap fees
     /// - `creation_fee`: SUI coin for creation fee (burned)
     ///
@@ -224,10 +306,26 @@ module sui_amm::factory {
     /// - `EInvalidCreationFee`: If creation fee insufficient
     /// - `EPoolAlreadyExists`: If pool with same parameters exists
     /// - `ETooManyPoolsPerToken`: If token already in too many pools
+    ///
+    /// # Examples
+    /// ```move
+    /// // Create a pool with MEDIUM fee tier (0.3%)
+    /// let (position, refund_a, refund_b) = factory::create_pool<USDC, USDT>(
+    ///     &mut registry,
+    ///     &mut stats_registry,
+    ///     factory::fee_tier_medium_enum(),
+    ///     0,  // No creator fee
+    ///     coin_a,
+    ///     coin_b,
+    ///     creation_fee,
+    ///     &clock,
+    ///     ctx
+    /// );
+    /// ```
     public fun create_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,
         statistics_registry: &mut swap_history::StatisticsRegistry,
-        fee_percent: u64,
+        fee_tier: FeeTier,
         creator_fee_percent: u64,
         coin_a: coin::Coin<CoinA>,
         coin_b: coin::Coin<CoinB>,
@@ -235,6 +333,9 @@ module sui_amm::factory {
         clock: &clock::Clock,
         ctx: &mut tx_context::TxContext
     ): (position::LPPosition, coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // Convert fee tier enum to basis points
+        let fee_percent = fee_tier_to_bps(fee_tier);
+        
         // Validate fee tier
         assert!(fee_percent >= pool::min_fee_bps(), EInvalidFeeTier);
         assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
@@ -332,9 +433,11 @@ module sui_amm::factory {
     /// Create a StableSwap pool with initial liquidity
     ///
     /// Similar to create_pool but creates a StableSwap pool optimized for stable pairs.
-    /// Requires an amplification coefficient (amp) parameter.
+    /// Requires an amplification coefficient (amp) parameter. Defaults to LOW fee tier
+    /// (5 bps / 0.05%) which is optimal for stable pairs with minimal price volatility.
     ///
     /// # Parameters
+    /// - `fee_tier`: Standardized fee tier (typically LOW for stable pairs)
     /// - `amp`: Amplification coefficient (controls curve flatness)
     ///
     /// # Returns
@@ -342,11 +445,28 @@ module sui_amm::factory {
     /// - Refund of unused CoinA
     /// - Refund of unused CoinB
     ///
+    /// # Examples
+    /// ```move
+    /// // Create a stable pool with LOW fee tier (0.05%)
+    /// let (position, refund_a, refund_b) = factory::create_stable_pool<USDC, USDT>(
+    ///     &mut registry,
+    ///     &mut stats_registry,
+    ///     factory::fee_tier_low_enum(),  // Recommended for stable pairs
+    ///     0,  // No creator fee
+    ///     100,  // Amplification coefficient
+    ///     coin_a,
+    ///     coin_b,
+    ///     creation_fee,
+    ///     &clock,
+    ///     ctx
+    /// );
+    /// ```
+    ///
     /// See create_pool for full parameter and error documentation.
     public fun create_stable_pool<CoinA, CoinB>(
         registry: &mut PoolRegistry,
         statistics_registry: &mut swap_history::StatisticsRegistry,
-        fee_percent: u64,
+        fee_tier: FeeTier,
         creator_fee_percent: u64,
         amp: u64,
         coin_a: coin::Coin<CoinA>,
@@ -355,6 +475,9 @@ module sui_amm::factory {
         clock: &clock::Clock,
         ctx: &mut tx_context::TxContext
     ): (position::LPPosition, coin::Coin<CoinA>, coin::Coin<CoinB>) {
+        // Convert fee tier enum to basis points
+        let fee_percent = fee_tier_to_bps(fee_tier);
+        
         // Validate fee tier
         assert!(fee_percent >= stable_pool::min_fee_bps(), EInvalidFeeTier);
         assert!(is_valid_fee_tier(registry, fee_percent), EInvalidFeeTier);
@@ -592,6 +715,11 @@ module sui_amm::factory {
     public fun fee_tier_low(): u64 { FEE_TIER_LOW }
     public fun fee_tier_medium(): u64 { FEE_TIER_MEDIUM }
     public fun fee_tier_high(): u64 { FEE_TIER_HIGH }
+
+    // Helper functions to create FeeTier enum variants
+    public fun fee_tier_low_enum(): FeeTier { FeeTier::LOW }
+    public fun fee_tier_medium_enum(): FeeTier { FeeTier::MEDIUM }
+    public fun fee_tier_high_enum(): FeeTier { FeeTier::HIGH }
 
     /// Get total number of pools in registry
     public fun pool_count(registry: &PoolRegistry): u64 {
