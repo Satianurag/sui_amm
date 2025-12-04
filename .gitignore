@@ -3,5 +3,6 @@ traces/*
 .trace
 .coverage*
 .kiro
-demo/test_coins
 test_coins
+scripts
+demo
