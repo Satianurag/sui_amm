@@ -8,18 +8,18 @@ A sophisticated automated market maker (AMM) protocol on Sui blockchain featurin
 
 | Resource | Address |
 |----------|---------|
-| Package ID | `0x6ddd7fa2cb774fdf82425c70f0f54797abef9f6b74e42d260c0d0ad3dc148001` |
-| PoolRegistry | `0xa3f09fde64bafa93790f85f526ef4af002fcfe72214761090294e1f94216a8e0` |
-| StatisticsRegistry | `0xd3da6ae9f10c018e289e6c45e52867632c9b6c6974fa81bff599eea28c78d873` |
-| OrderRegistry | `0xfc6e61245144e3c9dea60448b5bc46525caf1f98c95699895bc99474dda8b4b2` |
-| GovernanceConfig | `0x36d7e0d53f3fe1b88138f2f4532ad2e3ae981bb21b63c57158e9b6f31fc1aa87` |
-| Publisher | `0x069365f26289a9187475a106552adc33c57582bda6b16213cd0d007a954d2505` |
-| AdminCap | `0xcfef50a23eec5c9c7d598f5ac3f546d7a842523e2cbc19f55153c2e496fa0d5c` |
-| UpgradeCap | `0x96f2e09bc5d16701122d00cac0674204b8c9e2a09a29aab760ca24a56d3cc932` |
+| Package ID | `0x207d0463a4414fa0d4efbbc224fa5241aa7423089db9f7eff59369aaecc4d9c8` |
+| PoolRegistry | `0xe18b6289be6b7ec01dcbbaba788e5a59b0a7ffd1985b2637136f16e060eaa225` |
+| StatisticsRegistry | `0x9b7d10faf31c34dc7e110304411b2be52e371b76d1367e696794a57381b16e2d` |
+| OrderRegistry | `0x0c8e5510e677d8dd40cb0c709f00d760d024bfacf0d0986c4c3cca71105d95a1` |
+| GovernanceConfig | `0x9a4cb408da96e85f056f7e6e60b5fa01d029ab085d7749d45124dfbda527e0eb` |
+| Publisher | `0x1b5228d3e6ceca95d7d56d5590a8e76aa22965c40a409feb1c9ecd7b08c52d00` |
+| AdminCap | `0x7cad5d13469d01498e66d3ee84ac4ed22429fdaca84c532078bc3110bc9bc80e` |
+| UpgradeCap | `0xed1c8ebfd2182f189777e3cd832c2edab7c4dc537735db080c91f2fc8dcdc856` |
 
-**Deployment Digest:** `5iMW4cq1M7sULbEG2PgD295HwyTRZg4N3vaPpYdD1YqY`
+**Deployment Digest:** `4Ey7guQ4ozwVmqq41hfJBS29sAtU9sHSemckrcEhYN7x`
 
-**Explorer:** [View on Sui Explorer](https://suiscan.xyz/testnet/object/0x6ddd7fa2cb774fdf82425c70f0f54797abef9f6b74e42d260c0d0ad3dc148001)
+**Explorer:** [View on Sui Explorer](https://suiscan.xyz/testnet/object/0x207d0463a4414fa0d4efbbc224fa5241aa7423089db9f7eff59369aaecc4d9c8)
 
 > 📝 **Full deployment details and transaction history**: See [TESTNET_DEPLOYMENT.md](./TESTNET_DEPLOYMENT.md)
 
