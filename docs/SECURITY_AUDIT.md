@@ -361,7 +361,7 @@ public fun execute_fee_change(
 
 | Mitigation | Status | Limit |
 |------------|--------|-------|
-| **Pool creation fee** | ✅ | 10 SUI (economic barrier) |
+| **Pool creation fee** | ✅ | 5 SUI (economic barrier) |
 | **Max pools per token** | ✅ | 500 pools |
 | **Max global pools** | ✅ | 50,000 pools |
 | **Pagination support** | ✅ | Prevents unbounded iteration |
@@ -371,13 +371,13 @@ public fun execute_fee_change(
 // factory.move - DoS protections
 const MAX_POOLS_PER_TOKEN_PAIR: u64 = 500;
 const MAX_GLOBAL_POOLS: u64 = 50_000;
-const POOL_CREATION_FEE: u64 = 10_000_000_000; // 10 SUI
+const POOL_CREATION_FEE: u64 = 5_000_000_000; // 5 SUI
 
 assert!(registry.total_pools < MAX_GLOBAL_POOLS, ETooManyGlobalPools);
 ```
 
 **Attack Scenario:** Spam pool creation to bloat registry  
-**Mitigation:** 10 SUI fee + hard limits make attack expensive
+**Mitigation:** 5 SUI fee + hard limits make attack expensive
 
 **Tests:**
 - ✅ `test_factory::test_max_pools_per_token_limit`

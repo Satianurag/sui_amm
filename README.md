@@ -76,7 +76,7 @@ A sophisticated automated market maker (AMM) protocol on Sui blockchain featurin
 │                    Factory (Registry)                    │
 │  • Pool creation & indexing                             │
 │  • Fee tier management                                  │
-│  • DoS protection (10 SUI creation fee)                 │
+│  • DoS protection (5 SUI creation fee)                  │
 └─────────────────┬───────────────────────────────────────┘
                   │
         ┌─────────┴─────────┐
@@ -307,7 +307,7 @@ let (position, refund_a, refund_b) = factory::create_stable_pool<USDC, USDT>(
     100,    // amplification coefficient
     coin_usdc,  // initial liquidity
     coin_usdt,  // initial liquidity
-    creation_fee,  // 10 SUI
+    creation_fee,  // 5 SUI
     clock,
     ctx
 );
@@ -544,7 +544,7 @@ cat docs/GAS_BENCHMARKS.md
 | Parameter | Value | Purpose |
 |-----------|-------|---------|
 | Minimum Liquidity | 1,000 shares | Prevents manipulation |
-| Pool Creation Fee | 10 SUI | DoS protection |
+| Pool Creation Fee | 5 SUI | DoS protection |
 | Max Pools Per Token | 500 | Registry DoS prevention |
 | Max Global Pools | 50,000 | Scalability limit |
 | Ratio Tolerance | 0.5% | Liquidity add flexibility |
