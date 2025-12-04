@@ -1,4 +1,4 @@
-# SUI AMM - Production-Ready Decentralized Exchange
+# SUI AMM - Decentralized AMM with NFT LP Positions
 
 A sophisticated automated market maker (AMM) protocol on Sui blockchain featuring NFT-based LP positions, StableSwap pools, and advanced DeFi capabilities.
 
